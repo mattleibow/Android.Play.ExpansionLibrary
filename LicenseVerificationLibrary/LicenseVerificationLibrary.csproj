@@ -46,39 +46,42 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CallbackErrorCode.cs" />
-    <Compile Include="ILicenseResultListener.java.cs">
+    <Compile Include="ILicenseResultListener.cs" />
+    <Compile Include="LicenseResultListenerStub.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ILicensingService.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Policy.java.cs" />
+    <Compile Include="LicensingServiceStub.cs" />
+    <Compile Include="IPolicy.cs" />
     <Compile Include="LicenseChecker.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LicenseCheckerCallback.java.cs">
+    <Compile Include="ILicenseCheckerCallback.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LicenseValidator.java.cs">
+    <Compile Include="LicenseValidator.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DeviceLimiter.java.cs">
+    <Compile Include="IDeviceLimiter.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="PolicyExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AESObfuscator.java.cs" />
-    <Compile Include="APKExpansionPolicy.java.cs" />
-    <Compile Include="NullDeviceLimiter.java.cs" />
-    <Compile Include="Obfuscator.java.cs" />
+    <Compile Include="AesObfuscator.cs" />
+    <Compile Include="ApkExpansionPolicy.cs" />
+    <Compile Include="NullDeviceLimiter.cs" />
+    <Compile Include="IObfuscator.cs" />
     <Compile Include="PolicyServerResponse.cs" />
-    <Compile Include="PreferenceObfuscator.java.cs" />
-    <Compile Include="ResponseData.java.cs" />
-    <Compile Include="ServerManagedPolicy.java.cs" />
-    <Compile Include="StrictPolicy.java.cs" />
-    <Compile Include="ValidationException.java.cs" />
+    <Compile Include="PreferenceObfuscator.cs" />
+    <Compile Include="ResponseData.cs" />
+    <Compile Include="ServerManagedPolicy.cs" />
+    <Compile Include="ServerResponseCode.cs" />
+    <Compile Include="StrictPolicy.cs" />
+    <Compile Include="ValidationException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

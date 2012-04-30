@@ -1,15 +1,16 @@
 using System.Text;
+using LicenseVerificationLibrary;
 
 namespace ExpansionDownloader.impl
 {
     public class DownloadInfo
     {
-        public DownloadInfo(int index, string fileName, string package)
+        public DownloadInfo(int fileType, string fileName, string package)
         {
             Fuzz = Helpers.Random.Next(1001);
             FileName = fileName;
             Package = package;
-            Index = index;
+            ExpansionFileType = fileType;
         }
 
         public int Control { get; set; }
@@ -18,7 +19,7 @@ namespace ExpansionDownloader.impl
         public string FileName { get; set; }
         public string Package { get; set; }
         public int Fuzz { get; set; }
-        public int Index { get; set; }
+        public int ExpansionFileType { get; set; }
         public long LastModified { get; set; }
         public int FailedCount { get; set; }
         public int RedirectCount { get; set; }

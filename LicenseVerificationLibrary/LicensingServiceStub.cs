@@ -1,45 +1,44 @@
+using System;
 using Android.OS;
 
 namespace LicenseVerificationLibrary
 {
-    public interface ILicenseResultListener : IInterface
-    {
-        void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature);
-    }
-
     /// <summary>
     /// Local-side IPC implementation stub class.
     /// </summary>
-    internal abstract class LicenseResultListenerStub : Binder, ILicenseResultListener
+    internal class LicensingServiceStub : Binder, ILicensingService
     {
-        private const int TransactionVerifyLicense = (BinderConsts.FirstCallTransaction + 0);
-        private const string Descriptor = "com.android.vending.licensing.ILicenseResultListener";
+        private const int TransactionCheckLicense = (BinderConsts.FirstCallTransaction + 0);
+        private const string Descriptor = "com.android.vending.licensing.ILicensingService";
 
         /// <summary>
         /// Construct the stub at attach it to the interface.
         /// </summary>
-        protected LicenseResultListenerStub()
+        private LicensingServiceStub()
         {
             AttachInterface(this, Descriptor);
         }
 
         /// <summary>
-        /// Cast an IBinder object into an ILicenseResultListener interface, generating a proxy if needed.
+        /// Cast an IBinder object into an ILicensingService interface, generating a proxy if needed.
         /// </summary>
         public IBinder AsBinder()
         {
             return this;
         }
 
-        public abstract void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature);
-
-        public static ILicenseResultListener AsInterface(IBinder obj)
+        public virtual void CheckLicense(long nonce, string packageName, ILicenseResultListener listener)
         {
-            ILicenseResultListener result = null;
+            throw new NotImplementedException();
+        }
+
+        public static ILicensingService AsInterface(IBinder obj)
+        {
+            ILicensingService result = null;
 
             if (obj != null)
             {
-                var iin = obj.QueryLocalInterface(Descriptor) as ILicenseResultListener;
+                var iin = obj.QueryLocalInterface(Descriptor) as ILicensingService;
                 result = iin ?? new Proxy(obj);
             }
 
@@ -48,7 +47,7 @@ namespace LicenseVerificationLibrary
 
         protected override bool OnTransact(int code, Parcel data, Parcel reply, int flags)
         {
-            var handled = false;
+            bool handled = false;
 
             switch (code)
             {
@@ -56,13 +55,13 @@ namespace LicenseVerificationLibrary
                     reply.WriteString(Descriptor);
                     handled = true;
                     break;
-
-                case TransactionVerifyLicense:
+                case TransactionCheckLicense:
                     data.EnforceInterface(Descriptor);
-                    var responseCode = data.ReadInt();
-                    var signedData = data.ReadString();
-                    var signature = data.ReadString();
-                    VerifyLicense((ServerResponseCode) responseCode, signedData, signature);
+                    var nonce = data.ReadLong();
+                    var packageName = data.ReadString();
+                    var resultListener = LicenseResultListenerStub.AsInterface(data.ReadStrongBinder());
+
+                    CheckLicense(nonce, packageName, resultListener);
                     handled = true;
                     break;
             }
@@ -70,7 +69,7 @@ namespace LicenseVerificationLibrary
             return handled || base.OnTransact(code, data, reply, flags);
         }
 
-        private class Proxy : Binder, ILicenseResultListener
+        private class Proxy : Binder, ILicensingService
         {
             private readonly IBinder _remote;
 
@@ -89,17 +88,17 @@ namespace LicenseVerificationLibrary
                 return _remote;
             }
 
-            public void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature)
+            public void CheckLicense(long nonce, string packageName, ILicenseResultListener listener)
             {
                 Parcel data = Parcel.Obtain();
                 try
                 {
                     data.WriteInterfaceToken(Descriptor);
-                    data.WriteInt((int) responseCode);
-                    data.WriteString(signedData);
-                    data.WriteString(signature);
+                    data.WriteLong(nonce);
+                    data.WriteString(packageName);
+                    data.WriteStrongBinder(listener != null ? listener.AsBinder() : null);
 
-                    _remote.Transact(TransactionVerifyLicense, data, null, BinderConsts.FlagOneway);
+                    _remote.Transact(TransactionCheckLicense, data, null, TransactionFlags.Oneway);
                 }
                 finally
                 {

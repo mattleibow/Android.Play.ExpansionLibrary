@@ -40,9 +40,9 @@ namespace LicenseVerificationLibrary
                 ISecretKey tmp = factory.GenerateSecret(keySpec);
                 ISecretKey secret = new SecretKeySpec(tmp.GetEncoded(), "AES");
                 _encryptor = Cipher.GetInstance(CipherAlgorithm);
-                _encryptor.Init(Cipher.EncryptMode, secret, new IvParameterSpec(Iv));
+                _encryptor.Init(CipherMode.EncryptMode, secret, new IvParameterSpec(Iv));
                 _decryptor = Cipher.GetInstance(CipherAlgorithm);
-                _decryptor.Init(Cipher.DecryptMode, secret, new IvParameterSpec(Iv));
+                _decryptor.Init(CipherMode.DecryptMode, secret, new IvParameterSpec(Iv));
             }
             catch (GeneralSecurityException e)
             {

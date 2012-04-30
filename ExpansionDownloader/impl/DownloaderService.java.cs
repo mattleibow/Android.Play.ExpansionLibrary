@@ -1103,10 +1103,10 @@ namespace ExpansionDownloader.impl
                 _context.mNotification.OnDownloadStateChanged(DownloaderClientState.FetchingUrl);
                 string deviceId = Settings.Secure.GetString(_context.ContentResolver, Settings.Secure.AndroidId);
 
-                var aep = new APKExpansionPolicy(_context, new AesObfuscator(_context.GetSalt(), _context.PackageName, deviceId));
+                var aep = new ApkExpansionPolicy(_context, new AesObfuscator(_context.GetSalt(), _context.PackageName, deviceId));
 
                 // reset our policy back to the start of the world to force a re-check
-                aep.resetPolicy();
+                aep.ResetPolicy();
 
                 // let's try and get the OBB file from LVL first
                 // Construct the LicenseChecker with a IPolicy.
@@ -1120,10 +1120,10 @@ namespace ExpansionDownloader.impl
 
             private class ApkLicenseCheckerCallback : ILicenseCheckerCallback
             {
-                private readonly APKExpansionPolicy _aep;
+                private readonly ApkExpansionPolicy _aep;
                 private readonly LvlRunnable _lvlRunnable;
 
-                public ApkLicenseCheckerCallback(LvlRunnable lvlRunnable, APKExpansionPolicy aep)
+                public ApkLicenseCheckerCallback(LvlRunnable lvlRunnable, ApkExpansionPolicy aep)
                 {
                     _lvlRunnable = lvlRunnable;
                     _aep = aep;
@@ -1136,7 +1136,7 @@ namespace ExpansionDownloader.impl
                     Debug.WriteLine("DownloaderService.LvlRunnable.ApkLicenseCheckerCallback.Allow");
                     try
                     {
-                        int count = _aep.getExpansionURLCount();
+                        int count = _aep.GetExpansionUrlCount();
                         DownloadsDB db = DownloadsDB.getDB(Context);
                         if (count == 0)
                         {
@@ -1146,17 +1146,19 @@ namespace ExpansionDownloader.impl
                         int status = 0;
                         for (int i = 0; i < count; i++)
                         {
-                            string currentFileName = _aep.getExpansionFileName(i);
+                            var index = i;
+
+                            string currentFileName = _aep.GetExpansionFileName(index);
                             if (null != currentFileName)
                             {
-                                var di = new DownloadInfo(i, currentFileName, Context.PackageName);
+                                var di = new DownloadInfo(index, currentFileName, Context.PackageName);
 
-                                long fileSize = _aep.getExpansionFileSize(i);
-                                if (Context.HandleFileUpdated(db, i, currentFileName, fileSize))
+                                long fileSize = _aep.GetExpansionFileSize(index);
+                                if (Context.HandleFileUpdated(db, index, currentFileName, fileSize))
                                 {
                                     status |= -1;
                                     di.ResetDownload();
-                                    di.Uri = _aep.getExpansionURL(i);
+                                    di.Uri = _aep.GetExpansionUrl(index);
                                     di.TotalBytes = fileSize;
                                     di.Status = status;
                                     db.updateDownload(di);
@@ -1173,13 +1175,13 @@ namespace ExpansionDownloader.impl
                                         di.Status = DownloadStatus.Success;
                                         di.TotalBytes = fileSize;
                                         di.CurrentBytes = fileSize;
-                                        di.Uri = _aep.getExpansionURL(i);
+                                        di.Uri = _aep.GetExpansionUrl(index);
                                         db.updateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
-                                        dbdi.Uri = _aep.getExpansionURL(i);
+                                        dbdi.Uri = _aep.GetExpansionUrl(index);
                                         db.updateDownload(dbdi);
                                         status |= -1;
                                     }

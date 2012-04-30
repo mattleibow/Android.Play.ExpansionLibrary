@@ -6,6 +6,7 @@ using Android.Database.Sqlite;
 using Android.Provider;
 using Android.Util;
 using Java.Lang;
+using LicenseVerificationLibrary;
 using Exception = Java.Lang.Exception;
 
 namespace ExpansionDownloader.impl
@@ -136,7 +137,7 @@ namespace ExpansionDownloader.impl
 
         public long getIDForDownloadInfo(DownloadInfo di)
         {
-            return getIDByIndex(di.Index);
+            return getIDByIndex(di.ExpansionFileType);
         }
 
         public long getIDByIndex(int index)
@@ -159,7 +160,7 @@ namespace ExpansionDownloader.impl
             SQLiteStatement downloadCurrentBytes = getUpdateCurrentBytesStatement();
             downloadCurrentBytes.ClearBindings();
             downloadCurrentBytes.BindLong(1, di.CurrentBytes);
-            downloadCurrentBytes.BindLong(2, di.Index);
+            downloadCurrentBytes.BindLong(2, di.ExpansionFileType);
             downloadCurrentBytes.Execute();
         }
 
@@ -178,7 +179,7 @@ namespace ExpansionDownloader.impl
         public bool updateDownload(DownloadInfo di)
         {
             var cv = new ContentValues();
-            cv.Put(DownloadColumns.INDEX, di.Index);
+            cv.Put(DownloadColumns.INDEX, di.ExpansionFileType);
             cv.Put(DownloadColumns.FILENAME, di.FileName);
             cv.Put(DownloadColumns.URI, di.Uri);
             cv.Put(DownloadColumns.ETAG, di.ETag);

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Android.Content;
 
@@ -25,13 +26,24 @@ namespace LicenseVerificationLibrary
             _editor = null;
         }
 
+        public void PutValue<T>(string key, T value)
+        {
+            PutString(key, value.ToString());
+        }
+
         public void PutString(string key, string value)
         {
             if (_editor == null)
             {
                 _editor = _preferences.Edit();
             }
+
             _editor.PutString(key, _obfuscator.Obfuscate(value, key));
+        }
+
+        public T GetValue<T>(string key, T defValue)
+        {
+            return (T) Convert.ChangeType(GetString(key, defValue.ToString()), typeof(T));
         }
 
         public string GetString(string key, string defValue)
