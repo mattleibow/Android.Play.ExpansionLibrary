@@ -1,4 +1,3 @@
-using System;
 using Android.OS;
 
 namespace LicenseVerificationLibrary
@@ -11,7 +10,7 @@ namespace LicenseVerificationLibrary
     /// <summary>
     /// Local-side IPC implementation stub class.
     /// </summary>
-    internal class LicenseResultListenerStub : Binder, ILicenseResultListener
+    internal abstract class LicenseResultListenerStub : Binder, ILicenseResultListener
     {
         private const int TransactionVerifyLicense = (BinderConsts.FirstCallTransaction + 0);
         private const string Descriptor = "com.android.vending.licensing.ILicenseResultListener";
@@ -32,10 +31,7 @@ namespace LicenseVerificationLibrary
             return this;
         }
 
-        public virtual void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature);
 
         public static ILicenseResultListener AsInterface(IBinder obj)
         {

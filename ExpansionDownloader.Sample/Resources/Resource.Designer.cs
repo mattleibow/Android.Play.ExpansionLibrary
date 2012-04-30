@@ -40,14 +40,17 @@ namespace ExpansionDownloader.Sample
 		public partial class Id
 		{
 			
-			// aapt resource value: 0x7f060010
-			public const int NowPlaying = 2131099664;
+			// aapt resource value: 0x7f060018
+			public const int NowPlaying = 2131099672;
+			
+			// aapt resource value: 0x7f060017
+			public const int PlayerLayout = 2131099671;
+			
+			// aapt resource value: 0x7f060019
+			public const int VideoView = 2131099673;
 			
 			// aapt resource value: 0x7f06000f
-			public const int PlayerLayout = 2131099663;
-			
-			// aapt resource value: 0x7f060011
-			public const int VideoView = 2131099665;
+			public const int appIcon = 2131099663;
 			
 			// aapt resource value: 0x7f060009
 			public const int approveCellular = 2131099657;
@@ -58,11 +61,17 @@ namespace ExpansionDownloader.Sample
 			// aapt resource value: 0x7f060008
 			public const int cancelButton = 2131099656;
 			
+			// aapt resource value: 0x7f060015
+			public const int description = 2131099669;
+			
 			// aapt resource value: 0x7f060001
 			public const int downloaderDashboard = 2131099649;
 			
 			// aapt resource value: 0x7f060007
 			public const int pauseButton = 2131099655;
+			
+			// aapt resource value: 0x7f060016
+			public const int paused_text = 2131099670;
 			
 			// aapt resource value: 0x7f060002
 			public const int progressAsFraction = 2131099650;
@@ -79,6 +88,15 @@ namespace ExpansionDownloader.Sample
 			// aapt resource value: 0x7f060006
 			public const int progressTimeRemaining = 2131099654;
 			
+			// aapt resource value: 0x7f060014
+			public const int progress_bar = 2131099668;
+			
+			// aapt resource value: 0x7f060013
+			public const int progress_bar_frame = 2131099667;
+			
+			// aapt resource value: 0x7f060010
+			public const int progress_text = 2131099664;
+			
 			// aapt resource value: 0x7f06000d
 			public const int resumeOverCellular = 2131099661;
 			
@@ -90,6 +108,12 @@ namespace ExpansionDownloader.Sample
 			
 			// aapt resource value: 0x7f06000b
 			public const int textPausedParagraph2 = 2131099659;
+			
+			// aapt resource value: 0x7f060012
+			public const int time_remaining = 2131099666;
+			
+			// aapt resource value: 0x7f060011
+			public const int title = 2131099665;
 			
 			// aapt resource value: 0x7f06000e
 			public const int wifiSettingsButton = 2131099662;
@@ -109,7 +133,10 @@ namespace ExpansionDownloader.Sample
 			public const int notification = 2130903041;
 			
 			// aapt resource value: 0x7f030002
-			public const int videoplayer = 2130903042;
+			public const int status_bar_ongoing_event_progress_bar = 2130903042;
+			
+			// aapt resource value: 0x7f030003
+			public const int videoplayer = 2130903043;
 			
 			private Layout()
 			{
@@ -162,6 +189,18 @@ namespace ExpansionDownloader.Sample
 		
 		public partial class Style
 		{
+			
+			// aapt resource value: 0x7f050004
+			public const int ButtonBackground = 2131034116;
+			
+			// aapt resource value: 0x7f050001
+			public const int NotificationText = 2131034113;
+			
+			// aapt resource value: 0x7f050002
+			public const int NotificationTextShadow = 2131034114;
+			
+			// aapt resource value: 0x7f050003
+			public const int NotificationTitle = 2131034115;
 			
 			// aapt resource value: 0x7f050000
 			public const int VideoFullScreen = 2131034112;

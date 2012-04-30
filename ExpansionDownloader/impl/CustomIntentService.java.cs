@@ -45,7 +45,7 @@ namespace ExpansionDownloader.impl
             Log.Debug(LOG_TAG, "onDestroy");
         }
 
-        protected abstract void onHandleIntent(Intent paramIntent);
+        protected abstract void OnHandleIntent(Intent paramIntent);
         protected abstract bool shouldStop();
 
         public override void OnStart(Intent paramIntent, int startId)
@@ -85,7 +85,7 @@ namespace ExpansionDownloader.impl
 
             public override void HandleMessage(Message paramMessage)
             {
-                _cis.onHandleIntent((Intent) paramMessage.Obj);
+                _cis.OnHandleIntent((Intent) paramMessage.Obj);
                 if (_cis.shouldStop())
                 {
                     Log.Debug(LOG_TAG, "stopSelf");

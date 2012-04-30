@@ -1,77 +1,78 @@
-using Android.Util;
+using System.Text;
 
 namespace ExpansionDownloader.impl
 {
     public class DownloadInfo
     {
-        public int mControl;
-        public long mCurrentBytes;
-        public string mETag;
-        public string mFileName;
-        public int mFuzz;
-        public int mIndex;
-        private bool mInitialized;
-        public long mLastMod;
-        public int mNumFailed;
-        public int mRedirectCount;
-        public int mRetryAfter;
-        public int mStatus;
-        public long mTotalBytes;
-        public string mUri;
-
-        public DownloadInfo(int index, string fileName, string pkg)
+        public DownloadInfo(int index, string fileName, string package)
         {
-            mFuzz = Helpers.sRandom.NextInt(1001);
-            mFileName = fileName;
-            mIndex = index;
+            Fuzz = Helpers.Random.Next(1001);
+            FileName = fileName;
+            Package = package;
+            Index = index;
         }
 
-        public void resetDownload()
+        public int Control { get; set; }
+        public long CurrentBytes { get; set; }
+        public string ETag { get; set; }
+        public string FileName { get; set; }
+        public string Package { get; set; }
+        public int Fuzz { get; set; }
+        public int Index { get; set; }
+        public long LastModified { get; set; }
+        public int FailedCount { get; set; }
+        public int RedirectCount { get; set; }
+        public int RetryAfter { get; set; }
+        public int Status { get; set; }
+        public long TotalBytes { get; set; }
+        public string Uri { get; set; }
+
+        public void ResetDownload()
         {
-            mCurrentBytes = 0;
-            mETag = string.Empty;
-            mLastMod = 0;
-            mStatus = 0;
-            mControl = 0;
-            mNumFailed = 0;
-            mRetryAfter = 0;
-            mRedirectCount = 0;
+            CurrentBytes = 0;
+            ETag = string.Empty;
+            LastModified = 0;
+            Status = 0;
+            Control = 0;
+            FailedCount = 0;
+            RetryAfter = 0;
+            RedirectCount = 0;
         }
 
-        /**
-     * Returns the time when a download should be restarted.
-     */
-
-        public long restartTime(long now)
+        /// <summary>
+        ///   Returns the time when a download should be restarted.
+        /// </summary>
+        public long RestartTime(long now)
         {
-            if (mNumFailed == 0)
+            if (FailedCount == 0)
             {
                 return now;
             }
-            if (mRetryAfter > 0)
+            if (RetryAfter > 0)
             {
-                return mLastMod + mRetryAfter;
+                return LastModified + RetryAfter;
             }
-            return mLastMod +
-                   Constants.RETRY_FIRST_DELAY*
-                   (1000 + mFuzz)*(1 << (mNumFailed - 1));
+            return LastModified + DownloaderService.RETRY_FIRST_DELAY*(1000 + Fuzz)*(1 << FailedCount - 1);
         }
 
-        public void logVerboseInfo()
+        public override string ToString()
         {
-            Log.Verbose(Constants.TAG, "Service adding new entry");
-            Log.Verbose(Constants.TAG, "FILENAME: " + mFileName);
-            Log.Verbose(Constants.TAG, "URI     : " + mUri);
-            Log.Verbose(Constants.TAG, "FILENAME: " + mFileName);
-            Log.Verbose(Constants.TAG, "CONTROL : " + mControl);
-            Log.Verbose(Constants.TAG, "STATUS  : " + mStatus);
-            Log.Verbose(Constants.TAG, "FAILED_C: " + mNumFailed);
-            Log.Verbose(Constants.TAG, "RETRY_AF: " + mRetryAfter);
-            Log.Verbose(Constants.TAG, "REDIRECT: " + mRedirectCount);
-            Log.Verbose(Constants.TAG, "LAST_MOD: " + mLastMod);
-            Log.Verbose(Constants.TAG, "TOTAL   : " + mTotalBytes);
-            Log.Verbose(Constants.TAG, "CURRENT : " + mCurrentBytes);
-            Log.Verbose(Constants.TAG, "ETAG    : " + mETag);
+            var sb = new StringBuilder("Service adding new entry");
+
+            sb.AppendLine("PACKAGE : " + Package);
+            sb.AppendLine("URI     : " + Uri);
+            sb.AppendLine("FILENAME: " + FileName);
+            sb.AppendLine("CONTROL : " + Control);
+            sb.AppendLine("STATUS  : " + Status);
+            sb.AppendLine("FAILED_C: " + FailedCount);
+            sb.AppendLine("RETRY_AF: " + RetryAfter);
+            sb.AppendLine("REDIRECT: " + RedirectCount);
+            sb.AppendLine("LAST_MOD: " + LastModified);
+            sb.AppendLine("TOTAL   : " + TotalBytes);
+            sb.AppendLine("CURRENT : " + CurrentBytes);
+            sb.AppendLine("ETAG    : " + ETag);
+
+            return sb.ToString();
         }
     }
 }

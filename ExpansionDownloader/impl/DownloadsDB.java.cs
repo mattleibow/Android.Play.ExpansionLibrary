@@ -42,7 +42,7 @@ namespace ExpansionDownloader.impl
         private static int REDIRECT_COUNT_IDX = 10;
         private static int INDEX_IDX = 11;
         private readonly SQLiteOpenHelper mHelper;
-        internal int mFlags;
+        internal DownloaderServiceFlags mFlags;
         private SQLiteStatement mGetDownloadByIndex;
         private long mMetadataRowID = -1;
         internal int mStatus = -1;
@@ -67,7 +67,7 @@ namespace ExpansionDownloader.impl
                 mVersionCode = cur.GetInt(0);
                 mMetadataRowID = cur.GetLong(1);
                 mStatus = cur.GetInt(2);
-                mFlags = cur.GetInt(3);
+                mFlags = (DownloaderServiceFlags)cur.GetInt(3);
                 cur.Close();
             }
             mDownloadsDB = this;
@@ -136,7 +136,7 @@ namespace ExpansionDownloader.impl
 
         public long getIDForDownloadInfo(DownloadInfo di)
         {
-            return getIDByIndex(di.mIndex);
+            return getIDByIndex(di.Index);
         }
 
         public long getIDByIndex(int index)
@@ -148,7 +148,7 @@ namespace ExpansionDownloader.impl
             {
                 return downloadByIndex.SimpleQueryForLong();
             }
-            catch (SQLiteDoneException e)
+            catch (SQLiteDoneException)
             {
                 return -1;
             }
@@ -158,8 +158,8 @@ namespace ExpansionDownloader.impl
         {
             SQLiteStatement downloadCurrentBytes = getUpdateCurrentBytesStatement();
             downloadCurrentBytes.ClearBindings();
-            downloadCurrentBytes.BindLong(1, di.mCurrentBytes);
-            downloadCurrentBytes.BindLong(2, di.mIndex);
+            downloadCurrentBytes.BindLong(1, di.CurrentBytes);
+            downloadCurrentBytes.BindLong(2, di.Index);
             downloadCurrentBytes.Execute();
         }
 
@@ -178,18 +178,18 @@ namespace ExpansionDownloader.impl
         public bool updateDownload(DownloadInfo di)
         {
             var cv = new ContentValues();
-            cv.Put(DownloadColumns.INDEX, di.mIndex);
-            cv.Put(DownloadColumns.FILENAME, di.mFileName);
-            cv.Put(DownloadColumns.URI, di.mUri);
-            cv.Put(DownloadColumns.ETAG, di.mETag);
-            cv.Put(DownloadColumns.TOTALBYTES, di.mTotalBytes);
-            cv.Put(DownloadColumns.CURRENTBYTES, di.mCurrentBytes);
-            cv.Put(DownloadColumns.LASTMOD, di.mLastMod);
-            cv.Put(DownloadColumns.STATUS, di.mStatus);
-            cv.Put(DownloadColumns.CONTROL, di.mControl);
-            cv.Put(DownloadColumns.NUM_FAILED, di.mNumFailed);
-            cv.Put(DownloadColumns.RETRY_AFTER, di.mRetryAfter);
-            cv.Put(DownloadColumns.REDIRECT_COUNT, di.mRedirectCount);
+            cv.Put(DownloadColumns.INDEX, di.Index);
+            cv.Put(DownloadColumns.FILENAME, di.FileName);
+            cv.Put(DownloadColumns.URI, di.Uri);
+            cv.Put(DownloadColumns.ETAG, di.ETag);
+            cv.Put(DownloadColumns.TOTALBYTES, di.TotalBytes);
+            cv.Put(DownloadColumns.CURRENTBYTES, di.CurrentBytes);
+            cv.Put(DownloadColumns.LASTMOD, di.LastModified);
+            cv.Put(DownloadColumns.STATUS, di.Status);
+            cv.Put(DownloadColumns.CONTROL, di.Control);
+            cv.Put(DownloadColumns.NUM_FAILED, di.FailedCount);
+            cv.Put(DownloadColumns.RETRY_AFTER, di.RetryAfter);
+            cv.Put(DownloadColumns.REDIRECT_COUNT, di.RedirectCount);
             return updateDownload(di, cv);
         }
 
@@ -244,31 +244,27 @@ namespace ExpansionDownloader.impl
             return true;
         }
 
-        public int getFlags()
+        public DownloaderServiceFlags getFlags()
         {
             return mFlags;
         }
 
-        public bool updateFlags(int flags)
+        public bool UpdateFlags(DownloaderServiceFlags flags)
         {
-            if (mFlags != flags)
-            {
-                var cv = new ContentValues();
-                cv.Put(MetadataColumns.FLAGS, flags);
-                if (updateMetadata(cv))
-                {
-                    mFlags = flags;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
+            if (mFlags == flags)
             {
                 return true;
             }
+            
+            var cv = new ContentValues();
+            cv.Put(MetadataColumns.FLAGS, (int) flags);
+            if (updateMetadata(cv))
+            {
+                mFlags = flags;
+                return true;
+            }
+
+            return false;
         }
 
         public bool updateStatus(int status)
@@ -338,7 +334,7 @@ namespace ExpansionDownloader.impl
                                   DownloadColumns.FILENAME + "= ?",
                                   new[]
                                       {
-                                          di.mFileName
+                                          di.FileName
                                       }, null, null, null);
                 if (null != cur && cur.MoveToFirst())
                 {
@@ -358,16 +354,16 @@ namespace ExpansionDownloader.impl
 
         public void setDownloadInfoFromCursor(DownloadInfo di, ICursor cur)
         {
-            di.mUri = cur.GetString(URI_IDX);
-            di.mETag = cur.GetString(ETAG_IDX);
-            di.mTotalBytes = cur.GetLong(TOTALBYTES_IDX);
-            di.mCurrentBytes = cur.GetLong(CURRENTBYTES_IDX);
-            di.mLastMod = cur.GetLong(LASTMOD_IDX);
-            di.mStatus = cur.GetInt(STATUS_IDX);
-            di.mControl = cur.GetInt(CONTROL_IDX);
-            di.mNumFailed = cur.GetInt(NUM_FAILED_IDX);
-            di.mRetryAfter = cur.GetInt(RETRY_AFTER_IDX);
-            di.mRedirectCount = cur.GetInt(REDIRECT_COUNT_IDX);
+            di.Uri = cur.GetString(URI_IDX);
+            di.ETag = cur.GetString(ETAG_IDX);
+            di.TotalBytes = cur.GetLong(TOTALBYTES_IDX);
+            di.CurrentBytes = cur.GetLong(CURRENTBYTES_IDX);
+            di.LastModified = cur.GetLong(LASTMOD_IDX);
+            di.Status = cur.GetInt(STATUS_IDX);
+            di.Control = cur.GetInt(CONTROL_IDX);
+            di.FailedCount = cur.GetInt(NUM_FAILED_IDX);
+            di.RetryAfter = cur.GetInt(RETRY_AFTER_IDX);
+            di.RedirectCount = cur.GetInt(REDIRECT_COUNT_IDX);
         }
 
         public DownloadInfo getDownloadInfoFromCursor(ICursor cur)
@@ -377,7 +373,7 @@ namespace ExpansionDownloader.impl
             return di;
         }
 
-        public DownloadInfo[] getDownloads()
+        public DownloadInfo[] GetDownloads()
         {
             SQLiteDatabase sqldb = mHelper.ReadableDatabase;
             ICursor cur = null;

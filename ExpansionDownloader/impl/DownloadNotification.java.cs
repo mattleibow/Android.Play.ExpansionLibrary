@@ -12,7 +12,6 @@ namespace ExpansionDownloader.impl
         private static string LOGTAG = "DownloadNotification";
         private static readonly int NOTIFICATION_ID = LOGTAG.GetHashCode();
         private readonly Context mContext;
-        private readonly ICustomNotification mCustomNotification;
         private readonly string mLabel;
         private readonly Notification mNotification;
         private readonly NotificationManager mNotificationManager;
@@ -30,23 +29,22 @@ namespace ExpansionDownloader.impl
             mContext = ctx;
             mLabel = applicationLabel;
             mNotificationManager = mContext.GetSystemService(Context.NotificationService).JavaCast<NotificationManager>();
-            mCustomNotification = CustomNotificationFactory.createCustomNotification();
             mNotification = new Notification();
             mCurrentNotification = mNotification;
         }
 
         #region IDownloaderClient Members
 
-        public void onDownloadStateChanged(DownloaderClientState newState)
+        public void OnDownloadStateChanged(DownloaderClientState newState)
         {
             if (null != mClientProxy)
             {
-                mClientProxy.onDownloadStateChanged(newState);
+                mClientProxy.OnDownloadStateChanged(newState);
             }
             if (newState != mState)
             {
                 mState = newState;
-                if (newState == DownloaderClientState.STATE_IDLE || null == mContentIntent)
+                if (newState == DownloaderClientState.Idle || null == mContentIntent)
                 {
                     return;
                 }
@@ -57,23 +55,23 @@ namespace ExpansionDownloader.impl
                 // get the new title string and paused text
                 switch (newState)
                 {
-                    case DownloaderClientState.STATE_DOWNLOADING:
+                    case DownloaderClientState.Downloading:
                         iconResource = Resource.Drawable.StatSysDownload;
-                        stringDownload = Helpers.getDownloaderStringResourceIDFromState(newState);
+                        stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
 
-                    case DownloaderClientState.STATE_FETCHING_URL:
-                    case DownloaderClientState.STATE_CONNECTING:
+                    case DownloaderClientState.FetchingUrl:
+                    case DownloaderClientState.Connecting:
                         iconResource = Resource.Drawable.StatSysDownloadDone;
-                        stringDownload = Helpers.getDownloaderStringResourceIDFromState(newState);
+                        stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
 
-                    case DownloaderClientState.STATE_COMPLETED:
-                    case DownloaderClientState.STATE_PAUSED_BY_REQUEST:
+                    case DownloaderClientState.Completed:
+                    case DownloaderClientState.PausedByRequest:
                         iconResource = Resource.Drawable.StatSysDownloadDone;
-                        stringDownload = Helpers.getDownloaderStringResourceIDFromState(newState);
+                        stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = false;
                         break;
 
@@ -83,13 +81,13 @@ namespace ExpansionDownloader.impl
                     case DownloaderClientState.STATE_FAILED_SDCARD_FULL:
                     case DownloaderClientState.STATE_FAILED_UNLICENSED:
                         iconResource = Resource.Drawable.StatSysWarning;
-                        stringDownload = Helpers.getDownloaderStringResourceIDFromState(newState);
+                        stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = false;
                         break;
 
                     default:
                         iconResource = Resource.Drawable.StatSysWarning;
-                        stringDownload = Helpers.getDownloaderStringResourceIDFromState(newState);
+                        stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
                 }
@@ -111,12 +109,12 @@ namespace ExpansionDownloader.impl
             }
         }
 
-        public void onDownloadProgress(DownloadProgressInfo progress)
+        public void OnDownloadProgress(DownloadProgressInfo progress)
         {
             mProgressInfo = progress;
             if (null != mClientProxy)
             {
-                mClientProxy.onDownloadProgress(progress);
+                mClientProxy.OnDownloadProgress(progress);
             }
             if (progress.mOverallTotal <= 0)
             {
@@ -128,19 +126,19 @@ namespace ExpansionDownloader.impl
             }
             else
             {
-                mCustomNotification.setCurrentBytes(progress.mOverallProgress);
-                mCustomNotification.setTotalBytes(progress.mOverallTotal);
-                mCustomNotification.setIcon(Resource.Drawable.StatSysDownload);
-                mCustomNotification.setPendingIntent(mContentIntent);
-                mCustomNotification.setTicker(mLabel + ": " + mCurrentText);
-                mCustomNotification.setTitle(mLabel);
-                mCustomNotification.setTimeRemaining(progress.mTimeRemaining);
-                mCurrentNotification = mCustomNotification.updateNotification(mContext);
+                CustomNotificationFactory.Notification.setCurrentBytes(progress.mOverallProgress);
+                CustomNotificationFactory.Notification.setTotalBytes(progress.mOverallTotal);
+                CustomNotificationFactory.Notification.setIcon(Resource.Drawable.StatSysDownload);
+                CustomNotificationFactory.Notification.setPendingIntent(mContentIntent);
+                CustomNotificationFactory.Notification.setTicker(mLabel + ": " + mCurrentText);
+                CustomNotificationFactory.Notification.setTitle(mLabel);
+                CustomNotificationFactory.Notification.setTimeRemaining(progress.mTimeRemaining);
+                mCurrentNotification = CustomNotificationFactory.Notification.updateNotification(mContext);
             }
             mNotificationManager.Notify(NOTIFICATION_ID, mCurrentNotification);
         }
 
-        public void onServiceConnected(Messenger m)
+        public void OnServiceConnected(Messenger m)
         {
         }
 
@@ -160,12 +158,12 @@ namespace ExpansionDownloader.impl
         {
             if (null != mClientProxy)
             {
-                mClientProxy.onDownloadStateChanged(mState);
+                mClientProxy.OnDownloadStateChanged(mState);
             }
         }
 
         /**
-     * Called in response to onClientUpdated. Creates a new proxy and notifies
+     * Called in response to OnClientUpdated. Creates a new proxy and notifies
      * it of the current state.
      * 
      * @param msg the client Messenger to notify
@@ -176,11 +174,11 @@ namespace ExpansionDownloader.impl
             mClientProxy = DownloaderClientMarshaller.CreateProxy(msg);
             if (null != mProgressInfo)
             {
-                mClientProxy.onDownloadProgress(mProgressInfo);
+                mClientProxy.OnDownloadProgress(mProgressInfo);
             }
             if (mState != DownloaderClientState.Unknown)
             {
-                mClientProxy.onDownloadStateChanged(mState);
+                mClientProxy.OnDownloadStateChanged(mState);
             }
         }
 

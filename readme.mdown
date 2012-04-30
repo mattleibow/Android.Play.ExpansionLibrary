@@ -1,9 +1,22 @@
-This is the C# implementation of Google's License Verification Library and the Android Play Expansion Library
+This is the C# implementation of Google's License Verification Library and the 
+Android Play Expansion Library
 
-It is a bit scary as this is a direct translation f the code and I am still busy .NETifying it. 
+It is a bit scary as this is a direct translation of the code and I am still 
+busy '.NET'ifying it. 
 
-They compile and the LVL works. I am busy cleaning this up. I haven't been able to test the Expansions bit yet as I don't hav a version 4.0 device yet. I will try and get the version down to 2.1 or so. Currently due to Mono for Android's limitation on including resource files with class libraries, it won't compile if you include the v3 notifications bit. Removing it will allow itto compile, but I haven't got around to testing this on the v11+ devices yet.
+They both compile and the LVL works. I am busy cleaning up the LVL library and 
+sample. 
 
-Maybe someone could do this to help us?
+The expansions library also compiles and runs correctly. As of this check in,
+I have not tested on a 3.0+ device and not on a Wifi connection. The downloader
+currently, correctly, notices that it is on mobile data and asks the user to
+make a decision on to wait for wifi or use mobile.
 
-This is most of the work done and it just needs cleaning and refactoring.
+Currently due to Mono for Android's limitation on including resource files 
+with class libraries, so I have embedded the stings temporarily. I am also 
+using a temporary static class CustomNotificationFactory to hold some app
+classes that are used insidethe library. I will movethis out soon.
+
+This is most of the work done and it just needs cleaning and refactoring. 
+I also then want to make it friendlier towards .NET developers and using the 
+C#/.NET types instead of the Java types.

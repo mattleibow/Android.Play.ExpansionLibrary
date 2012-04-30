@@ -27,7 +27,7 @@ namespace LicenseVerificationLibrary.Tests
 		{
 			
 			// aapt resource value: 0x7f020000
-			public const int Icon = 2130837504;
+			public const int icon = 2130837504;
 			
 			private Drawable()
 			{
@@ -55,7 +55,7 @@ namespace LicenseVerificationLibrary.Tests
 		{
 			
 			// aapt resource value: 0x7f030000
-			public const int Main = 2130903040;
+			public const int main = 2130903040;
 			
 			private Layout()
 			{

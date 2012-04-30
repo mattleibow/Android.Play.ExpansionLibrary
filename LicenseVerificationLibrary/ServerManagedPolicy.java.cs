@@ -1,299 +1,262 @@
+using System;
 using System.Collections.Generic;
 using Android.Content;
 using Android.Util;
-using Java.Lang;
-using Java.Net;
-using Enum = System.Enum;
 
 namespace LicenseVerificationLibrary
 {
-    /**
-     * Default policy. All policy decisions are based off of response data received
-     * from the licensing service. Specifically, the licensing server sends the
-     * following information: response validity period, error retry period, and
-     * error retry count.
-     * <p>
-     * These values will vary based on the the way the application is configured in
-     * the Android Market publishing console, such as whether the application is
-     * marked as free or is within its refund period, as well as how often an
-     * application is checking with the licensing service.
-     * <p>
-     * Developers who need more fine grained control over their application's
-     * licensing policy should implement a custom IPolicy.
-     */
-
+    ///<summary>
+    ///  Default policy. All policy decisions are based off of response data received
+    ///  from the licensing service. Specifically, the licensing server sends the
+    ///  following information: response validity period, error retry period, and
+    ///  error retry count.
+    ///
+    ///  These values will vary based on the the way the application is configured in
+    ///  the Android Market publishing console, such as whether the application is
+    ///  marked as free or is within its refund period, as well as how often an
+    ///  application is checking with the licensing service.
+    ///
+    ///  Developers who need more fine grained control over their application's
+    ///  licensing policy should implement a custom IPolicy.
+    ///</summary>
     public class ServerManagedPolicy : IPolicy
     {
-        private static string TAG = "ServerManagedPolicy";
-        private static string PREFS_FILE = "com.android.vending.licensing.ServerManagedPolicy";
-        private static string PREF_LAST_RESPONSE = "lastResponse";
-        private static string PREF_VALIDITY_TIMESTAMP = "validityTimestamp";
-        private static string PREF_RETRY_UNTIL = "retryUntil";
-        private static string PREF_MAX_RETRIES = "maxRetries";
-        private static string PREF_RETRY_COUNT = "retryCount";
-        private static string DEFAULT_VALIDITY_TIMESTAMP = "0";
-        private static string DEFAULT_RETRY_UNTIL = "0";
-        private static string DEFAULT_MAX_RETRIES = "0";
-        private static string DEFAULT_RETRY_COUNT = "0";
-        private readonly PreferenceObfuscator mPreferences;
-        private PolicyServerResponse mLastResponse;
-        private long mLastResponseTime;
+        private const string Tag = "ServerManagedPolicy";
+        private const string PrefsFile = "com.android.vending.licensing.ServerManagedPolicy";
+        private const string PrefLastResponse = "lastResponse";
+        private const string PrefValidityTimestamp = "validityTimestamp";
+        private const string PrefRetryUntil = "retryUntil";
+        private const string PrefMaxRetries = "maxRetries";
+        private const string PrefRetryCount = "retryCount";
+        private const string DefaultValidityTimestamp = "0";
+        private const string DefaultRetryUntil = "0";
+        private const string DefaultMaxRetries = "0";
+        private const string DefaultRetryCount = "0";
 
-        private long mMaxRetries;
-        private long mRetryCount;
-        private long mRetryUntil;
-        private long mValidityTimestamp;
+        private readonly PreferenceObfuscator _preferences;
 
-        /**
-     * @param context
-     *            The context for the current application
-     * @param obfuscator
-     *            An obfuscator to be used with preferences.
-     */
+        private PolicyServerResponse _lastResponse;
+        private long _lastResponseTime;
+        private long _maxRetries;
+        private long _retryCount;
+        private long _retryUntil;
+        private long _validityTimestamp;
 
-        public ServerManagedPolicy(Context context, Obfuscator obfuscator)
+        /// <summary>
+        /// </summary>
+        /// <param name = "context">The context for the current application</param>
+        /// <param name = "obfuscator">An obfuscator to be used with preferences.</param>
+        public ServerManagedPolicy(Context context, IObfuscator obfuscator)
         {
             // Import old values
-            ISharedPreferences sp = context.GetSharedPreferences(PREFS_FILE, FileCreationMode.Private);
-            mPreferences = new PreferenceObfuscator(sp, obfuscator);
-            string lastResponse = mPreferences.getString(PREF_LAST_RESPONSE, ((int) PolicyServerResponse.Retry).ToString());
-            mLastResponse = (PolicyServerResponse) Enum.Parse(typeof (PolicyServerResponse), lastResponse);
-            mValidityTimestamp = long.Parse(mPreferences.getString(PREF_VALIDITY_TIMESTAMP, DEFAULT_VALIDITY_TIMESTAMP));
-            mRetryUntil = long.Parse(mPreferences.getString(PREF_RETRY_UNTIL, DEFAULT_RETRY_UNTIL));
-            mMaxRetries = long.Parse(mPreferences.getString(PREF_MAX_RETRIES, DEFAULT_MAX_RETRIES));
-            mRetryCount = long.Parse(mPreferences.getString(PREF_RETRY_COUNT, DEFAULT_RETRY_COUNT));
+            ISharedPreferences sp = context.GetSharedPreferences(PrefsFile, FileCreationMode.Private);
+            _preferences = new PreferenceObfuscator(sp, obfuscator);
+            string lastResponse = _preferences.GetString(PrefLastResponse, ((int) PolicyServerResponse.Retry).ToString());
+            LastResponse = (PolicyServerResponse) Enum.Parse(typeof (PolicyServerResponse), lastResponse);
+            ValidityTimestamp = long.Parse(_preferences.GetString(PrefValidityTimestamp, DefaultValidityTimestamp));
+            RetryUntil = long.Parse(_preferences.GetString(PrefRetryUntil, DefaultRetryUntil));
+            MaxRetries = long.Parse(_preferences.GetString(PrefMaxRetries, DefaultMaxRetries));
+            RetryCount = long.Parse(_preferences.GetString(PrefRetryCount, DefaultRetryCount));
         }
 
-        /**
-     * Process a new response from the license server.
-     * <p>
-     * This data will be used for computing future policy decisions. The
-     * following parameters are processed:
-     * <ul>
-     * <li>VT: the timestamp that the client should consider the response valid
-     * until
-     * <li>GT: the timestamp that the client should ignore retry errors until
-     * <li>GR: the number of retry errors that the client should ignore
-     * </ul>
-     * 
-     * @param response
-     *            the result from validating the server response
-     * @param rawData
-     *            the raw server response data
-     */
+        /// <summary>
+        ///   Set the last license response received from the server and add to
+        ///   preferences. You must manually call PreferenceObfuscator.commit() to
+        ///   commit these changes to disk.
+        /// </summary>
+        public PolicyServerResponse LastResponse
+        {
+            get { return _lastResponse; }
+            private set
+            {
+                _lastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
+                _lastResponse = value;
+                _preferences.PutString(PrefLastResponse, _lastResponse.ToString());
+            }
+        }
+
+
+        /// <summary>
+        ///   Set the current retry count and add to preferences. You must manually
+        ///   call PreferenceObfuscator.commit() to commit these changes to disk.
+        /// </summary>
+        public long RetryCount
+        {
+            get { return _retryCount; }
+            private set
+            {
+                _retryCount = value;
+                _preferences.PutString(PrefRetryCount, _retryCount.ToString());
+            }
+        }
+
+        /// <summary>
+        ///   The last validity timestamp (VT) received from the server
+        /// </summary>
+        public long ValidityTimestamp
+        {
+            get { return _validityTimestamp; }
+            private set
+            {
+                _validityTimestamp = value;
+                _preferences.PutString(PrefValidityTimestamp, _validityTimestamp.ToString());
+            }
+        }
+
+        /// <summary>
+        ///   The retry until timestamp (GT) received from the server.
+        /// </summary>
+        public long RetryUntil
+        {
+            get { return _retryUntil; }
+            private set
+            {
+                _retryUntil = value;
+                _preferences.PutString(PrefRetryUntil, _retryUntil.ToString());
+            }
+        }
+
+        /// <summary>
+        ///   The max retries value (GR) as received from the server
+        /// </summary>
+        public long MaxRetries
+        {
+            get { return _maxRetries; }
+            private set
+            {
+                _maxRetries = value;
+                _preferences.PutString(PrefMaxRetries, _maxRetries.ToString());
+            }
+        }
 
         #region IPolicy Members
 
+        /// <summary>
+        ///   Process a new response from the license server.
+        /// 
+        ///   This data will be used for computing future policy decisions. The
+        ///   following parameters are processed:
+        ///   <ul>
+        ///     <li>VT: the timestamp that the client should consider the response valid until</li>
+        ///     <li>GT: the timestamp that the client should ignore retry errors until</li>
+        ///     <li>GR: the number of retry errors that the client should ignore</li>
+        ///   </ul>
+        /// </summary>
+        /// <param name = "response">the result from validating the server response</param>
+        /// <param name = "rawData">the raw server response data</param>
         public void ProcessServerResponse(PolicyServerResponse response, ResponseData rawData)
         {
             // Update retry counter
-            if (response != PolicyServerResponse.Retry)
+            RetryCount = response == PolicyServerResponse.Retry ? RetryCount + 1 : 0;
+
+            switch (response)
             {
-                setRetryCount(0);
-            }
-            else
-            {
-                setRetryCount(mRetryCount + 1);
+                case PolicyServerResponse.Licensed:
+                    // Update server policy data
+                    Dictionary<string, string> extras;
+                    if (!PolicyExtensions.TryDecodeExtras(rawData.Extra, out extras))
+                    {
+                        Log.Warn(Tag, "Invalid syntax error while decoding extras data from server.");
+                    }
+                    else
+                    {
+                        SetValidityTimestamp(extras["VT"]);
+                        SetRetryUntil(extras["GT"]);
+                        SetMaxRetries(extras["GR"]);
+                    }
+                    break;
+                case PolicyServerResponse.NotLicensed:
+                    SetValidityTimestamp(DefaultValidityTimestamp);
+                    SetRetryUntil(DefaultRetryUntil);
+                    SetMaxRetries(DefaultMaxRetries);
+                    break;
             }
 
-            if (response == PolicyServerResponse.Licensed)
-            {
-                // Update server policy data
-                var extras = new Dictionary<string, string>();
-                try
-                {
-                    extras = PolicyExtensions.DecodeExtras(rawData.extra);
-                }
-                catch (URISyntaxException e)
-                {
-                    Log.Warn(TAG, "Invalid syntax error while decoding extras data from server.");
-                }
-                mLastResponse = response;
-                setValidityTimestamp(extras["VT"]);
-                setRetryUntil(extras["GT"]);
-                setMaxRetries(extras["GR"]);
-            }
-            else if (response == PolicyServerResponse.NotLicensed)
-            {
-                // Clear out stale policy data
-                setValidityTimestamp(DEFAULT_VALIDITY_TIMESTAMP);
-                setRetryUntil(DEFAULT_RETRY_UNTIL);
-                setMaxRetries(DEFAULT_MAX_RETRIES);
-            }
+            LastResponse = response;
 
-            setLastResponse(response);
-            mPreferences.commit();
+            _preferences.Commit();
         }
 
+
+        /// <summary>
+        ///   This implementation allows access if either:
+        ///   <ol>
+        ///     <li>a LICENSED response was received within the validity period</li>
+        ///     <li>a RETRY response was received in the last minute, and we are under
+        ///       the RETRY count or in the RETRY period.</li>
+        ///   </ol>
+        /// </summary>
         public bool AllowAccess()
         {
+            bool allowed = false;
+
             long ts = PolicyExtensions.GetCurrentMilliseconds();
-            if (mLastResponse == PolicyServerResponse.Licensed)
+            if (LastResponse == PolicyServerResponse.Licensed)
             {
-                // Check if the LICENSED response occurred within the validity
-                // timeout.
-                if (ts <= mValidityTimestamp)
-                {
-                    // Cached LICENSED response is still valid.
-                    return true;
-                }
+                // Check if the LICENSED response occurred within the validity timeout and is still valid.
+                allowed = ts <= ValidityTimestamp;
             }
-            else if (mLastResponse == PolicyServerResponse.Retry
-                     && ts < mLastResponseTime + PolicyExtensions.MillisPerMinute)
+            if (LastResponse == PolicyServerResponse.Retry && ts < _lastResponseTime + PolicyExtensions.MillisPerMinute)
             {
-                // Only allow access if we are within the retry period or we haven't
-                // used up our
-                // max retries.
-                return (ts <= mRetryUntil || mRetryCount <= mMaxRetries);
+                // Only allow access if we are within the retry period or we haven't used up our max retries.
+                allowed = ts <= RetryUntil || RetryCount <= MaxRetries;
             }
-            return false;
+
+            return allowed;
         }
 
         #endregion
 
-        /**
-     * Set the last license response received from the server and add to
-     * preferences. You must manually call PreferenceObfuscator.commit() to
-     * commit these changes to disk.
-     * 
-     * @param l
-     *            the response
-     */
-
-        private void setLastResponse(PolicyServerResponse l)
+        /// <summary>
+        ///   Set the last validity timestamp (VT) received from the server and add to
+        ///   preferences. You must manually call PreferenceObfuscator.commit() to
+        ///   commit these changes to disk.
+        /// </summary>
+        /// <param name = "validityTimestamp">the VT string received</param>
+        private void SetValidityTimestamp(string validityTimestamp)
         {
-            mLastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
-            mLastResponse = l;
-            mPreferences.putString(PREF_LAST_RESPONSE, l.ToString());
-        }
-
-        /**
-     * Set the current retry count and add to preferences. You must manually
-     * call PreferenceObfuscator.commit() to commit these changes to disk.
-     * 
-     * @param c
-     *            the new retry count
-     */
-
-        private void setRetryCount(long c)
-        {
-            mRetryCount = c;
-            mPreferences.putString(PREF_RETRY_COUNT, c.ToString());
-        }
-
-        public long getRetryCount()
-        {
-            return mRetryCount;
-        }
-
-        /**
-     * Set the last validity timestamp (VT) received from the server and add to
-     * preferences. You must manually call PreferenceObfuscator.commit() to
-     * commit these changes to disk.
-     * 
-     * @param validityTimestamp
-     *            the VT string received
-     */
-
-        private void setValidityTimestamp(string validityTimestamp)
-        {
-            long lValidityTimestamp;
-            try
-            {
-                lValidityTimestamp = long.Parse(validityTimestamp);
-            }
-            catch (NumberFormatException e)
+            long timestamp;
+            if (!long.TryParse(validityTimestamp, out timestamp))
             {
                 // No response or not parsable, expire in one minute.
-                Log.Warn(TAG, "License validity timestamp (VT) missing, caching for a minute");
-                lValidityTimestamp = PolicyExtensions.GetCurrentMilliseconds() + PolicyExtensions.MillisPerMinute;
-                validityTimestamp = lValidityTimestamp.ToString();
+                Log.Warn(Tag, "License validity timestamp (VT) missing, caching for a minute");
+                timestamp = PolicyExtensions.GetCurrentMilliseconds() + PolicyExtensions.MillisPerMinute;
             }
-
-            mValidityTimestamp = lValidityTimestamp;
-            mPreferences.putString(PREF_VALIDITY_TIMESTAMP, validityTimestamp);
+            ValidityTimestamp = timestamp;
         }
 
-        public long getValidityTimestamp()
-        {
-            return mValidityTimestamp;
-        }
-
-        /**
-     * Set the retry until timestamp (GT) received from the server and add to
-     * preferences. You must manually call PreferenceObfuscator.commit() to
-     * commit these changes to disk.
-     * 
-     * @param retryUntil
-     *            the GT string received
-     */
-
-        private void setRetryUntil(string retryUntil)
+        /// <summary>
+        ///   Set the retry until timestamp (GT) received from the server and add to
+        ///   preferences. You must manually call PreferenceObfuscator.commit() to
+        ///   commit these changes to disk.
+        /// </summary>
+        /// <param name = "retryUntil">the GT string received</param>
+        private void SetRetryUntil(string retryUntil)
         {
             long lRetryUntil;
-            try
-            {
-                lRetryUntil = long.Parse(retryUntil);
-            }
-            catch (NumberFormatException e)
+            if (!long.TryParse(retryUntil, out lRetryUntil))
             {
                 // No response or not parsable, expire immediately
-                Log.Warn(TAG, "License retry timestamp (GT) missing, grace period disabled");
-                retryUntil = "0";
-                lRetryUntil = 0L;
+                Log.Warn(Tag, "License retry timestamp (GT) missing, grace period disabled");
             }
-
-            mRetryUntil = lRetryUntil;
-            mPreferences.putString(PREF_RETRY_UNTIL, retryUntil);
+            RetryUntil = lRetryUntil;
         }
 
-        public long getRetryUntil()
-        {
-            return mRetryUntil;
-        }
-
-        /**
-     * Set the max retries value (GR) as received from the server and add to
-     * preferences. You must manually call PreferenceObfuscator.commit() to
-     * commit these changes to disk.
-     * 
-     * @param maxRetries
-     *            the GR string received
-     */
-
-        private void setMaxRetries(string maxRetries)
+        /// <summary>
+        ///   Set the max retries value (GR) as received from the server and add to
+        ///   preferences. You must manually call PreferenceObfuscator.commit() to
+        ///   commit these changes to disk.
+        /// </summary>
+        /// <param name = "maxRetries">the GR string received</param>
+        private void SetMaxRetries(string maxRetries)
         {
             long lMaxRetries;
-            try
-            {
-                lMaxRetries = long.Parse(maxRetries);
-            }
-            catch (NumberFormatException e)
+            if (!long.TryParse(maxRetries, out lMaxRetries))
             {
                 // No response or not parsable, expire immediately
-                Log.Warn(TAG, "Licence retry count (GR) missing, grace period disabled");
-                maxRetries = "0";
-                lMaxRetries = 0L;
+                Log.Warn(Tag, "Licence retry count (GR) missing, grace period disabled");
             }
-
-            mMaxRetries = lMaxRetries;
-            mPreferences.putString(PREF_MAX_RETRIES, maxRetries);
+            MaxRetries = lMaxRetries;
         }
-
-        public long getMaxRetries()
-        {
-            return mMaxRetries;
-        }
-
-        /**
-     * {@inheritDoc}
-     * 
-     * This implementation allows access if either:<br>
-     * <ol>
-     * <li>a LICENSED response was received within the validity period
-     * <li>a RETRY response was received in the last minute, and we are under
-     * the RETRY count or in the RETRY period.
-     * </ol>
-     */
     }
 }

@@ -51,7 +51,7 @@ namespace LicenseVerificationLibrary.Tests
         {
             base.OnCreate(savedInstanceState);
             RequestWindowFeature(WindowFeatures.IndeterminateProgress);
-            SetContentView(Resource.Layout.Main);
+            SetContentView(Resource.Layout.main);
 
             mStatusText = FindViewById<TextView>(Resource.Id.status_text);
             mCheckLicenseButton = FindViewById<Button>(Resource.Id.check_license_button);
@@ -65,7 +65,7 @@ namespace LicenseVerificationLibrary.Tests
                 new StrictPolicyTest(this).Execute();
                 new APKExpansionPolicyTest(this).Execute();
                 new ObfuscatedPreferencesTest(this).Execute();
-                new AESObfuscatorTest(this).Execute();
+                new AesObfuscatorTest(this).Execute();
             };
 
             mHandler = new Handler();
@@ -78,7 +78,7 @@ namespace LicenseVerificationLibrary.Tests
             // Construct the LicenseChecker with a policy.
             mChecker = new LicenseChecker(this,
                                           new ServerManagedPolicy(this, 
-                                                                  new AESObfuscator(SALT, PackageName, deviceId)),
+                                                                  new AesObfuscator(SALT, PackageName, deviceId)),
                                           BASE64_PUBLIC_KEY);
             doCheck();
         }

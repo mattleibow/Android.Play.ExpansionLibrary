@@ -63,8 +63,8 @@ namespace ExpansionDownloader.impl
                 {
                     builder.SetProgress(0, 0, true);
                 }
-                builder.SetContentText(Helpers.getDownloadProgressString(mCurrentKB, mTotalKB));
-                builder.SetContentInfo(string.Format("{0}s left", Helpers.getTimeRemaining(mTimeRemaining)));
+                builder.SetContentText(Helpers.GetDownloadProgressString(mCurrentKB, mTotalKB));
+                builder.SetContentInfo(string.Format("{0}s left", Helpers.GetTimeRemaining(mTimeRemaining)));
             }
             if (mIcon != 0)
             {

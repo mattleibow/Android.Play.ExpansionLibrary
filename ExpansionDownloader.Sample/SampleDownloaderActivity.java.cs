@@ -6,6 +6,8 @@ using Android.Provider;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
+using ExpansionDownloader.impl;
+using Java.Lang;
 
 namespace ExpansionDownloader.Sample
 {
@@ -41,10 +43,11 @@ namespace ExpansionDownloader.Sample
 
         #region IDownloaderClient Members
 
-        public void onServiceConnected(Messenger m)
+        public void OnServiceConnected(Messenger m)
         {
+            System.Diagnostics.Debug.WriteLine("Activity.onServiceConnected");
             mRemoteService = DownloaderServiceMarshaller.CreateProxy(m);
-            mRemoteService.onClientUpdated(mDownloaderClientStub.getMessenger());
+            mRemoteService.OnClientUpdated(mDownloaderClientStub.GetMessenger());
         }
 
         /**
@@ -53,8 +56,9 @@ namespace ExpansionDownloader.Sample
          * considered a guideline.
          */
 
-        public void onDownloadStateChanged(DownloaderClientState newState)
+        public void OnDownloadStateChanged(DownloaderClientState newState)
         {
+            System.Diagnostics.Debug.WriteLine("Activity.OnDownloadStateChanged");
             setState(newState);
             bool showDashboard = true;
             bool showCellMessage = false;
@@ -62,49 +66,49 @@ namespace ExpansionDownloader.Sample
             bool indeterminate;
             switch (newState)
             {
-                case DownloaderClientState.STATE_IDLE:
-                    // STATE_IDLE means the service is listening, so it's
+                case DownloaderClientState.Idle:
+                    // Idle means the service is listening, so it's
                     // safe to start making calls via mRemoteService.
                     paused = false;
                     indeterminate = true;
                     break;
-                case DownloaderClientState.STATE_CONNECTING:
-                case DownloaderClientState.STATE_FETCHING_URL:
+                case DownloaderClientState.Connecting:
+                case DownloaderClientState.FetchingUrl:
                     showDashboard = true;
                     paused = false;
                     indeterminate = true;
                     break;
-                case DownloaderClientState.STATE_DOWNLOADING:
+                case DownloaderClientState.Downloading:
                     paused = false;
                     showDashboard = true;
                     indeterminate = false;
                     break;
 
-                case DownloaderClientState.STATE_FAILED_CANCELED:
                 case DownloaderClientState.STATE_FAILED:
+                case DownloaderClientState.STATE_FAILED_CANCELED:
                 case DownloaderClientState.STATE_FAILED_FETCHING_URL:
                 case DownloaderClientState.STATE_FAILED_UNLICENSED:
                     paused = true;
                     showDashboard = false;
                     indeterminate = false;
                     break;
-                case DownloaderClientState.STATE_PAUSED_NEED_CELLULAR_PERMISSION:
-                case DownloaderClientState.STATE_PAUSED_WIFI_DISABLED_NEED_CELLULAR_PERMISSION:
+                case DownloaderClientState.PausedNeedCellularPermission:
+                case DownloaderClientState.PausedWifiDisabledNeedCellularPermission:
                     showDashboard = false;
                     paused = true;
                     indeterminate = false;
                     showCellMessage = true;
                     break;
-                case DownloaderClientState.STATE_PAUSED_BY_REQUEST:
+                case DownloaderClientState.PausedByRequest:
                     paused = true;
                     indeterminate = false;
                     break;
-                case DownloaderClientState.STATE_PAUSED_ROAMING:
+                case DownloaderClientState.PausedRoaming:
                 case DownloaderClientState.STATE_PAUSED_SDCARD_UNAVAILABLE:
                     paused = true;
                     indeterminate = false;
                     break;
-                case DownloaderClientState.STATE_COMPLETED:
+                case DownloaderClientState.Completed:
                     showDashboard = false;
                     paused = false;
                     indeterminate = false;
@@ -135,16 +139,16 @@ namespace ExpansionDownloader.Sample
          * sent from the downloader service.
          */
 
-        public void onDownloadProgress(DownloadProgressInfo progress)
+        public void OnDownloadProgress(DownloadProgressInfo progress)
         {
-            mAverageSpeed.Text = Helpers.getSpeedString(progress.mCurrentSpeed) + " Kb/s";
-            mTimeRemaining.Text = "Time remaining: " + Helpers.getTimeRemaining(progress.mTimeRemaining);
+            mAverageSpeed.Text = Helpers.GetSpeedString(progress.mCurrentSpeed) + " Kb/s";
+            mTimeRemaining.Text = "Time remaining: " + Helpers.GetTimeRemaining(progress.mTimeRemaining);
 
             progress.mOverallTotal = progress.mOverallTotal;
             mPB.Max = ((int) (progress.mOverallTotal >> 8));
             mPB.Progress = ((int) (progress.mOverallProgress >> 8));
             mProgressPercent.Text = (progress.mOverallProgress*100/progress.mOverallTotal) + "%";
-            mProgressFraction.Text = (Helpers.getDownloadProgressString(progress.mOverallProgress, progress.mOverallTotal));
+            mProgressFraction.Text = (Helpers.GetDownloadProgressString(progress.mOverallProgress, progress.mOverallTotal));
         }
 
         #endregion
@@ -154,7 +158,7 @@ namespace ExpansionDownloader.Sample
             if (mState != newState)
             {
                 mState = newState;
-                mStatusText.Text = Helpers.getDownloaderStringResourceIDFromState(newState);
+                mStatusText.Text = Helpers.GetDownloaderStringFromState(newState);
             }
         }
 
@@ -188,8 +192,8 @@ namespace ExpansionDownloader.Sample
         {
             foreach (XAPKFile xf in xAPKS)
             {
-                string fileName = Helpers.getExpansionAPKFileName(this, xf.mIsMain, xf.mFileVersion);
-                if (!Helpers.doesFileExist(this, fileName, xf.mFileSize, false))
+                string fileName = Helpers.GetExpansionApkFileName(this, xf.mIsMain, xf.mFileVersion);
+                if (!Helpers.DoesFileExist(this, fileName, xf.mFileSize, false))
                     return false;
             }
             return true;
@@ -308,7 +312,7 @@ namespace ExpansionDownloader.Sample
         //                        if (crc.getValue() != entry.mCRC32)
         //                        {
         //                            Log.Error(Constants.TAG, "CRC does not match for entry: "
-        //                                    + entry.mFileName);
+        //                                    + entry.FileName);
         //                            Log.Error(Constants.TAG, "In file: " + entry.getZipFileName());
         //                            return false;
         //                        }
@@ -358,6 +362,20 @@ namespace ExpansionDownloader.Sample
          * all of the controls into the remote service calls.
          */
 
+
+        public void CreateCustomNotification()
+        {
+            // if version 11+
+            //    CustomNotificationFactory.Notification = new V11CustomNotification();
+            //    CustomNotificationFactory.MaxBytesOverMobile = DownloadManager.GetMaxBytesOverMobile(ApplicationContext).LongValue();
+            //    CustomNotificationFactory.RecommendedMaxBytesOverMobile = DownloadManager.GetRecommendedMaxBytesOverMobile(ApplicationContext).LongValue();
+            // else 3+
+            CustomNotificationFactory.Notification = new V3CustomNotification();
+            CustomNotificationFactory.MaxBytesOverMobile = int.MaxValue;
+            CustomNotificationFactory.RecommendedMaxBytesOverMobile = 2097152L;
+        }
+
+
         private void initializeDownloadUI()
         {
             mDownloaderClientStub = DownloaderClientMarshaller.CreateStub(this, typeof (SampleDownloaderService));
@@ -378,11 +396,11 @@ namespace ExpansionDownloader.Sample
                                       {
                                           if (mStatePaused)
                                           {
-                                              mRemoteService.requestContinueDownload();
+                                              mRemoteService.RequestContinueDownload();
                                           }
                                           else
                                           {
-                                              mRemoteService.requestPauseDownload();
+                                              mRemoteService.RequestPauseDownload();
                                           }
                                           setButtonPausedState(!mStatePaused);
                                       };
@@ -392,8 +410,8 @@ namespace ExpansionDownloader.Sample
             var resumeOnCell = (Button) FindViewById(Resource.Id.resumeOverCellular);
             resumeOnCell.Click += delegate
                                       {
-                                          mRemoteService.setDownloadFlags(IDownloaderServiceConsts.FLAGS_DOWNLOAD_OVER_CELLULAR);
-                                          mRemoteService.requestContinueDownload();
+                                          mRemoteService.SetDownloadFlags(DownloaderServiceFlags.FlagsDownloadOverCellular);
+                                          mRemoteService.RequestContinueDownload();
                                           mCellMessage.Visibility = ViewStates.Gone;
                                       };
         }
@@ -405,52 +423,60 @@ namespace ExpansionDownloader.Sample
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
+            CreateCustomNotification();
+
             base.OnCreate(savedInstanceState);
 
-            /**
-         * Before we do anything, are the files we expect already here and
-         * delivered (presumably by Market) For free titles, this is probably
-         * worth doing. (so no Market request is necessary)
-         */
-            if (!expansionFilesDelivered())
+            // Before we do anything, are the files we expect already here and delivered (presumably by Market) 
+            // For free titles, this is probably worth doing. (so no Market request is necessary)
+            if (expansionFilesDelivered() || !GetExpansionFiles())
             {
-                try
-                {
-                    Intent launchIntent = Intent;
-                    var intentToLaunchThisActivityFromNotification = new Intent(this, typeof (SampleDownloaderActivity));
-                    intentToLaunchThisActivityFromNotification.SetFlags(ActivityFlags.NewTask | ActivityFlags.ClearTop);
-                    intentToLaunchThisActivityFromNotification.SetAction(launchIntent.Action);
+                initializeDownloadUI();
+                validateXAPKZipFiles();
+            }
+        }
 
-                    if (launchIntent.Categories != null)
+        private bool GetExpansionFiles()
+        {
+            bool result = false;
+            try
+            {
+                Intent launchIntent = Intent;
+                var intentToLaunchThisActivityFromNotification = new Intent(this, typeof (SampleDownloaderActivity));
+                intentToLaunchThisActivityFromNotification.SetFlags(ActivityFlags.NewTask | ActivityFlags.ClearTop);
+                intentToLaunchThisActivityFromNotification.SetAction(launchIntent.Action);
+
+                if (launchIntent.Categories != null)
+                {
+                    foreach (string category in launchIntent.Categories)
                     {
-                        foreach (string category in launchIntent.Categories)
-                        {
-                            intentToLaunchThisActivityFromNotification.AddCategory(category);
-                        }
+                        intentToLaunchThisActivityFromNotification.AddCategory(category);
                     }
-
-                    // Build PendingIntent used to open this activity from Notification
-                    PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0, intentToLaunchThisActivityFromNotification,
-                                                                            PendingIntentFlags.UpdateCurrent);
-                    // Request to start the download
-                    int startResult = DownloaderClientMarshaller.startDownloadServiceIfRequired(this, pendingIntent, typeof (SampleDownloaderService));
-
-                    if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED)
-                    {
-                        // The DownloaderService has started downloading the files, show progress
-                        initializeDownloadUI();
-                        return;
-                    } // otherwise, download not needed so we fall through to starting the movie
                 }
-                catch (PackageManager.NameNotFoundException e)
+
+                // Build PendingIntent used to open this activity from Notification
+                PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0,
+                                                                        intentToLaunchThisActivityFromNotification,
+                                                                        PendingIntentFlags.UpdateCurrent);
+                // Request to start the download
+                int startResult = DownloaderClientMarshaller.StartDownloadServiceIfRequired(this, pendingIntent,
+                                                                                            typeof (SampleDownloaderService));
+
+                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED)
                 {
-                    Log.Error(LOG_TAG, "Cannot find own package! MAYDAY!");
-                    e.PrintStackTrace();
+                    // The DownloaderService has started downloading the files, show progress
+                    // otherwise, download not needed so we fall through to starting the movie
+                    initializeDownloadUI();
+                    result = true;
                 }
             }
+            catch (PackageManager.NameNotFoundException e)
+            {
+                Log.Error(LOG_TAG, "Cannot find own package! MAYDAY!");
+                e.PrintStackTrace();
+            }
 
-            initializeDownloadUI();
-            validateXAPKZipFiles();
+            return result;
         }
 
         /**
@@ -461,7 +487,7 @@ namespace ExpansionDownloader.Sample
         {
             if (null != mDownloaderClientStub)
             {
-                mDownloaderClientStub.connect(this);
+                mDownloaderClientStub.Connect(this);
             }
             base.OnResume();
         }
@@ -474,7 +500,7 @@ namespace ExpansionDownloader.Sample
         {
             if (null != mDownloaderClientStub)
             {
-                mDownloaderClientStub.disconnect(this);
+                mDownloaderClientStub.Disconnect(this);
             }
             base.OnStop();
         }

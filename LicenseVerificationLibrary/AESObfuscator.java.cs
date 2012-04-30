@@ -1,10 +1,11 @@
-using Android.Util;
+using System.Text;
 using Java.IO;
 using Java.Lang;
 using Java.Security;
 using Java.Security.Spec;
 using Javax.Crypto;
 using Javax.Crypto.Spec;
+using System;
 
 namespace LicenseVerificationLibrary
 {
@@ -12,39 +13,36 @@ namespace LicenseVerificationLibrary
     ///   An Obfuscator that uses AES to encrypt data.
     ///   todo: dodgy translation
     /// </summary>
-    public class AESObfuscator : Obfuscator
+    public class AesObfuscator : IObfuscator
     {
-        private static string UTF8 = "UTF-8";
-        private static string KEYGEN_ALGORITHM = "PBEWITHSHAAND256BITAES-CBC-BC";
-        private static string CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding";
-        private static readonly byte[] IV = new byte[] {16, 74, 71, 80, 32, 101, 47, 72, 117, 14, 0, 29, 70, 65, 12, 74};
-        private static string header = "com.android.vending.licensing.AESObfuscator-1|";
+        private static readonly byte[] Iv = new byte[] { 16, 74, 71, 80, 32, 101, 47, 72, 117, 14, 0, 29, 70, 65, 12, 74 };
+        private const string KeygenAlgorithm = "PBEWITHSHAAND256BITAES-CBC-BC";
+        private const string CipherAlgorithm = "AES/CBC/PKCS5Padding";
+        private const string Header = "com.android.vending.licensing.AESObfuscator-1|";
 
-        private readonly Cipher mDecryptor;
-        private readonly Cipher mEncryptor;
+        private readonly Cipher _decryptor;
+        private readonly Cipher _encryptor;
 
-        /**
-     * @param salt
-     *            an array of random bytes to use for each (un)obfuscation
-     * @param applicationId
-     *            application identifier, e.g. the package name
-     * @param deviceId
-     *            device identifier. Use as many sources as possible to create
-     *            this unique identifier.
-     */
-
-        public AESObfuscator(byte[] salt, string applicationId, string deviceId)
+        /// <summary>
+        /// </summary>
+        /// <param name="salt">an array of random bytes to use for each (un)obfuscation</param>
+        /// <param name="applicationId">application identifier, e.g. the package name</param>
+        /// <param name="deviceId">
+        /// device identifier. Use as many sources as possible to 
+        /// create this unique identifier.
+        /// </param>
+        public AesObfuscator(byte[] salt, string applicationId, string deviceId)
         {
             try
             {
-                SecretKeyFactory factory = SecretKeyFactory.GetInstance(KEYGEN_ALGORITHM);
+                SecretKeyFactory factory = SecretKeyFactory.GetInstance(KeygenAlgorithm);
                 IKeySpec keySpec = new PBEKeySpec((applicationId + deviceId).ToCharArray(), salt, 1024, 256);
                 ISecretKey tmp = factory.GenerateSecret(keySpec);
                 ISecretKey secret = new SecretKeySpec(tmp.GetEncoded(), "AES");
-                mEncryptor = Cipher.GetInstance(CIPHER_ALGORITHM);
-                mEncryptor.Init(Cipher.EncryptMode, secret, new IvParameterSpec(IV));
-                mDecryptor = Cipher.GetInstance(CIPHER_ALGORITHM);
-                mDecryptor.Init(Cipher.DecryptMode, secret, new IvParameterSpec(IV));
+                _encryptor = Cipher.GetInstance(CipherAlgorithm);
+                _encryptor.Init(Cipher.EncryptMode, secret, new IvParameterSpec(Iv));
+                _decryptor = Cipher.GetInstance(CipherAlgorithm);
+                _decryptor.Init(Cipher.DecryptMode, secret, new IvParameterSpec(Iv));
             }
             catch (GeneralSecurityException e)
             {
@@ -55,16 +53,17 @@ namespace LicenseVerificationLibrary
 
         #region Obfuscator Members
 
-        public string obfuscate(string original, string key)
+        public string Obfuscate(string original, string key)
         {
             if (original == null)
             {
                 return null;
             }
+
             try
             {
                 // Header is appended as an integrity check
-                return Base64.EncodeToString(mEncryptor.DoFinal(new String(header + key + original).GetBytes(UTF8)), Base64.Default);
+                return Convert.ToBase64String(_encryptor.DoFinal(Encoding.UTF8.GetBytes(Header + key + original)));
             }
             catch (UnsupportedEncodingException e)
             {
@@ -76,24 +75,28 @@ namespace LicenseVerificationLibrary
             }
         }
 
-        public string unobfuscate(string obfuscated, string key)
+        public string Unobfuscate(string obfuscated, string key)
         {
             if (obfuscated == null)
             {
                 return null;
             }
+
             try
             {
-                var result = new String(mDecryptor.DoFinal(Base64.Decode(obfuscated, Base64.Default)), UTF8);
-                // Check for presence of header. This serves as a  integrity
-                // check, for cases
-                // where the block size is correct during decryption.
-                int headerIndex = result.IndexOf(header + key);
-                if (headerIndex != 0)
+                var result = Encoding.UTF8.GetString(_decryptor.DoFinal(Convert.FromBase64String(obfuscated)));
+                // Check for presence of header. This serves as an integrity check, 
+                // for cases where the block size is correct during decryption.
+                var headerAndKey = Header + key;
+                if (!result.StartsWith(headerAndKey))
                 {
                     throw new ValidationException("Header not found (invalid data or key)" + ":" + obfuscated);
                 }
-                return result.Substring(header.Length + key.Length, result.Length());
+                return result.Substring(headerAndKey.Length);
+            }
+            catch (FormatException e)
+            {
+                throw new ValidationException(e.Message + ":" + obfuscated);
             }
             catch (IllegalArgumentException e)
             {

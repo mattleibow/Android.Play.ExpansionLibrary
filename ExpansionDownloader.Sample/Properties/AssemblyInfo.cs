@@ -44,3 +44,7 @@ using Android.App;
 
 [assembly: UsesPermission(Manifest.Permission.Internet)]
 [assembly: UsesPermission(Manifest.Permission.WriteExternalStorage)]
+[assembly: UsesPermission(Manifest.Permission.AccessNetworkState)]
+[assembly: UsesPermission(Manifest.Permission.WakeLock)]
+[assembly: UsesPermission(Manifest.Permission.AccessWifiState)]
+[assembly: UsesPermission("com.android.vending.CHECK_LICENSE")]

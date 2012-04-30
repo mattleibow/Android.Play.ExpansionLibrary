@@ -1,78 +1,66 @@
+using System.Diagnostics;
 using Android.Content;
-using Android.Util;
-
-/**
- * An wrapper for SharedPreferences that transparently performs data
- * obfuscation.
- */
 
 namespace LicenseVerificationLibrary
 {
+    /// <summary>
+    ///   An wrapper for SharedPreferences that transparently performs data
+    ///   obfuscation.
+    /// </summary>
     public class PreferenceObfuscator
     {
-        private static string TAG = "PreferenceObfuscator";
+        private readonly IObfuscator _obfuscator;
+        private readonly ISharedPreferences _preferences;
+        private ISharedPreferencesEditor _editor;
 
-        private readonly Obfuscator mObfuscator;
-        private readonly ISharedPreferences mPreferences;
-        private ISharedPreferencesEditor mEditor;
-
-        /**
-     * Constructor.
-     * 
-     * @param sp
-     *            A SharedPreferences instance provided by the system.
-     * @param o
-     *            The Obfuscator to use when reading or writing data.
-     */
-
-        public PreferenceObfuscator(ISharedPreferences sp, Obfuscator o)
+        /// <summary>
+        ///   Constructor.
+        /// </summary>
+        /// <param name = "sp">A SharedPreferences instance provided by the system.</param>
+        /// <param name = "o">The Obfuscator to use when reading or writing data.</param>
+        public PreferenceObfuscator(ISharedPreferences sp, IObfuscator o)
         {
-            mPreferences = sp;
-            mObfuscator = o;
-            mEditor = null;
+            _preferences = sp;
+            _obfuscator = o;
+            _editor = null;
         }
 
-        public void putString(string key, string value)
+        public void PutString(string key, string value)
         {
-            if (mEditor == null)
+            if (_editor == null)
             {
-                mEditor = mPreferences.Edit();
+                _editor = _preferences.Edit();
             }
-            string obfuscatedValue = mObfuscator.obfuscate(value, key);
-            mEditor.PutString(key, obfuscatedValue);
+            _editor.PutString(key, _obfuscator.Obfuscate(value, key));
         }
 
-        public string getString(string key, string defValue)
+        public string GetString(string key, string defValue)
         {
-            string result;
-            string value = mPreferences.GetString(key, null);
+            string result = defValue;
+            string value = _preferences.GetString(key, null);
+
             if (value != null)
             {
                 try
                 {
-                    result = mObfuscator.unobfuscate(value, key);
+                    result = _obfuscator.Unobfuscate(value, key);
                 }
-                catch (ValidationException ex)
+                catch (ValidationException)
                 {
                     // Unable to unobfuscate, data corrupt or tampered
-                    Log.Warn(TAG, "Validation error while reading preference: " + key);
-                    result = defValue;
+                    Debug.WriteLine("Validation error while reading preference: " + key);
                 }
             }
-            else
-            {
-                // Preference not found
-                result = defValue;
-            }
+
             return result;
         }
 
-        public void commit()
+        public void Commit()
         {
-            if (mEditor != null)
+            if (_editor != null)
             {
-                mEditor.Commit();
-                mEditor = null;
+                _editor.Commit();
+                _editor = null;
             }
         }
     }

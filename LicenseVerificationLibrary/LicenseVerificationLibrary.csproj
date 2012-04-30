@@ -13,6 +13,9 @@
     <AssemblyName>LicenseVerificationLibrary</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <AndroidSupportedAbis>armeabi</AndroidSupportedAbis>
+    <AndroidStoreUncompressedFileExtensions />
+    <MandroidI18n />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,16 +42,17 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System.Web.Services" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CallbackErrorCode.cs" />
     <Compile Include="ILicenseResultListener.java.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ILicensingService.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Policy.java.cs" />
     <Compile Include="LicenseChecker.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -61,6 +65,7 @@
     <Compile Include="DeviceLimiter.java.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="PolicyExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -68,7 +73,7 @@
     <Compile Include="APKExpansionPolicy.java.cs" />
     <Compile Include="NullDeviceLimiter.java.cs" />
     <Compile Include="Obfuscator.java.cs" />
-    <Compile Include="Policy.java.cs" />
+    <Compile Include="PolicyServerResponse.cs" />
     <Compile Include="PreferenceObfuscator.java.cs" />
     <Compile Include="ResponseData.java.cs" />
     <Compile Include="ServerManagedPolicy.java.cs" />

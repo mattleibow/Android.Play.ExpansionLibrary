@@ -21,7 +21,7 @@ namespace ExpansionDownloader.Sample
      * used by the LVL to validate responses from Market on your behalf.
      */
 
-        public override string getPublicKey()
+        public override string GetPublicKey()
         {
             return BASE64_PUBLIC_KEY;
         }
@@ -32,7 +32,7 @@ namespace ExpansionDownloader.Sample
      * applications.
      */
 
-        public override byte[] getSALT()
+        public override byte[] GetSalt()
         {
             return SALT;
         }
@@ -43,7 +43,7 @@ namespace ExpansionDownloader.Sample
      * to make sure that your receiver is in your unique package)
      */
 
-        public override string getAlarmReceiverClassName()
+        public override string GetAlarmReceiverClassName()
         {
             return typeof (SampleAlarmReceiver).Name;
         }

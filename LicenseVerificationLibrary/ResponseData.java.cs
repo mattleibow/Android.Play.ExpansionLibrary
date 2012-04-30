@@ -1,73 +1,73 @@
-using Android.Text;
-using Java.Lang;
-using Java.Util.Regex;
-using Enum = System.Enum;
+using System;
 
 namespace LicenseVerificationLibrary
 {
-    /**
-     * ResponseData from licensing server.
-     */
-
+    /// <summary>
+    ///   ResponseData from licensing server.
+    /// </summary>
     public class ResponseData
     {
-        public string extra;
-        public int nonce;
-        public string packageName;
-        public ServerResponseCode responseCode;
-        public long timestamp;
-        public string userId;
-        public string versionCode;
-        /** Response-specific data. */
+        // Response-specific data.
+        public string Extra { get; private set; }
+        public int NumberUsedOnce { get; private set; }
+        public string PackageName { get; private set; }
+        public ServerResponseCode ResponseCode { get; private set; }
+        public long TimeStamp { get; private set; }
+        public string UserId { get; private set; }
+        public string VersionCode { get; private set; }
 
-        /**
-     * Parses response string into ResponseData.
-     * 
-     * @param responseData
-     *            response data string
-     * @throws IllegalArgumentException
-     *             upon parsing error
-     * @return ResponseData object
-     */
-
-        public static ResponseData parse(string responseData)
+        /// <summary>
+        ///   Parses response string into ResponseData.
+        /// </summary>
+        /// <param name = "responseData">response data string</param>
+        /// <returns>ResponseData object</returns>
+        /// <exception cref = "ArgumentException">upon parsing error</exception>
+        public static ResponseData Parse(string responseData)
         {
             // Must parse out main response data and response-specific data.
             int index = responseData.IndexOf(':');
-            string mainData, extraData;
-            if (-1 == index)
-            {
-                mainData = responseData;
-                extraData = "";
-            }
-            else
+            string mainData = responseData;
+            string extraData = string.Empty;
+            if (index != -1)
             {
                 mainData = responseData.Substring(0, index);
-                extraData = index >= responseData.Length ? "" : responseData.Substring(index + 1);
+                extraData = index < responseData.Length
+                                ? responseData.Substring(index + 1)
+                                : string.Empty;
             }
 
-            string[] fields = TextUtils.Split(mainData, Pattern.Quote("|"));
+            string[] fields = mainData.Split('|');
             if (fields.Length < 6)
             {
-                throw new IllegalArgumentException("Wrong number of fields.");
+                throw new ArgumentException("Wrong number of fields.");
             }
 
-            var data = new ResponseData();
-            data.extra = extraData;
-            data.responseCode = (ServerResponseCode) Enum.Parse(typeof (ServerResponseCode), fields[0]);
-            data.nonce = int.Parse(fields[1]);
-            data.packageName = fields[2];
-            data.versionCode = fields[3];
-            // Application-specific user identifier.
-            data.userId = fields[4];
-            data.timestamp = long.Parse(fields[5]);
+            var data = new ResponseData
+                           {
+                               Extra = extraData,
+                               ResponseCode = (ServerResponseCode) Enum.Parse(typeof (ServerResponseCode), fields[0]),
+                               NumberUsedOnce = int.Parse(fields[1]),
+                               PackageName = fields[2],
+                               VersionCode = fields[3],
+                               // Application-specific user identifier.
+                               UserId = fields[4],
+                               TimeStamp = long.Parse(fields[5])
+                           };
 
             return data;
         }
 
         public override string ToString()
         {
-            return string.Join("|", new object[] {responseCode, nonce, packageName, versionCode, userId, timestamp});
+            return string.Join("|", new object[]
+                                        {
+                                            (int) ResponseCode,
+                                            NumberUsedOnce,
+                                            PackageName,
+                                            VersionCode,
+                                            UserId,
+                                            TimeStamp
+                                        });
         }
     }
 }

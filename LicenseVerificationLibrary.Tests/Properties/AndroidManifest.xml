@@ -1,8 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" 
-          package="com.jamwarehouse.licensing.tests" android:versionCode="1" android:versionName="first">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" package="com.jamwarehouse.licensing.tests" android:versionCode="1" android:versionName="first">
   <application android:icon="@drawable/icon" android:label="com.jamwarehouse.licensing.tests">
   </application>
-  <uses-sdk android:minSdkVersion="8" /> 
-  <uses-permission android:name="com.android.vending.CHECK_LICENSE" />
+  <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="14" />
 </manifest>

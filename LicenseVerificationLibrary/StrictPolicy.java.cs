@@ -1,58 +1,51 @@
 namespace LicenseVerificationLibrary
 {
-    /**
- * Non-caching policy. All requests will be sent to the licensing service, and
- * no local caching is performed.
- * <p>
- * Using a non-caching policy ensures that there is no local preference data for
- * malicious users to tamper with. As a side effect, applications will not be
- * permitted to run while offline. Developers should carefully weigh the risks
- * of using this IPolicy over one which implements caching, such as
- * ServerManagedPolicy.
- * <p>
- * Access to the application is only allowed if a LICESNED response is.
- * received. All other responses (including RETRY) will deny access.
- */
-
+    /// <summary>
+    /// Non-caching policy. All requests will be sent to the licensing service, and
+    /// no local caching is performed.
+    /// 
+    /// Using a non-caching policy ensures that there is no local preference data for
+    /// malicious users to tamper with. As a side effect, applications will not be
+    /// permitted to run while offline. Developers should carefully weigh the risks
+    /// of using this IPolicy over one which implements caching, such as
+    /// ServerManagedPolicy.
+    /// 
+    /// Access to the application is only allowed if a LICESNED response is.
+    /// received. All other responses (including RETRY) will deny access.
+    ///  </summary>
     public class StrictPolicy : IPolicy
     {
-        private PolicyServerResponse mLastResponse;
+        private PolicyServerResponse _lastResponse;
 
         public StrictPolicy()
         {
             // Set default policy. This will force the application to check the
             // policy on launch.
-            mLastResponse = PolicyServerResponse.Retry;
+            _lastResponse = PolicyServerResponse.Retry;
         }
-
-        /**
-     * Process a new response from the license server. Since we aren't
-     * performing any caching, this equates to reading the LicenseResponse. Any
-     * ResponseData provided is ignored.
-     * 
-     * @param response
-     *            the result from validating the server response
-     * @param rawData
-     *            the raw server response data
-     */
 
         #region IPolicy Members
 
+        /// <summary>
+        /// Process a new response from the license server. Since we aren't
+        /// performing any caching, this equates to reading the LicenseResponse. Any
+        /// ResponseData provided is ignored.
+        /// </summary>
+        /// <param name="response">the result from validating the server response</param>
+        /// <param name="rawData">the raw server response data</param>
         public void ProcessServerResponse(PolicyServerResponse response, ResponseData rawData)
         {
-            mLastResponse = response;
+            _lastResponse = response;
         }
 
-        /**
-     * {@inheritDoc}
-     * 
-     * This implementation allows access if and only if a LICENSED response was
-     * received the last time the server was contacted.
-     */
-
+        /// <summary>
+        /// This implementation allows access if and only if a LICENSED response was
+        /// received the last time the server was contacted.
+        /// </summary>
+        /// <returns></returns>
         public bool AllowAccess()
         {
-            return (mLastResponse == PolicyServerResponse.Licensed);
+            return _lastResponse == PolicyServerResponse.Licensed;
         }
 
         #endregion

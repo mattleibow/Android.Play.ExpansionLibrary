@@ -1,10 +1,10 @@
 namespace LicenseVerificationLibrary
 {
-    public class NullDeviceLimiter : DeviceLimiter
+    public class NullDeviceLimiter : IDeviceLimiter
     {
         #region DeviceLimiter Members
 
-        public PolicyServerResponse isDeviceAllowed(string userId)
+        public PolicyServerResponse IsDeviceAllowed(string userId)
         {
             return PolicyServerResponse.Licensed;
         }

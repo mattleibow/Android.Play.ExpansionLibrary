@@ -56,34 +56,34 @@ namespace ExpansionDownloader
 
             #region IDownloaderService Members
 
-            public void requestAbortDownload()
+            public void RequestAbortDownload()
             {
                 send(MSG_REQUEST_ABORT_DOWNLOAD, new Bundle());
             }
 
-            public void requestPauseDownload()
+            public void RequestPauseDownload()
             {
                 send(MSG_REQUEST_PAUSE_DOWNLOAD, new Bundle());
             }
 
-            public void setDownloadFlags(int flags)
+            public void SetDownloadFlags(DownloaderServiceFlags flags)
             {
                 var p = new Bundle();
-                p.PutInt(PARAMS_FLAGS, flags);
+                p.PutInt(PARAMS_FLAGS, (int)flags);
                 send(MSG_SET_DOWNLOAD_FLAGS, p);
             }
 
-            public void requestContinueDownload()
+            public void RequestContinueDownload()
             {
                 send(MSG_REQUEST_CONTINUE_DOWNLOAD, new Bundle());
             }
 
-            public void requestDownloadStatus()
+            public void RequestDownloadStatus()
             {
                 send(MSG_REQUEST_DOWNLOAD_STATE, new Bundle());
             }
 
-            public void onClientUpdated(Messenger clientMessenger)
+            public void OnClientUpdated(Messenger clientMessenger)
             {
                 var bundle = new Bundle(1);
                 bundle.PutParcelable(PARAM_MESSENGER, clientMessenger);
@@ -124,22 +124,22 @@ namespace ExpansionDownloader
                                                   switch (msg.What)
                                                   {
                                                       case MSG_REQUEST_ABORT_DOWNLOAD:
-                                                          mItf.requestAbortDownload();
+                                                          mItf.RequestAbortDownload();
                                                           break;
                                                       case MSG_REQUEST_CONTINUE_DOWNLOAD:
-                                                          mItf.requestContinueDownload();
+                                                          mItf.RequestContinueDownload();
                                                           break;
                                                       case MSG_REQUEST_PAUSE_DOWNLOAD:
-                                                          mItf.requestPauseDownload();
+                                                          mItf.RequestPauseDownload();
                                                           break;
                                                       case MSG_SET_DOWNLOAD_FLAGS:
-                                                          mItf.setDownloadFlags(msg.Data.GetInt(PARAMS_FLAGS));
+                                                          mItf.SetDownloadFlags((DownloaderServiceFlags)msg.Data.GetInt(PARAMS_FLAGS));
                                                           break;
                                                       case MSG_REQUEST_DOWNLOAD_STATE:
-                                                          mItf.requestDownloadStatus();
+                                                          mItf.RequestDownloadStatus();
                                                           break;
                                                       case MSG_REQUEST_CLIENT_UPDATE:
-                                                          mItf.onClientUpdated((Messenger) msg.Data.GetParcelable(PARAM_MESSENGER));
+                                                          mItf.OnClientUpdated((Messenger) msg.Data.GetParcelable(PARAM_MESSENGER));
                                                           break;
                                                   }
                                               });
@@ -149,16 +149,16 @@ namespace ExpansionDownloader
 
             #region IStub Members
 
-            public Messenger getMessenger()
+            public Messenger GetMessenger()
             {
                 return mMessenger;
             }
 
-            public void connect(Context c)
+            public void Connect(Context c)
             {
             }
 
-            public void disconnect(Context c)
+            public void Disconnect(Context c)
             {
             }
 

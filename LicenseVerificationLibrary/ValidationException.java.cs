@@ -1,22 +1,19 @@
 using System;
 
-/**
- * Indicates that an error occurred while validating the integrity of data
- * managed by an {@link Obfuscator}.}
- */
-
 namespace LicenseVerificationLibrary
 {
+    /// <summary>
+    /// Indicates that an error occurred while validating the integrity 
+    /// of data managed by an <see cref="IObfuscator"/>.
+    /// </summary>
     public class ValidationException : Exception
     {
-        private static long serialVersionUID = 1L;
-
         public ValidationException()
         {
         }
 
-        public ValidationException(string s)
-            : base(s)
+        public ValidationException(string message)
+            : base(message)
         {
         }
     }

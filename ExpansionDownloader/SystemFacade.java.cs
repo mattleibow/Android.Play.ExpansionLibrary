@@ -4,6 +4,7 @@ using Android.Net;
 using Android.Runtime;
 using Android.Telephony;
 using Android.Util;
+using ExpansionDownloader.impl;
 using Java.Lang;
 
 namespace ExpansionDownloader
@@ -24,20 +25,17 @@ namespace ExpansionDownloader
             var connectivity = mContext.GetSystemService(Context.ConnectivityService).JavaCast<ConnectivityManager>();
             if (connectivity == null)
             {
-                Log.Warn(Constants.TAG, "couldn't get connectivity manager");
+                Log.Warn(DownloaderService.TAG, "couldn't get connectivity manager");
                 return -1;
             }
 
             NetworkInfo activeInfo = connectivity.ActiveNetworkInfo;
             if (activeInfo == null)
             {
-                if (Constants.LOGVV)
-                {
-                    Log.Verbose(Constants.TAG, "network is not available");
-                }
+                    Log.Verbose(DownloaderService.TAG, "network is not available");
                 return -1;
             }
-            return (int) activeInfo.Type;
+            return (int)activeInfo.Type;
         }
 
         public bool isNetworkRoaming()
@@ -45,7 +43,7 @@ namespace ExpansionDownloader
             var connectivity = mContext.GetSystemService(Context.ConnectivityService).JavaCast<ConnectivityManager>();
             if (connectivity == null)
             {
-                Log.Warn(Constants.TAG, "couldn't get connectivity manager");
+                Log.Warn(DownloaderService.TAG, "couldn't get connectivity manager");
                 return false;
             }
 
@@ -54,13 +52,13 @@ namespace ExpansionDownloader
             var tm = mContext.GetSystemService(Context.TelephonyService).JavaCast<TelephonyManager>();
             if (null == tm)
             {
-                Log.Warn(Constants.TAG, "couldn't get telephony manager");
+                Log.Warn(DownloaderService.TAG, "couldn't get telephony manager");
                 return false;
             }
             bool isRoaming = isMobile && tm.IsNetworkRoaming;
-            if (Constants.LOGVV && isRoaming)
+            if (isRoaming)
             {
-                Log.Verbose(Constants.TAG, "network is roaming");
+                Log.Verbose(DownloaderService.TAG, "network is roaming");
             }
             return isRoaming;
         }

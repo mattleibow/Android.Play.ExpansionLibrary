@@ -1,298 +1,251 @@
 using System;
+using System.IO;
+using System.Text.RegularExpressions;
 using Android.Content;
 using Android.OS;
-using Android.Util;
-using Java.IO;
-using Java.Lang;
-using Java.Util.Regex;
-using Environment = System.Environment;
-using Exception = System.Exception;
-using Pattern = Java.Util.Regex.Pattern;
-using Random = Java.Util.Random;
-using String = Java.Lang.String;
+using ExpansionDownloader.impl;
 
 namespace ExpansionDownloader
 {
-    public class Helpers
+    public static class Helpers
     {
-        public static Random sRandom = new Random(Environment.TickCount);
+        public static readonly Random Random;
+        private static readonly string ContentDispositionPattern; // to parse content-disposition headers
+        private static readonly float Megabytes;
 
-        /** Regex used to parse content-disposition headers */
-        private static readonly Pattern CONTENT_DISPOSITION_PATTERN = Pattern.Compile("attachment;\\s*filename\\s*=\\s*\"([^\"]*)\"");
-
-        private Helpers()
+        static Helpers()
         {
+            Megabytes = 1024.0F*1024.0F;
+            Random = new Random(System.Environment.TickCount);
+            ContentDispositionPattern = @"attachment;\s*filename\s*=\s*""([^\""]*)\""";
         }
 
-        /*
-     * Parse the Content-Disposition HTTP Header. The format of the header is
-     * defined here: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html This
-     * header provides a filename for content that is going to be downloaded to
-     * the file system. We only support the attachment type.
-     */
-
-        private static string parseContentDisposition(string contentDisposition)
+        /// <summary>
+        /// Parse the Content-Disposition HTTP Header. The format of the header is
+        /// defined here: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html This
+        /// header provides a filename for content that is going to be downloaded to
+        /// the file system. We only support the attachment type.
+        /// </summary>
+        private static string ParseContentDisposition(string contentDisposition)
         {
             try
             {
-                Matcher m = CONTENT_DISPOSITION_PATTERN.Matcher(contentDisposition);
-                if (m.Find())
+                var m = Regex.Match(contentDisposition, ContentDispositionPattern);
+                if (m.Success)
                 {
-                    return m.Group(1);
+                    return m.Groups[1].Value;
                 }
             }
-            catch (IllegalStateException)
+            catch (Exception ex)
             {
-                // This function is defined as returning null when it can't parse
-                // the header
+                // This function is defined as returning null when it can't parse the header
+                System.Diagnostics.Debug.WriteLine("can't parse the content disposition header {0}", ex.Message);
             }
             return null;
         }
 
-        /**
-     * @return the root of the filesystem containing the given path
-     */
-
-        public static File getFilesystemRoot(string path)
+        /// <summary>
+        /// Get the root of the filesystem containing the given path
+        /// </summary>
+        public static string GetFileSystemRoot(string path)
         {
-            File cache = Android.OS.Environment.DownloadCacheDirectory;
-            if (path.StartsWith(cache.Path))
+            string cache = Android.OS.Environment.DownloadCacheDirectory.Path;
+            if (path.StartsWith(cache))
             {
                 return cache;
             }
-            File external = Android.OS.Environment.ExternalStorageDirectory;
-            if (path.StartsWith(external.Path))
+            string external = Android.OS.Environment.ExternalStorageDirectory.Path;
+            if (path.StartsWith(external))
             {
                 return external;
             }
-            throw new IllegalArgumentException("Cannot determine filesystem root for " + path);
+            throw new ArgumentException("Cannot determine filesystem root for " + path);
         }
 
-        public static bool isExternalMediaMounted()
+        public static bool IsExternalMediaMounted()
         {
-            if (Android.OS.Environment.ExternalStorageState != Android.OS.Environment.MediaMounted)
+            var storageMissing = Android.OS.Environment.ExternalStorageState != Android.OS.Environment.MediaMounted;
+            if (storageMissing) // No SD card found.
             {
-                // No SD card found.
-                if (Constants.LOGVV)
-                {
-                    Log.Debug(Constants.TAG, "no external storage");
-                }
-                return false;
+                System.Diagnostics.Debug.WriteLine("no external storage");
             }
-            return true;
+
+            return !storageMissing;
         }
 
-        /**
-     * @return the number of bytes available on the filesystem rooted at the
-     *         given File
-     */
-
-        public static long getAvailableBytes(File root)
+        /// <summary>
+        /// Get the number of bytes available on the filesystem rooted at the given File.
+        /// </summary>
+        public static long GetAvailableBytes(string root)
         {
-            var stat = new StatFs(root.Path);
-            // put a bit of margin (in case creating the file grows the system by a
-            // few blocks)
+            var stat = new StatFs(root);
+            // put a bit of margin (in case creating the file grows the system by a few blocks)
             long availableBlocks = (long) stat.AvailableBlocks - 4;
             return stat.BlockSize*availableBlocks;
         }
 
-        /**
-     * Checks whether the filename looks legitimate
-     */
-
-        public static bool isFilenameValid(string filename)
+        /// <summary>
+        /// Checks whether the filename looks legitimate.
+        /// </summary>
+        public static bool IsFilenameValid(string filename)
         {
-            filename = new String(filename).ReplaceFirst("/+", "/"); // normalize leading slashes
+            filename = Regex.Replace(filename, "/+", "/"); // normalize leading slashes
             return filename.StartsWith(Android.OS.Environment.DownloadCacheDirectory.ToString()) ||
                    filename.StartsWith(Android.OS.Environment.ExternalStorageDirectory.ToString());
         }
 
-        /*
-     * Delete the given file from device
-     */
-        /* package */
-
-        private static void deleteFile(string path)
+        /// <summary>
+        /// Delete the given file from device
+        /// </summary>
+        private static void DeleteFile(string path)
         {
             try
             {
-                var file = new File(path);
-                file.Delete();
+                File.Delete(path);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log.Warn(Constants.TAG, "file: '" + path + "' couldn't be deleted", e);
+                System.Diagnostics.Debug.WriteLine("File '{0}' couldn't be deleted. ({1})", path, ex.Message);
             }
         }
 
-        /**
-     * Showing progress in MB here. It would be nice to choose the unit (KB, MB,
-     * GB) based on total file size, but given what we know about the expected
-     * ranges of file sizes for APK expansion files, it's probably not necessary.
-     * 
-     * @param overallProgress
-     * @param overallTotal
-     * @return
-     */
-
-        public static string getDownloadProgressString(long overallProgress, long overallTotal)
+        /// <summary>
+        /// Showing progress in MB here. It would be nice to choose the unit (KB, MB,
+        /// GB) based on total file size, but given what we know about the expected
+        /// ranges of file sizes for APK expansion files, it's probably not necessary.
+        /// </summary>
+        public static string GetDownloadProgressString(long overallProgress, long overallTotal)
         {
             if (overallTotal == 0)
             {
-                if (Constants.LOGVV)
-                {
-                    Log.Error(Constants.TAG, "Notification called when total is zero");
-                }
+                System.Diagnostics.Debug.WriteLine("Notification called when total is zero");
                 return string.Empty;
             }
-            return string.Format("{0:00} MB / {1:00} MB",
-                                 overallProgress/(1024.0f*1024.0f),
-                                 overallTotal/(1024.0f*1024.0f));
+
+            return string.Format("{0:0.00} MB / {1:0.00} MB", overallProgress/Megabytes, overallTotal/Megabytes);
         }
 
-        /**
-     * Adds a percentile to getDownloadProgressString.
-     * 
-     * @param overallProgress
-     * @param overallTotal
-     * @return
-     */
-
-        public static string getDownloadProgressStringNotification(long overallProgress, long overallTotal)
+        /// <summary>
+        /// Adds a percentile to GetDownloadProgressString.
+        /// </summary>
+        public static string GetDownloadProgressStringNotification(long overallProgress, long overallTotal)
         {
             if (overallTotal == 0)
             {
-                if (Constants.LOGVV)
-                {
-                    Log.Error(Constants.TAG, "Notification called when total is zero");
-                }
-                return "";
-            }
-            return getDownloadProgressString(overallProgress, overallTotal) + " (" +
-                   getDownloadProgressPercent(overallProgress, overallTotal) + ")";
-        }
-
-        public static string getDownloadProgressPercent(long overallProgress, long overallTotal)
-        {
-            if (overallTotal == 0)
-            {
-                if (Constants.LOGVV)
-                {
-                    Log.Error(Constants.TAG, "Notification called when total is zero");
-                }
+                System.Diagnostics.Debug.WriteLine("Notification called when total is zero");
                 return string.Empty;
             }
-            return (overallProgress*100/overallTotal) + "%";
+
+            return string.Format("{0} ({1})",
+                                 GetDownloadProgressString(overallProgress, overallTotal),
+                                 GetDownloadProgressPercent(overallProgress, overallTotal));
         }
 
-        public static string getSpeedString(float bytesPerMillisecond)
+        public static string GetDownloadProgressPercent(long overallProgress, long overallTotal)
+        {
+            if (overallTotal == 0)
+            {
+                System.Diagnostics.Debug.WriteLine("Notification called when total is zero");
+                return string.Empty;
+            }
+            return string.Format("{0}%", overallProgress*100/overallTotal);
+        }
+
+        public static string GetSpeedString(float bytesPerMillisecond)
         {
             return string.Format("{0:00}", bytesPerMillisecond*1000/1024);
         }
 
-        public static string getTimeRemaining(long durationInMilliseconds)
+        public static string GetTimeRemaining(long durationInMilliseconds)
         {
             TimeSpan timeSpan = TimeSpan.FromMilliseconds(durationInMilliseconds);
-            return timeSpan.ToString(timeSpan.Hours > 0 ? "HH:mm" : "mm:ss");
+            return timeSpan.ToString(timeSpan.Hours > 0 ? "hh\\:mm" : "mm\\:ss");
         }
 
-        /**
-     * Returns the file name (without full path) for an Expansion APK file from
-     * the given context.
-     * 
-     * @param c the context
-     * @param mainFile true for main file, false for patch file
-     * @param versionCode the version of the file
-     * @return string the file name of the expansion file
-     */
-
-        public static string getExpansionAPKFileName(Context c, bool mainFile, int versionCode)
+        /// <summary>
+        /// Returns the file name (without full path) for an Expansion APK file from the given context.
+        /// </summary>
+        /// <param name="c">the context</param>
+        /// <param name="mainFile">true for main file, false for patch file</param>
+        /// <param name="versionCode">the version of the file</param>
+        /// <returns>the file name of the expansion file</returns>
+        public static string GetExpansionApkFileName(Context c, bool mainFile, int versionCode)
         {
-            return (mainFile ? "main." : "patch.") + versionCode + "." + c.PackageName + ".obb";
+            return string.Format("{0}.{1}.{2}.obb", mainFile ? "main" : "patch", versionCode, c.PackageName);
         }
 
-        /**
-     * Returns the filename (where the file should be saved) from info about a
-     * download
-     */
-
-        public static string generateSaveFileName(Context c, string fileName)
+        /// <summary>
+        /// Returns the filename (where the file should be saved) from info about a download
+        /// </summary>
+        public static string GenerateSaveFileName(Context c, string fileName)
         {
-            string path = getSaveFilePath(c) + File.Separator + fileName;
-            return path;
+            return Path.Combine(GetSaveFilePath(c), fileName);
         }
 
-        public static string getSaveFilePath(Context c)
+        public static string GetSaveFilePath(Context c)
         {
-            File root = Android.OS.Environment.ExternalStorageDirectory;
-            string path = root + Constants.EXP_PATH + c.PackageName;
-            return path;
+            var root = Android.OS.Environment.ExternalStorageDirectory.AbsolutePath;
+            return root + DownloaderService.ExpansionPath + c.PackageName;
         }
 
-        /**
-     * Helper function to ascertain the existence of a file and return
-     * true/false appropriately
-     * 
-     * @param c the app/activity/service context
-     * @param fileName the name (sans path) of the file to query
-     * @param fileSize the size that the file must match
-     * @param deleteFileOnMismatch if the file sizes do not match, delete the
-     *            file
-     * @return true if it does exist, false otherwise
-     */
-
-        public static bool doesFileExist(Context c, string fileName, long fileSize, bool deleteFileOnMismatch)
+        /// <summary>
+        /// Helper function to ascertain the existence of a file and return true/false appropriately.
+        /// </summary>
+        /// <param name="c">the app/activity/service context</param>
+        /// <param name="fileName">the name (sans path) of the file to query</param>
+        /// <param name="fileSize">the size that the file must match</param>
+        /// <param name="deleteFileOnMismatch">if the file sizes do not match, delete the file</param>
+        /// <returns>true if it does exist, false otherwise</returns>
+        public static bool DoesFileExist(Context c, string fileName, long fileSize, bool deleteFileOnMismatch)
         {
-            // the file may have been delivered by Market --- let's make sure
-            // it's the size we expect
-            var fileForNewFile = new File(generateSaveFileName(c, fileName));
-            if (fileForNewFile.Exists())
+            // the file may have been delivered by Market - let's make sure it's the size we expect
+            var fileForNewFile = new FileInfo(GenerateSaveFileName(c, fileName));
+            if (fileForNewFile.Exists)
             {
-                if (fileForNewFile.Length() == fileSize)
+                if (fileForNewFile.Length == fileSize)
                 {
                     return true;
                 }
                 if (deleteFileOnMismatch)
                 {
-                    // delete the file --- we won't be able to resume
-                    // because we cannot confirm the integrity of the file
+                    // delete the file - we won't be able to resume because we cannot
+                    // confirm the integrity of the file
                     fileForNewFile.Delete();
                 }
             }
             return false;
         }
 
-        /**
-     * Converts download states that are returned by the {@link 
-     * IDownloaderClient#onDownloadStateChanged} callback into usable strings.
-     * This is useful if using the state strings built into the library to display user messages.
-     * @param state One of the STATE_* constants from {@link IDownloaderClient}.
-     * @return string resource ID for the corresponding string.
-     */
-
-        public static string getDownloaderStringResourceIDFromState(DownloaderClientState state)
+        /// <summary>
+        /// Converts download states that are returned by the
+        /// <see cref="IDownloaderClient.OnDownloadStateChanged"/> callback into usable strings.
+        /// This is useful if using the state strings built into the library to display user messages.
+        /// </summary>
+        /// <param name="state">One of the STATE_* constants from <see cref="IDownloaderClient"/>.</param>
+        /// <returns>resource ID for the corresponding string.</returns>
+        public static string GetDownloaderStringFromState(DownloaderClientState state)
         {
             switch (state)
             {
-                case DownloaderClientState.STATE_IDLE:
+                case DownloaderClientState.Idle:
                     return "Waiting for download to start";
-                case DownloaderClientState.STATE_FETCHING_URL:
+                case DownloaderClientState.FetchingUrl:
                     return "Looking for resources to download";
-                case DownloaderClientState.STATE_CONNECTING:
+                case DownloaderClientState.Connecting:
                     return "Connecting to the download server";
-                case DownloaderClientState.STATE_DOWNLOADING:
+                case DownloaderClientState.Downloading:
                     return "Downloading resources";
-                case DownloaderClientState.STATE_COMPLETED:
+                case DownloaderClientState.Completed:
                     return "Download finished";
-                case DownloaderClientState.STATE_PAUSED_NETWORK_UNAVAILABLE:
+                case DownloaderClientState.PausedNetworkUnavailable:
                     return "Download paused because no network is available";
-                case DownloaderClientState.STATE_PAUSED_BY_REQUEST:
+                case DownloaderClientState.PausedByRequest:
                     return "Download paused";
-                case DownloaderClientState.STATE_PAUSED_WIFI_DISABLED_NEED_CELLULAR_PERMISSION:
+                case DownloaderClientState.PausedWifiDisabledNeedCellularPermission:
                     return "Download paused because wifi is disabled";
-                case DownloaderClientState.STATE_PAUSED_NEED_CELLULAR_PERMISSION:
+                case DownloaderClientState.PausedNeedCellularPermission:
                     return "Download paused because wifi is unavailable";
-                case DownloaderClientState.STATE_PAUSED_ROAMING:
+                case DownloaderClientState.PausedRoaming:
                     return "Download paused because you are roaming";
                 case DownloaderClientState.STATE_PAUSED_NETWORK_SETUP_FAILURE:
                     return "Download paused. Test a website in browser";

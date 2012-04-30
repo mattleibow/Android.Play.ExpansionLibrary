@@ -14,13 +14,13 @@ namespace ExpansionDownloader
      * <p>That is, when you receive this callback, you should call
      * {@link DownloaderServiceMarshaller#CreateProxy} to instantiate a member
      * instance of {@link IDownloaderService}, then call {@link
-     * IDownloaderService#onClientUpdated} with the Messenger retrieved from your
+     * IDownloaderService#OnClientUpdated} with the Messenger retrieved from your
      * {@link IStub} proxy object.
      * 
      * @param m the service Messenger. This Messenger is used to call the
      *            service API from the client.
      */
-        void onServiceConnected(Messenger m);
+        void OnServiceConnected(Messenger m);
 
         /**
      * Called when the download state changes. Depending on the state, there may
@@ -40,56 +40,16 @@ namespace ExpansionDownloader
      * 
      * @param newState one of the STATE_* values defined in DownloaderClientState
      */
-        void onDownloadStateChanged(DownloaderClientState newState);
+        void OnDownloadStateChanged(DownloaderClientState newState);
 
         /**
      * Shows the download progress. This is intended to be used to fill out a
      * client UI. This progress should only be shown in a few states such as
-     * STATE_DOWNLOADING.
+     * Downloading.
      * 
      * @param progress the DownloadProgressInfo object containing the current
      *            progress of all downloads.
      */
-        void onDownloadProgress(DownloadProgressInfo progress);
-    }
-
-    public enum DownloaderClientState
-    {
-        Unknown = -1,
-
-        STATE_IDLE = 1,
-        STATE_FETCHING_URL = 2,
-        STATE_CONNECTING = 3,
-        STATE_DOWNLOADING = 4,
-        STATE_COMPLETED = 5,
-
-        STATE_PAUSED_NETWORK_UNAVAILABLE = 6,
-        STATE_PAUSED_BY_REQUEST = 7,
-
-        /**
-     * Both STATE_PAUSED_WIFI_DISABLED_NEED_CELLULAR_PERMISSION and
-     * STATE_PAUSED_NEED_CELLULAR_PERMISSION imply that Wi-Fi is unavailable and
-     * cellular permission will restart the service. Wi-Fi disabled means that
-     * the Wi-Fi manager is returning that Wi-Fi is not enabled, while in the
-     * other case Wi-Fi is enabled but not available.
-     */
-        STATE_PAUSED_WIFI_DISABLED_NEED_CELLULAR_PERMISSION = 8,
-        STATE_PAUSED_NEED_CELLULAR_PERMISSION = 9,
-        STATE_PAUSED_ROAMING = 10,
-
-        /**
-     * Scary case.  We were on a network that redirected us to another website
-     * that delivered us the wrong file.
-     */
-        STATE_PAUSED_NETWORK_SETUP_FAILURE = 11,
-
-        STATE_PAUSED_SDCARD_UNAVAILABLE = 12,
-
-        STATE_FAILED_UNLICENSED = 13,
-        STATE_FAILED_FETCHING_URL = 14,
-        STATE_FAILED_SDCARD_FULL = 15,
-        STATE_FAILED_CANCELED = 16,
-
-        STATE_FAILED = 17
+        void OnDownloadProgress(DownloadProgressInfo progress);
     }
 }

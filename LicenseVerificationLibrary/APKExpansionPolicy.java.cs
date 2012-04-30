@@ -46,17 +46,17 @@ namespace LicenseVerificationLibrary
      *            An obfuscator to be used with preferences.
      */
 
-        public APKExpansionPolicy(Context context, Obfuscator obfuscator)
+        public APKExpansionPolicy(Context context, IObfuscator obfuscator)
         {
             // Import old values
             ISharedPreferences sp = context.GetSharedPreferences(PREFS_FILE, FileCreationMode.Private);
             mPreferences = new PreferenceObfuscator(sp, obfuscator);
-            string lastResponse = mPreferences.getString(PREF_LAST_RESPONSE, PolicyServerResponse.Retry.ToString());
+            string lastResponse = mPreferences.GetString(PREF_LAST_RESPONSE, PolicyServerResponse.Retry.ToString());
             mLastResponse = (PolicyServerResponse) Enum.Parse(typeof (PolicyServerResponse), lastResponse);
-            mValidityTimestamp = long.Parse(mPreferences.getString(PREF_VALIDITY_TIMESTAMP, DEFAULT_VALIDITY_TIMESTAMP));
-            mRetryUntil = long.Parse(mPreferences.getString(PREF_RETRY_UNTIL, DEFAULT_RETRY_UNTIL));
-            mMaxRetries = long.Parse(mPreferences.getString(PREF_MAX_RETRIES, DEFAULT_MAX_RETRIES));
-            mRetryCount = long.Parse(mPreferences.getString(PREF_RETRY_COUNT, DEFAULT_RETRY_COUNT));
+            mValidityTimestamp = long.Parse(mPreferences.GetString(PREF_VALIDITY_TIMESTAMP, DEFAULT_VALIDITY_TIMESTAMP));
+            mRetryUntil = long.Parse(mPreferences.GetString(PREF_RETRY_UNTIL, DEFAULT_RETRY_UNTIL));
+            mMaxRetries = long.Parse(mPreferences.GetString(PREF_MAX_RETRIES, DEFAULT_MAX_RETRIES));
+            mRetryCount = long.Parse(mPreferences.GetString(PREF_RETRY_COUNT, DEFAULT_RETRY_COUNT));
         }
 
         /**
@@ -102,7 +102,7 @@ namespace LicenseVerificationLibrary
                 var extras = new Dictionary<string, string>();
                 try
                 {
-                    extras = PolicyExtensions.DecodeExtras(rawData.extra);
+                    extras = PolicyExtensions.DecodeExtras(rawData.Extra);
                 }
                 catch (URISyntaxException e)
                 {
@@ -155,7 +155,7 @@ namespace LicenseVerificationLibrary
             }
 
             setLastResponse(response);
-            mPreferences.commit();
+            mPreferences.Commit();
         }
 
         public bool AllowAccess()
@@ -186,12 +186,12 @@ namespace LicenseVerificationLibrary
 
         public void resetPolicy()
         {
-            mPreferences.putString(PREF_LAST_RESPONSE, PolicyServerResponse.Retry.ToString());
+            mPreferences.PutString(PREF_LAST_RESPONSE, PolicyServerResponse.Retry.ToString());
             setRetryUntil(DEFAULT_RETRY_UNTIL);
             setMaxRetries(DEFAULT_MAX_RETRIES);
             setRetryCount(long.Parse(DEFAULT_RETRY_COUNT));
             setValidityTimestamp(DEFAULT_VALIDITY_TIMESTAMP);
-            mPreferences.commit();
+            mPreferences.Commit();
         }
 
         private void setValidityTimestamp(long validityTimestamp)
@@ -212,7 +212,7 @@ namespace LicenseVerificationLibrary
         {
             mLastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
             mLastResponse = l;
-            mPreferences.putString(PREF_LAST_RESPONSE, l.ToString());
+            mPreferences.PutString(PREF_LAST_RESPONSE, l.ToString());
         }
 
         /**
@@ -226,7 +226,7 @@ namespace LicenseVerificationLibrary
         private void setRetryCount(long c)
         {
             mRetryCount = c;
-            mPreferences.putString(PREF_RETRY_COUNT, c.ToString());
+            mPreferences.PutString(PREF_RETRY_COUNT, c.ToString());
         }
 
         public long getRetryCount()
@@ -255,7 +255,7 @@ namespace LicenseVerificationLibrary
             }
 
             mValidityTimestamp = lValidityTimestamp;
-            mPreferences.putString(PREF_VALIDITY_TIMESTAMP, validityTimestamp);
+            mPreferences.PutString(PREF_VALIDITY_TIMESTAMP, validityTimestamp);
         }
 
         public long getValidityTimestamp()
@@ -284,7 +284,7 @@ namespace LicenseVerificationLibrary
             }
 
             mRetryUntil = lRetryUntil;
-            mPreferences.putString(PREF_RETRY_UNTIL, retryUntil);
+            mPreferences.PutString(PREF_RETRY_UNTIL, retryUntil);
         }
 
         public long getRetryUntil()
@@ -313,7 +313,7 @@ namespace LicenseVerificationLibrary
             }
 
             mMaxRetries = lMaxRetries;
-            mPreferences.putString(PREF_MAX_RETRIES, maxRetries);
+            mPreferences.PutString(PREF_MAX_RETRIES, maxRetries);
         }
 
         public long getMaxRetries()

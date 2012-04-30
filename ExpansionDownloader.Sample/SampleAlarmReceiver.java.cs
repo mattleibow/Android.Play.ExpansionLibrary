@@ -10,7 +10,7 @@ namespace ExpansionDownloader.Sample
         {
             try
             {
-                DownloaderClientMarshaller.startDownloadServiceIfRequired(context, intent, typeof (SampleDownloaderService));
+                DownloaderClientMarshaller.StartDownloadServiceIfRequired(context, intent, typeof (SampleDownloaderService));
             }
             catch (PackageManager.NameNotFoundException e)
             {

@@ -76,9 +76,9 @@ namespace ExpansionDownloader
      * @throws NameNotFoundException
      */
 
-        public static int startDownloadServiceIfRequired(Context context, PendingIntent notificationClient, Type serviceClass)
+        public static int StartDownloadServiceIfRequired(Context context, PendingIntent notificationClient, Type serviceClass)
         {
-            return DownloaderService.startDownloadServiceIfRequired(context, notificationClient, serviceClass);
+            return DownloaderService.StartDownloadServiceIfRequired(context, notificationClient, serviceClass);
         }
 
         /**
@@ -94,9 +94,9 @@ namespace ExpansionDownloader
          * @throws NameNotFoundException
          */
 
-        public static int startDownloadServiceIfRequired(Context context, Intent notificationClient, Type serviceClass)
+        public static int StartDownloadServiceIfRequired(Context context, Intent notificationClient, Type serviceClass)
         {
-            return DownloaderService.startDownloadServiceIfRequired(context, notificationClient, serviceClass);
+            return DownloaderService.StartDownloadServiceIfRequired(context, notificationClient, serviceClass);
         }
 
         #region Nested type: Proxy
@@ -112,21 +112,21 @@ namespace ExpansionDownloader
 
             #region IDownloaderClient Members
 
-            public void onDownloadStateChanged(DownloaderClientState newState)
+            public void OnDownloadStateChanged(DownloaderClientState newState)
             {
                 var p = new Bundle(1);
                 p.PutInt(PARAM_NEW_STATE, (int) newState);
                 send(MSG_ONDOWNLOADSTATE_CHANGED, p);
             }
 
-            public void onDownloadProgress(DownloadProgressInfo progress)
+            public void OnDownloadProgress(DownloadProgressInfo progress)
             {
                 var p = new Bundle(1);
                 p.PutString(PARAM_PROGRESS, progress.ToString());
                 send(MSG_ONDOWNLOADPROGRESS, p);
             }
 
-            public void onServiceConnected(Messenger m)
+            public void OnServiceConnected(Messenger m)
             {
                 /**
              * This is never called through the proxy.
@@ -177,16 +177,16 @@ namespace ExpansionDownloader
                                                           Bundle bun = msg.Data;
                                                           if (null != mContext)
                                                           {
-                                                              bun.ClassLoader = mContext.ClassLoader;
+                                                              bun.SetClassLoader(mContext.ClassLoader);
                                                               var dpi = new DownloadProgressInfo(msg.Data.GetString(PARAM_PROGRESS));
-                                                              mItf.onDownloadProgress(dpi);
+                                                              mItf.OnDownloadProgress(dpi);
                                                           }
                                                           break;
                                                       case MSG_ONDOWNLOADSTATE_CHANGED:
-                                                          mItf.onDownloadStateChanged((DownloaderClientState) msg.Data.GetInt(PARAM_NEW_STATE));
+                                                          mItf.OnDownloadStateChanged((DownloaderClientState) msg.Data.GetInt(PARAM_NEW_STATE));
                                                           break;
                                                       case MSG_ONSERVICECONNECTED:
-                                                          mItf.onServiceConnected((Messenger) msg.Data.GetParcelable(PARAM_MESSENGER));
+                                                          mItf.OnServiceConnected((Messenger) msg.Data.GetParcelable(PARAM_MESSENGER));
                                                           break;
                                                   }
                                               });
@@ -202,21 +202,19 @@ namespace ExpansionDownloader
 
             #region IStub Members
 
-            public void connect(Context c)
+            public void Connect(Context c)
             {
                 mContext = c;
                 var bindIntent = new Intent(c, mDownloaderServiceClass);
                 bindIntent.PutExtra(PARAM_MESSENGER, mMessenger);
-                if (!c.BindService(bindIntent, mConnection, Bind.DebugUnbind))
+                var bound = c.BindService(bindIntent, mConnection, Bind.DebugUnbind);
+                if (!bound)
                 {
-                    if (Constants.LOGVV)
-                    {
-                        Log.Debug(Constants.TAG, "Service Unbound");
-                    }
+                    Log.Debug(DownloaderService.TAG, "Service Unbound");
                 }
             }
 
-            public void disconnect(Context c)
+            public void Disconnect(Context c)
             {
                 if (mBound)
                 {
@@ -226,7 +224,7 @@ namespace ExpansionDownloader
                 mContext = null;
             }
 
-            public Messenger getMessenger()
+            public Messenger GetMessenger()
             {
                 return mMessenger;
             }
@@ -248,18 +246,22 @@ namespace ExpansionDownloader
 
                 public void OnServiceConnected(ComponentName className, IBinder service)
                 {
+                    System.Diagnostics.Debug.WriteLine("ServiceConnection.OnServiceConnected");
+
                     // This is called when the connection with the service has been
                     // established, giving us the object we can use to
                     // interact with the service. We are communicating with the
                     // service using a Messenger, so here we get a client-side
                     // representation of that from the raw IBinder object.
                     _stub.mServiceMessenger = new Messenger(service);
-                    _stub.mItf.onServiceConnected(_stub.mServiceMessenger);
+                    _stub.mItf.OnServiceConnected(_stub.mServiceMessenger);
                     _stub.mBound = true;
                 }
 
                 public void OnServiceDisconnected(ComponentName className)
                 {
+                    System.Diagnostics.Debug.WriteLine("ServiceConnection.OnServiceDisconnected");
+                    
                     // This is called when the connection with the service has been
                     // unexpectedly disconnected -- that is, its process crashed.
                     _stub.mServiceMessenger = null;

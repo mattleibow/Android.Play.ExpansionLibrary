@@ -1,29 +1,22 @@
 namespace LicenseVerificationLibrary
 {
-    public interface Obfuscator
+    public interface IObfuscator
     {
-        /**
-     * Obfuscate a string that is being stored into shared preferences.
-     * 
-     * @param original
-     *            The data that is to be obfuscated.
-     * @param key
-     *            The key for the data that is to be obfuscated.
-     * @return A transformed version of the original data.
-     */
-        string obfuscate(string original, string key);
+        /// <summary>
+        /// Obfuscate a string that is being stored into shared preferences.
+        /// </summary>
+        /// <param name="original">The data that is to be obfuscated.</param>
+        /// <param name="key">The key for the data that is to be obfuscated.</param>
+        /// <returns>A transformed version of the original data.</returns>
+        string Obfuscate(string original, string key);
 
-        /**
-     * Undo the transformation applied to data by the obfuscate() method.
-     * 
-     * @param original
-     *            The data that is to be obfuscated.
-     * @param key
-     *            The key for the data that is to be obfuscated.
-     * @return A transformed version of the original data.
-     * @throws ValidationException
-     *             Optionally thrown if a data integrity check fails.
-     */
-        string unobfuscate(string obfuscated, string key);
+        /// <summary>
+        /// Undo the transformation applied to data by the obfuscate() method.
+        /// </summary>
+        /// <param name="obfuscated">The data that is to be obfuscated.</param>
+        /// <param name="key">The key for the data that is to be obfuscated.</param>
+        /// <returns>A transformed version of the original data.</returns>
+        /// <exception cref="ValidationException">Optionally thrown if a data integrity check fails.</exception>
+        string Unobfuscate(string obfuscated, string key);
     }
 }

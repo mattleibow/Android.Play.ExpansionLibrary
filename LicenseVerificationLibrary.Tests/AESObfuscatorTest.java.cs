@@ -1,154 +1,149 @@
 using System.Linq;
 using Android.Content;
-using Android.Util;
 using Java.Lang;
-using LicenseVerificationLibrary;
 
-public class AESObfuscatorTest : TestCase
+namespace LicenseVerificationLibrary.Tests
 {
-    private static string TAG = "AESObfuscatorTest";
-
-    private static readonly byte[] SALT = new byte[]
-                                              {
-                                                  104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33
-                                              };
-
-    private static string PACKAGE = "package";
-    private static string DEVICE = "device";
-
-    private Obfuscator mObfuscator;
-
-    public AESObfuscatorTest(Context context)
-        : base(context)
+    public class AesObfuscatorTest : TestCase
     {
-    }
+        private static readonly byte[] SALT = new byte[] {104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33};
 
-    public override void SetUp()
-    {
-        mObfuscator = new AESObfuscator(SALT, PACKAGE, DEVICE);
-    }
+        private const string Package = "package";
+        private const string Device = "device";
 
-    public override void RunTests()
-    {
-        testObfuscateUnobfuscate();
-        testObfuscate_same();
-        testUnobfuscate_avoidBadPaddingException();
-        testUnobfuscate_differentDevice();
-        testUnobfuscate_differentKey();
-        testUnobfuscate_differentPackage();
-        testUnobfuscate_differentSalt();
-        testUnobfuscate_invalid();
-    }
+        private IObfuscator _obfuscator;
 
-    public void testObfuscateUnobfuscate()
-    {
-        testInvertible(null);
-        testInvertible("");
-        testInvertible("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*-=/\\|~`,.;:()[]{}<>\u00F6");
-    }
-
-    public void testUnobfuscate_invalid()
-    {
-        try
-        {
-            mObfuscator.unobfuscate("invalid", "testKey");
-            Fail("Should have thrown ValidationException");
-        }
-        catch (ValidationException)
+        public AesObfuscatorTest(Context context)
+            : base(context)
         {
         }
-    }
 
-    public void testUnobfuscate_differentSalt()
-    {
-        string obfuscated = mObfuscator.obfuscate("test", "testKey");
-        Obfuscator differentSalt = new AESObfuscator(new byte[] {1}, PACKAGE, DEVICE);
-        try
+        public override void SetUp()
         {
-            differentSalt.unobfuscate(obfuscated, "testKey");
-            Fail("Should have thrown ValidationException");
+            _obfuscator = new AesObfuscator(SALT, Package, Device);
         }
-        catch (ValidationException)
-        {
-        }
-    }
 
-    public void testUnobfuscate_avoidBadPaddingException()
-    {
-        // Length should be equal to the cipher block size, to make sure that all padding lengths
-        // are accounted for.
-        for (int length = 0; length < 255; length++)
+        public override void RunTests()
         {
-            char[] data = Enumerable.Repeat('0', length).ToArray();
-            string input = String.ValueOf(data);
-            Log.Debug(TAG, "Input: (" + length + ")" + input);
-            string obfuscated = mObfuscator.obfuscate(input, "testKey");
-            Obfuscator differentSalt = new AESObfuscator(new byte[] {1}, PACKAGE, DEVICE);
+            TestObfuscateUnobfuscate();
+            TestObfuscateSame();
+            TestUnobfuscateAvoidBadPaddingException();
+            TestUnobfuscateDifferentDevice();
+            TestUnobfuscateDifferentKey();
+            TestUnobfuscateDifferentPackage();
+            TestUnobfuscateDifferentSalt();
+            TestUnobfuscateInvalid();
+        }
+
+        public void TestObfuscateUnobfuscate()
+        {
+            TestInvertible(null);
+            TestInvertible("");
+            TestInvertible("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*-=/\\|~`,.;:()[]{}<>\u00F6");
+        }
+
+        public void TestUnobfuscateInvalid()
+        {
             try
             {
-                differentSalt.unobfuscate(obfuscated, "testKey");
+                _obfuscator.Unobfuscate("invalid", "testKey");
                 Fail("Should have thrown ValidationException");
             }
             catch (ValidationException)
             {
             }
         }
-    }
 
-    public void testUnobfuscate_differentDevice()
-    {
-        string obfuscated = mObfuscator.obfuscate("test", "testKey");
-        Obfuscator differentDevice = new AESObfuscator(SALT, PACKAGE, "device2");
-        try
+        public void TestUnobfuscateDifferentSalt()
         {
-            differentDevice.unobfuscate(obfuscated, "testKey");
-            Fail("Should have thrown ValidationException");
+            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentSalt = new AesObfuscator(new byte[] {1}, Package, Device);
+            try
+            {
+                differentSalt.Unobfuscate(obfuscated, "testKey");
+                Fail("Should have thrown ValidationException");
+            }
+            catch (ValidationException)
+            {
+            }
         }
-        catch (ValidationException)
-        {
-        }
-    }
 
-    public void testUnobfuscate_differentPackage()
-    {
-        string obfuscated = mObfuscator.obfuscate("test", "testKey");
-        Obfuscator differentPackage = new AESObfuscator(SALT, "package2", DEVICE);
-        try
+        public void TestUnobfuscateAvoidBadPaddingException()
         {
-            differentPackage.unobfuscate(obfuscated, "testKey");
-            Fail("Should have thrown ValidationException");
+            // Length should be equal to the cipher block size, to make sure that all padding lengths
+            // are accounted for.
+            for (int length = 0; length < 255; length++)
+            {
+                char[] data = Enumerable.Repeat('0', length).ToArray();
+                string input = String.ValueOf(data);
+                string obfuscated = _obfuscator.Obfuscate(input, "testKey");
+                IObfuscator differentSalt = new AesObfuscator(new byte[] {1}, Package, Device);
+                try
+                {
+                    differentSalt.Unobfuscate(obfuscated, "testKey");
+                    Fail("Should have thrown ValidationException");
+                }
+                catch (ValidationException)
+                {
+                }
+            }
         }
-        catch (ValidationException)
+
+        public void TestUnobfuscateDifferentDevice()
         {
+            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentDevice = new AesObfuscator(SALT, Package, "device2");
+            try
+            {
+                differentDevice.Unobfuscate(obfuscated, "testKey");
+                Fail("Should have thrown ValidationException");
+            }
+            catch (ValidationException)
+            {
+            }
         }
-    }
 
-    public void testUnobfuscate_differentKey()
-    {
-        string obfuscated = mObfuscator.obfuscate("test", "testKey");
-        Obfuscator differentPackage = new AESObfuscator(SALT, "package2", DEVICE);
-        try
+        public void TestUnobfuscateDifferentPackage()
         {
-            differentPackage.unobfuscate(obfuscated, "notMyKey");
-            Fail("Should have thrown ValidationException");
+            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentPackage = new AesObfuscator(SALT, "package2", Device);
+            try
+            {
+                differentPackage.Unobfuscate(obfuscated, "testKey");
+                Fail("Should have thrown ValidationException");
+            }
+            catch (ValidationException)
+            {
+            }
         }
-        catch (ValidationException)
+
+        public void TestUnobfuscateDifferentKey()
         {
+            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentPackage = new AesObfuscator(SALT, "package2", Device);
+            try
+            {
+                differentPackage.Unobfuscate(obfuscated, "notMyKey");
+                Fail("Should have thrown ValidationException");
+            }
+            catch (ValidationException)
+            {
+            }
         }
-    }
 
-    public void testObfuscate_same()
-    {
-        string obfuscated = mObfuscator.obfuscate("test", "testKey");
-        AssertEquals(obfuscated, mObfuscator.obfuscate("test", "testKey"));
+        public void TestObfuscateSame()
+        {
+            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
+            AssertEquals(obfuscated, _obfuscator.Obfuscate("test", "testKey"));
 
-        Obfuscator same = new AESObfuscator(SALT, PACKAGE, DEVICE);
-        AssertEquals(obfuscated, same.obfuscate("test", "testKey"));
-        AssertEquals("test", same.unobfuscate(obfuscated, "testKey"));
-    }
+            IObfuscator same = new AesObfuscator(SALT, Package, Device);
+            AssertEquals(obfuscated, same.Obfuscate("test", "testKey"));
+            AssertEquals("test", same.Unobfuscate(obfuscated, "testKey"));
+        }
 
-    private void testInvertible(string original)
-    {
-        AssertEquals(original, mObfuscator.unobfuscate(mObfuscator.obfuscate(original, original + "Key"), original + "Key"));
+        private void TestInvertible(string original)
+        {
+            AssertEquals(original, _obfuscator.Unobfuscate(_obfuscator.Obfuscate(original, original + "Key"), original + "Key"));
+        }
     }
 }

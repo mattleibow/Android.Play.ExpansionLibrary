@@ -5,8 +5,8 @@ namespace ExpansionDownloader
 {
     public interface IStub
     {
-        Messenger getMessenger();
-        void connect(Context c);
-        void disconnect(Context c);
+        Messenger GetMessenger();
+        void Connect(Context c);
+        void Disconnect(Context c);
     }
 }

@@ -1,76 +1,75 @@
 using Android.Content;
 using Android.Provider;
-using LicenseVerificationLibrary;
 
-public class ServerManagedPolicyTest : TestCase
+namespace LicenseVerificationLibrary.Tests
 {
-    private ServerManagedPolicy p;
-
-    public ServerManagedPolicyTest(Context context)
-        : base(context)
+    public class ServerManagedPolicyTest : TestCase
     {
-    }
+        private ServerManagedPolicy _policy;
 
-    public override void SetUp()
-    {
-        var SALT = new byte[] {104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33};
+        public ServerManagedPolicyTest(Context context)
+            : base(context)
+        {
+        }
 
-        string deviceId = Settings.Secure.GetString(Context.ContentResolver, Settings.Secure.AndroidId);
-        p = new ServerManagedPolicy(Context, new AESObfuscator(SALT, Context.PackageName, deviceId));
-    }
+        public override void SetUp()
+        {
+            var salt = new byte[] {104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33};
 
-    public override void RunTests()
-    {
-        testExtraDataParsed();
-        testRetryCountsCleared();
-        testNoFailureOnEncodedExtras();
-    }
+            string deviceId = Settings.Secure.GetString(Context.ContentResolver, Settings.Secure.AndroidId);
+            _policy = new ServerManagedPolicy(Context, new AesObfuscator(salt, Context.PackageName, deviceId));
+        }
 
-    /**
+        public override void RunTests()
+        {
+            TestExtraDataParsed();
+            TestRetryCountsCleared();
+            TestNoFailureOnEncodedExtras();
+        }
+
+        /**
      * Verify that extra data is parsed correctly on a LICENSED resopnse..
      */
 
-    public void testExtraDataParsed()
-    {
-        string sampleResponse =
-            "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=11&GT=22&GR=33";
+        public void TestExtraDataParsed()
+        {
+            const string sampleResponse = "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=11&GT=22&GR=33";
 
-        p.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.parse(sampleResponse));
-        AssertEquals(11L, p.getValidityTimestamp());
-        AssertEquals(22L, p.getRetryUntil());
-        AssertEquals(33L, p.getMaxRetries());
-    }
+            _policy.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.Parse(sampleResponse));
+            AssertEquals(11L, _policy.ValidityTimestamp);
+            AssertEquals(22L, _policy.RetryUntil);
+            AssertEquals(33L, _policy.MaxRetries);
+        }
 
-    /**
+        /**
      * Verify that retry counts are cleared after getting a NOT_LICENSED response.
      */
 
-    public void testRetryCountsCleared()
-    {
-        string sampleResponse =
-            "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&GT=2&GR=3";
+        public void TestRetryCountsCleared()
+        {
+            const string sampleResponse = "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&GT=2&GR=3";
 
-        p.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.parse(sampleResponse));
-        // Sanity test
-        AssertTrue(0L != p.getValidityTimestamp());
-        AssertTrue(0L != p.getRetryUntil());
-        AssertTrue(0L != p.getMaxRetries());
+            _policy.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.Parse(sampleResponse));
+            // Sanity test
+            AssertTrue(0L != _policy.ValidityTimestamp);
+            AssertTrue(0L != _policy.RetryUntil);
+            AssertTrue(0L != _policy.MaxRetries);
 
-        // Actual test
-        p.ProcessServerResponse(PolicyServerResponse.NotLicensed, null);
-        AssertEquals(0L, p.getValidityTimestamp());
-        AssertEquals(0L, p.getRetryUntil());
-        AssertEquals(0L, p.getMaxRetries());
-    }
+            // Actual test
+            _policy.ProcessServerResponse(PolicyServerResponse.NotLicensed, null);
+            AssertEquals(0L, _policy.ValidityTimestamp);
+            AssertEquals(0L, _policy.RetryUntil);
+            AssertEquals(0L, _policy.MaxRetries);
+        }
 
-    public void testNoFailureOnEncodedExtras()
-    {
-        string sampleResponse =
-            "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&test=hello%20world%20%26%20friends&GT=2&GR=3";
+        public void TestNoFailureOnEncodedExtras()
+        {
+            const string sampleResponse = "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&test=hello%20world%20%26%20friends&GT=2&GR=3";
 
-        p.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.parse(sampleResponse));
-        AssertEquals(1L, p.getValidityTimestamp());
-        AssertEquals(2L, p.getRetryUntil());
-        AssertEquals(3L, p.getMaxRetries());
+            _policy.ProcessServerResponse(PolicyServerResponse.Licensed, ResponseData.Parse(sampleResponse));
+            AssertEquals(1L, _policy.ValidityTimestamp);
+            AssertEquals(2L, _policy.RetryUntil);
+            AssertEquals(3L, _policy.MaxRetries);
+        }
     }
 }

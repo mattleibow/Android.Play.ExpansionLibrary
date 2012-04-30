@@ -6,10 +6,9 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Provider;
-using Android.Util;
-using Java.Lang;
 using Java.Security;
 using Java.Security.Spec;
+using Debug = System.Diagnostics.Debug;
 
 namespace LicenseVerificationLibrary
 {
@@ -27,7 +26,6 @@ namespace LicenseVerificationLibrary
     public class LicenseChecker : Java.Lang.Object, IServiceConnection
     {
         private const string KeyFactoryAlgorithm = "RSA";
-        private const string Tag = "LicenseChecker";
         // Timeout value (in milliseconds) for calls to service.
         private const int TimeoutMs = 10*1000;
 
@@ -56,7 +54,7 @@ namespace LicenseVerificationLibrary
         /// <param name = "context">a Context</param>
         /// <param name = "policy">implementation of IPolicy</param>
         /// <param name = "encodedPublicKey">Base64-encoded RSA public key</param>
-        /// <exception cref = "IllegalArgumentException">if encodedPublicKey is invalid</exception>
+        /// <exception cref = "ArgumentException">if encodedPublicKey is invalid</exception>
         public LicenseChecker(Context context, IPolicy policy, string encodedPublicKey)
         {
             _locker = new object();
@@ -101,7 +99,7 @@ namespace LicenseVerificationLibrary
                 // Called when the connection with the service has been
                 // unexpectedly disconnected. That is, Market crashed.
                 // If there are any checks in progress, the timeouts will handle them.
-                Log.Warn(Tag, "Service unexpectedly disconnected.");
+                Debug.WriteLine("Service unexpectedly disconnected.");
                 _licensingService = null;
             }
         }
@@ -113,12 +111,12 @@ namespace LicenseVerificationLibrary
         /// </summary>
         /// <param name = "encodedPublicKey">Base64-encoded public key</param>
         /// <returns></returns>
-        /// <exception cref = "IllegalArgumentException">if encodedPublicKey is invalid</exception>
+        /// <exception cref = "System.ArgumentException">if encodedPublicKey is invalid</exception>
         private static IPublicKey GeneratePublicKey(string encodedPublicKey)
         {
             try
             {
-                byte[] decodedKey = Base64.Decode(encodedPublicKey, Base64.Default);
+                byte[] decodedKey = Convert.FromBase64String(encodedPublicKey);
                 KeyFactory keyFactory = KeyFactory.GetInstance(KeyFactoryAlgorithm);
 
                 return keyFactory.GeneratePublic(new X509EncodedKeySpec(decodedKey));
@@ -126,17 +124,17 @@ namespace LicenseVerificationLibrary
             catch (NoSuchAlgorithmException ex)
             {
                 // This won't happen in an Android-compatible environment.
-                throw new RuntimeException(ex);
+                throw new Exception(ex.Message);
             }
-            catch (IllegalArgumentException)
+            catch (FormatException)
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Could not decode from Base64.");
+                Debug.WriteLine("Could not decode public key from Base64.");
                 throw;
             }
             catch (InvalidKeySpecException exx)
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Invalid key specification.");
-                throw new IllegalArgumentException(exx);
+                Debug.WriteLine("Invalid public key specification.");
+                throw new ArgumentException(exx.Message);
             }
         }
 
@@ -148,12 +146,14 @@ namespace LicenseVerificationLibrary
             lock (_locker)
             {
                 // If we have a valid recent LICENSED response, we can skip asking Market/Play.
+                /*
                 if (_policy.AllowAccess())
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Using cached license response");
+                    System.Diagnostics.Debug.WriteLine("Using cached license response");
                     callback.Allow(PolicyServerResponse.Licensed);
                 }
                 else
+                */
                 {
                     var validator = new LicenseValidator(_policy,
                                                          new NullDeviceLimiter(),
@@ -164,29 +164,27 @@ namespace LicenseVerificationLibrary
 
                     if (_licensingService == null)
                     {
-                        System.Diagnostics.Debug.WriteLine(Tag + " : Binding to licensing service.");
                         try
                         {
                             var i = new Intent(LicensingServiceIntentString);
-                            bool bindResult = _context.BindService(i, this, Bind.AutoCreate);
 
-                            if (bindResult)
+                            if (_context.BindService(i, this, Bind.AutoCreate))
                             {
                                 _pendingChecks.Enqueue(validator);
                             }
                             else
                             {
-                                System.Diagnostics.Debug.WriteLine(Tag + " : Could not bind to service.");
+                                Debug.WriteLine("Could not bind to service.");
                                 HandleServiceConnectionError(validator);
                             }
                         }
-                        catch (SecurityException)
+                        catch (Java.Lang.SecurityException)
                         {
                             callback.ApplicationError(CallbackErrorCode.MissingPermission);
                         }
-                        catch (IllegalArgumentException ex)
+                        catch (Exception ex)
                         {
-                            ex.PrintStackTrace();
+                            Debug.WriteLine(ex.StackTrace);
                         }
                     }
                     else
@@ -205,13 +203,13 @@ namespace LicenseVerificationLibrary
                 LicenseValidator validator = _pendingChecks.Dequeue();
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Calling CheckLicense on service for " + validator.GetPackageName());
+                    Debug.WriteLine("Calling CheckLicense on service for " + validator.GetPackageName());
                     _licensingService.CheckLicense(validator.GetNumberUsedOnce(), validator.GetPackageName(), new ResultListener(validator, this));
                     _checksInProgress.Add(validator);
                 }
                 catch (RemoteException e)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : RemoteException in CheckLicense call. " + e.Message);
+                    Debug.WriteLine("RemoteException in CheckLicense call. " + e.Message);
                     HandleServiceConnectionError(validator);
                 }
             }
@@ -260,10 +258,10 @@ namespace LicenseVerificationLibrary
                 {
                     _context.UnbindService(this);
                 }
-                catch (IllegalArgumentException)
+                catch
                 {
                     // Somehow we've already been unbound. This is a non-fatal error.
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Unable to unbind from licensing service (already unbound)");
+                    Debug.WriteLine("Unable to unbind from licensing service (already unbound).");
                 }
                 _licensingService = null;
             }
@@ -308,7 +306,7 @@ namespace LicenseVerificationLibrary
             }
             catch (PackageManager.NameNotFoundException)
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Package not found. could not get version code.");
+                Debug.WriteLine("Package not found. Could not get version code.");
                 return string.Empty;
             }
         }
@@ -319,38 +317,37 @@ namespace LicenseVerificationLibrary
         {
             private readonly LicenseChecker _checker;
             private readonly LicenseValidator _licenseValidator;
-            private readonly Runnable _onTimeout;
+            private readonly Action _onTimeout;
 
             public ResultListener(LicenseValidator validator, LicenseChecker checker)
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : LicenseValidator.ResultListener.ctor()");
                 _checker = checker;
                 _licenseValidator = validator;
-                _onTimeout = new Runnable(delegate
-                                              {
-                                                  System.Diagnostics.Debug.WriteLine(Tag + " : Check timed out.");
+                _onTimeout = delegate
+                                 {
+                                     Debug.WriteLine("License check timed out.");
 
-                                                  _checker.HandleServiceConnectionError(_licenseValidator);
-                                                  _checker.FinishCheck(_licenseValidator);
-                                              });
+                                     _checker.HandleServiceConnectionError(_licenseValidator);
+                                     _checker.FinishCheck(_licenseValidator);
+                                 };
                 StartTimeout();
             }
-            
+
             /// <summary>
-            /// Runs in IPC thread pool. Post it to the Handler, so we can guarantee
-            /// either this or the timeout runs.
+            ///   Runs in IPC thread pool. Post it to the Handler, so we can guarantee
+            ///   either this or the timeout runs.
             /// </summary>
-            /// <param name="responseCode"></param>
-            /// <param name="signedData"></param>
-            /// <param name="signature"></param>
+            /// <param name = "responseCode"></param>
+            /// <param name = "signedData"></param>
+            /// <param name = "signature"></param>
             public override void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature)
             {
-                _checker._handler.Post(new Runnable(() => GetValue(responseCode, signedData, signature)));
+                _checker._handler.Post(() => GetValue(responseCode, signedData, signature));
             }
 
             private void GetValue(ServerResponseCode responseCode, string signedData, string signature)
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Received response.");
+                Debug.WriteLine("Received license response.");
 
                 // Make sure it hasn't already timed out.
                 if (_checker._checksInProgress.Contains(_licenseValidator))
@@ -391,21 +388,21 @@ namespace LicenseVerificationLibrary
                 if (logResponse)
                 {
                     string androidId = Settings.Secure.GetString(_checker._context.ContentResolver, Settings.Secure.AndroidId);
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Server Failure: " + stringError);
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Android ID: " + androidId);
-                    System.Diagnostics.Debug.WriteLine(Tag + " : Time: " + DateTime.Now);
+                    Debug.WriteLine("License Server Failure: " + stringError);
+                    Debug.WriteLine("Android ID: " + androidId);
+                    Debug.WriteLine("Time: " + DateTime.Now);
                 }
             }
 
             private void StartTimeout()
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Start monitoring timeout.");
+                Debug.WriteLine("Start monitoring license checker timeout.");
                 _checker._handler.PostDelayed(_onTimeout, TimeoutMs);
             }
 
             private void ClearTimeout()
             {
-                System.Diagnostics.Debug.WriteLine(Tag + " : Clearing timeout.");
+                Debug.WriteLine("Clearing license checker timeout.");
                 _checker._handler.RemoveCallbacks(_onTimeout);
             }
         }
