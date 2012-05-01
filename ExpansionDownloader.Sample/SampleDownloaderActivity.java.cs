@@ -84,10 +84,10 @@ namespace ExpansionDownloader.Sample
                     indeterminate = false;
                     break;
 
-                case DownloaderClientState.STATE_FAILED:
-                case DownloaderClientState.STATE_FAILED_CANCELED:
-                case DownloaderClientState.STATE_FAILED_FETCHING_URL:
-                case DownloaderClientState.STATE_FAILED_UNLICENSED:
+                case DownloaderClientState.Failed:
+                case DownloaderClientState.FailedCanceled:
+                case DownloaderClientState.FailedFetchingUrl:
+                case DownloaderClientState.FailedUnlicensed:
                     paused = true;
                     showDashboard = false;
                     indeterminate = false;
@@ -104,7 +104,7 @@ namespace ExpansionDownloader.Sample
                     indeterminate = false;
                     break;
                 case DownloaderClientState.PausedRoaming:
-                case DownloaderClientState.STATE_PAUSED_SDCARD_UNAVAILABLE:
+                case DownloaderClientState.PausedSdCardUnavailable:
                     paused = true;
                     indeterminate = false;
                     break;
@@ -454,14 +454,13 @@ namespace ExpansionDownloader.Sample
                 }
 
                 // Build PendingIntent used to open this activity from Notification
-                PendingIntent pendingIntent = PendingIntent.GetActivity(this, 0,
-                                                                        intentToLaunchThisActivityFromNotification,
-                                                                        PendingIntentFlags.UpdateCurrent);
+                PendingIntent pendingIntent = PendingIntent.GetActivity(
+                    this, 0, intentToLaunchThisActivityFromNotification, PendingIntentFlags.UpdateCurrent);
                 // Request to start the download
-                int startResult = DownloaderClientMarshaller.StartDownloadServiceIfRequired(this, pendingIntent,
-                                                                                            typeof (SampleDownloaderService));
+                DownloadServiceRequirement startResult = DownloaderClientMarshaller.StartDownloadServiceIfRequired(
+                    this, pendingIntent, typeof(SampleDownloaderService));
 
-                if (startResult != DownloaderClientMarshaller.NO_DOWNLOAD_REQUIRED)
+                if (startResult != DownloadServiceRequirement.NoDownloadRequired)
                 {
                     // The DownloaderService has started downloading the files, show progress
                     // otherwise, download not needed so we fall through to starting the movie

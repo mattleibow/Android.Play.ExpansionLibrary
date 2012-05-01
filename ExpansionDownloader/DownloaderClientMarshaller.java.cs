@@ -18,10 +18,6 @@ namespace ExpansionDownloader
         public const string PARAM_PROGRESS = "progress";
         public const string PARAM_MESSENGER = DownloaderService.EXTRA_MESSAGE_HANDLER;
 
-        public const int NO_DOWNLOAD_REQUIRED = DownloaderService.NO_DOWNLOAD_REQUIRED;
-        public const int LVL_CHECK_REQUIRED = DownloaderService.LVL_CHECK_REQUIRED;
-        public const int DOWNLOAD_REQUIRED = DownloaderService.DOWNLOAD_REQUIRED;
-
         /**
      * Returns a proxy that will marshal calls to IDownloaderClient methods
      * 
@@ -59,7 +55,7 @@ namespace ExpansionDownloader
      * checks the new LVL status to see if a new download is required 3) If the
      * APK version does match, then checks to see if the download(s) have been
      * completed 4) If the downloads have been completed, returns
-     * NO_DOWNLOAD_REQUIRED The idea is that this can be called during the
+     * DownloadServiceRequirement.NoDownloadRequired The idea is that this can be called during the
      * startup of an application to quickly ascertain if the application needs
      * to wait to hear about any updated APK expansion files. Note that this does
      * mean that the application MUST be run for the first time with a network
@@ -71,12 +67,12 @@ namespace ExpansionDownloader
      * completes.
      * @param serviceClass the class of your {@link imp.DownloaderService} implementation
      * @return whether the service was started and the reason for starting the service.
-     * Either {@link #NO_DOWNLOAD_REQUIRED}, {@link #LVL_CHECK_REQUIRED}, or {@link
-     * #DOWNLOAD_REQUIRED}.
+     * Either {@link #DownloadServiceRequirement.NoDownloadRequired}, {@link #DownloadServiceRequirement.LvlCheckRequired}, or {@link
+     * #DownloadServiceRequirement.DownloadRequired}.
      * @throws NameNotFoundException
      */
 
-        public static int StartDownloadServiceIfRequired(Context context, PendingIntent notificationClient, Type serviceClass)
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, PendingIntent notificationClient, Type serviceClass)
         {
             return DownloaderService.StartDownloadServiceIfRequired(context, notificationClient, serviceClass);
         }
@@ -94,7 +90,7 @@ namespace ExpansionDownloader
          * @throws NameNotFoundException
          */
 
-        public static int StartDownloadServiceIfRequired(Context context, Intent notificationClient, Type serviceClass)
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, Intent notificationClient, Type serviceClass)
         {
             return DownloaderService.StartDownloadServiceIfRequired(context, notificationClient, serviceClass);
         }
@@ -210,7 +206,7 @@ namespace ExpansionDownloader
                 var bound = c.BindService(bindIntent, mConnection, Bind.DebugUnbind);
                 if (!bound)
                 {
-                    Log.Debug(DownloaderService.TAG, "Service Unbound");
+                    System.Diagnostics.Debug.WriteLine("LVLDL Service Unbound");
                 }
             }
 

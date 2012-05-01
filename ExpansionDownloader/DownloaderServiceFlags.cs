@@ -1,7 +1,10 @@
-using System;
-
 namespace ExpansionDownloader
 {
+    using System;
+
+    /// <summary>
+    /// Flags for a download
+    /// </summary>
     [Flags]
     public enum DownloaderServiceFlags
     {

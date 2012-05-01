@@ -1,595 +1,468 @@
-using System;
-using System.IO;
-using System.Linq;
-using Android.App;
-using Android.Content;
-using Android.Content.PM;
-using Android.Net;
-using Android.Net.Wifi;
-using Android.OS;
-using Android.Provider;
-using Android.Runtime;
-using Android.Telephony;
-using Android.Util;
-using Java.Lang;
-using LicenseVerificationLibrary;
-using Debug = System.Diagnostics.Debug;
-using Exception = System.Exception;
-using File = Java.IO.File;
-using Object = Java.Lang.Object;
-using String = System.String;
-
 namespace ExpansionDownloader.impl
 {
-    public abstract class DownloaderService : CustomIntentService, IDownloaderService
+    using System;
+    using System.IO;
+    using System.Linq;
+
+    using Android.App;
+    using Android.Content;
+    using Android.Content.PM;
+    using Android.Net;
+    using Android.Net.Wifi;
+    using Android.OS;
+    using Android.Runtime;
+    using Android.Telephony;
+
+    using LicenseVerificationLibrary;
+
+    using Debug = System.Diagnostics.Debug;
+
+    public enum DownloadServiceRequirement
     {
-
-        /** Tag used for debugging/logging */
-        public static string TAG = "LVLDL";
+        /// <summary>
+        /// The download required.
+        /// </summary>
+        DownloadRequired = 2,
 
         /// <summary>
-        /// Expansion path where we store obb files.
+        /// The lvl check required.
         /// </summary>
-        public static string ExpansionPath = String.Format("{0}Android{0}obb{0}", Path.DirectorySeparatorChar);
+        LvlCheckRequired = 1,
 
         /// <summary>
-        /// The intent that gets sent when the service must wake up for a retry.
+        /// The no download required.
         /// </summary>
-        public static string ActionRetry = "android.intent.action.DOWNLOAD_WAKEUP";
+        NoDownloadRequired = 0
+    }
+
+    /// <summary>
+    /// The downloader service.
+    /// </summary>
+    public abstract partial class DownloaderService : CustomIntentService, IDownloaderService
+    {
+        #region Constants and Fields
 
         /// <summary>
-        /// The intent that gets sent when clicking a successful download
+        /// The downloads changed.
         /// </summary>
-        public static string ActionOpen = "android.intent.action.DOWNLOAD_OPEN";
+        public const string DownloadsChanged = "downloadsChanged";
 
         /// <summary>
-        /// The intent that gets sent when clicking an incomplete/failed download
+        /// The extra file name.
         /// </summary>
-        public static string ActionList = "android.intent.action.DOWNLOAD_LIST";
+        public const string EXTRA_FILE_NAME = "downloadId";
 
         /// <summary>
-        /// The intent that gets sent when deleting the notification of a completed download
+        /// For intents used to notify the user that a download exceeds a size
+        /// threshold, if this extra is true, WiFi is required for this download
+        /// size; otherwise, it is only recommended.
         /// </summary>
-        public static string ActionHide = "android.intent.action.DOWNLOAD_HIDE";
+        public const string EXTRA_IS_WIFI_REQUIRED = "isWifiRequired";
+
+        /// <summary>
+        /// The extra message handler.
+        /// </summary>
+        public const string EXTRA_MESSAGE_HANDLER = "EMH";
+
+        /// <summary>
+        /// The extra package name.
+        /// </summary>
+        public const string EXTRA_PACKAGE_NAME = "EPN";
+
+        /// <summary>
+        /// The extra pending intent.
+        /// </summary>
+        public const string EXTRA_PENDING_INTENT = "EPI";
+
+        /// <summary>
+        /// Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_MOBILE}.
+        /// </summary>
+        public const int NETWORK_MOBILE = 1 << 0;
+
+        /// <summary>
+        /// Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_WIFI}.
+        /// </summary>
+        public const int NETWORK_WIFI = 1 << 1;
+
+        /// <summary>
+        /// This download doesn't show in the UI or in the notifications.
+        /// </summary>
+        public const int VISIBILITY_HIDDEN = 2;
+
+        /// <summary>
+        /// This download is visible but only shows in the notifications while it's in progress.
+        /// </summary>
+        public const int VISIBILITY_VISIBLE = 0;
+
+        /// <summary>
+        /// This download is visible and shows in the notifications while in progress and after completion.
+        /// </summary>
+        public const int VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1;
+
+        /// <summary>
+        /// The wake duration to check to see if the process was killed.
+        /// </summary>
+        public const long ACTIVE_THREAD_WATCHDOG = 5 * 1000;
+
+        /// <summary>
+        /// The buffer size used to stream the data.
+        /// </summary>
+        public const int BufferSize = 4096;
+
+        /// <summary>
+        /// The default user agent used for downloads.
+        /// </summary>
+        public const string DefaultUserAgent = "Android.LVLDM";
+
+        public static readonly string ExpansionPath = string.Format("{0}Android{0}obb{0}", Path.DirectorySeparatorChar);
 
         /// <summary>
         /// When a number has to be appended to the filename, this string is
         /// used to separate the base filename from the sequence number.
         /// </summary>
-        public static string FILENAME_SEQUENCE_SEPARATOR = "-";
+        public const string FILENAME_SEQUENCE_SEPARATOR = "-";
 
         /// <summary>
-        /// The default user agent used for downloads.
+        /// The maximum number of redirects. (can't be more than 7)
         /// </summary>
-        public static string DefaultUserAgent = "Android.LVLDM";
+        public const int MAX_REDIRECTS = 5;
+
+        public static readonly int MaxRetryAfter = (int)TimeSpan.FromDays(1).TotalSeconds;
 
         /// <summary>
-        /// The buffer size used to stream the data.
+        /// The maximum number of rows in the database (FIFO).
         /// </summary>
-        public static int BufferSize = 4096;
+        public const int MaximumDownloads = 1000;
+
+        /// <summary>
+        /// The number of times that the download manager will retry its network
+        /// operations when no progress is happening before it gives up.
+        /// </summary>
+        public const int MaximumRetries = 5;
 
         /// <summary>
         /// The minimum amount of progress that has to be done before the 
         /// progress bar gets updated.
         /// </summary>
-        public static int MinimumProgressStep = 4096;
+        public const int MinimumProgressStep = 4096;
 
         /// <summary>
         /// The minimum amount of time that has to elapse before the progress 
         /// bar gets updated, in milliseconds.
         /// </summary>
-        public static long MinimumProgressTime = 1000;
+        public const long MinimumProgressTime = 1000;
 
         /// <summary>
-        /// The maximum number of rows in the database (FIFO).
+        /// The minimum amount of time that the download manager accepts for
+        /// a Retry-After response header with a parameter in delta-seconds.
         /// </summary>
-        public static int MaximumDownloads = 1000;
+        public const int MinimumRetryAfter = 30;
 
-        /**
-     * The number of times that the download manager will retry its network
-     * operations when no progress is happening before it gives up.
-     */
-        public static int MaximumRetries = 5;
+        /// <summary>
+        /// The time between a failure and the first retry after an IOException.
+        /// Each subsequent retry grows exponentially, doubling each time.
+        /// The time is in seconds.
+        /// </summary>
+        public const int RETRY_FIRST_DELAY = 30;
 
-        /**
-     * The minimum amount of time that the download manager accepts for
-     * a Retry-After response header with a parameter in delta-seconds.
-     */
-        public static int MinimumRetryAfter = 30; // 30s
+        /// <summary>
+        /// The wake duration to check to see if a download is possible.
+        /// </summary>
+        public const long WATCHDOG_WAKE_TIMER = 60 * 1000;
 
-        /**
-     * The maximum amount of time that the download manager accepts for
-     * a Retry-After response header with a parameter in delta-seconds.
-     */
-        public static int MAX_RETRY_AFTER = 24 * 60 * 60; // 24h
-
-        /**
-     * The maximum number of redirects.
-     */
-        public static int MAX_REDIRECTS = 5; // can't be more than 7.
-
-        /**
-     * The time between a failure and the first retry after an IOException.
-     * Each subsequent retry grows exponentially, doubling each time.
-     * The time is in seconds.
-     */
-        public static int RETRY_FIRST_DELAY = 30;
-        /**
-     * The wake duration to check to see if a download is possible.
-     */
-        public static long WATCHDOG_WAKE_TIMER = 60 * 1000;
-
-        /**
-     * The wake duration to check to see if the process was killed.
-     */
-        public static long ACTIVE_THREAD_WATCHDOG = 5 * 1000;
-
-        /**
-     * For intents used to notify the user that a download exceeds a size
-     * threshold, if this extra is true, WiFi is required for this download
-     * size; otherwise, it is only recommended.
-     */
-        public const string EXTRA_IS_WIFI_REQUIRED = "isWifiRequired";
-        public const string EXTRA_FILE_NAME = "downloadId";
-
-        /**
-     * Used with DOWNLOAD_STATUS
-     */
-        public const string EXTRA_STATUS_STATE = "ESS";
-        public const string EXTRA_STATUS_TOTAL_SIZE = "ETS";
-        public const string EXTRA_STATUS_CURRENT_FILE_SIZE = "CFS";
-        public const string EXTRA_STATUS_TOTAL_PROGRESS = "TFP";
-        public const string EXTRA_STATUS_CURRENT_PROGRESS = "CFP";
-
-
-        public const string ACTION_DOWNLOADS_CHANGED = "downloadsChanged";
-
-        /**
-     * Broadcast intent action sent by the download manager when a download completes.
-     */
-        public const string ACTION_DOWNLOAD_COMPLETE = "lvldownloader.intent.action.DOWNLOAD_COMPLETE";
-
-        /**
-     * Broadcast intent action sent by the download manager when download status changes.
-     */
-        public const string ACTION_DOWNLOAD_STATUS = "lvldownloader.intent.action.DOWNLOAD_STATUS";
-
-        /**
-     * This download is allowed to run.
-     * 
-     * @hide
-     */
-        public const int CONTROL_RUN = 0;
-
-        /**
-     * This download must pause at the first opportunity.
-     * 
-     * @hide
-     */
-        public const int CONTROL_PAUSED = 1;
-
-        /**
-     * This download is visible but only shows in the notifications while it's in progress.
-     * 
-     * @hide
-     */
-        public const int VISIBILITY_VISIBLE = 0;
-
-        /**
-     * This download is visible and shows in the notifications while in progress and after completion.
-     * 
-     * @hide
-     */
-        public const int VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1;
-
-        /**
-     * This download doesn't show in the UI or in the notifications.
-     * 
-     * @hide
-     */
-        public const int VISIBILITY_HIDDEN = 2;
-
-        /**
-     * Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_MOBILE}.
-     */
-        public const int NETWORK_MOBILE = 1 << 0;
-
-        /**
-     * Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_WIFI}.
-     */
-        public const int NETWORK_WIFI = 1 << 1;
-        public const int NO_DOWNLOAD_REQUIRED = 0;
-        public const int LVL_CHECK_REQUIRED = 1;
-        public const int DOWNLOAD_REQUIRED = 2;
-
-        public const string EXTRA_PACKAGE_NAME = "EPN";
-        public const string EXTRA_PENDING_INTENT = "EPI";
-        public const string EXTRA_MESSAGE_HANDLER = "EMH";
-        private static string LOG_TAG = "LVLDL";
-
-        private static string TemporaryFileExtension = ".tmp";
-
-        /**
-     * Service thread status
-     */
-        private static bool sIsRunning;
-        private static float SMOOTHING_FACTOR = 0.005f;
-        private readonly object _locker = new object();
-        private readonly Messenger mServiceMessenger;
-        private readonly IStub mServiceStub;
-        private PendingIntent mAlarmIntent;
-        private float mAverageDownloadSpeed;
-        private long mBytesAtSample;
+        /// <summary>
+        /// Byte counts
+        /// </summary>
         public long mBytesSoFar;
+
+        /// <summary>
+        /// Byte counts
+        /// </summary>
+        public long mTotalLength;
+
+        /// <summary>
+        /// The _locker.
+        /// </summary>
+        private readonly object locker = new object();
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private readonly Messenger serviceMessenger;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private readonly IStub serviceStub;
+
+        /// <summary>
+        /// Service thread status
+        /// </summary>
+        private const float SmoothingFactor = 0.005f;
+
+        /// <summary>
+        /// The temporary file extension.
+        /// </summary>
+        private const string TemporaryFileExtension = ".tmp";
+
+        /// <summary>
+        /// Service thread status
+        /// </summary>
+        private static bool isRunning;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private PendingIntent mAlarmIntent;
+
+        /// <summary>
+        /// Used for calculating time remaining and speed
+        /// </summary>
+        private float mAverageDownloadSpeed;
+
+        /// <summary>
+        /// Used for calculating time remaining and speed
+        /// </summary>
+        private long mBytesAtSample;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
         private Messenger mClientMessenger;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
         private BroadcastReceiver mConnReceiver;
+
+        /// <summary>
+        /// Bindings to important services
+        /// </summary>
         private ConnectivityManager mConnectivityManager;
-        private int mControl;
+
+        /// <summary>
+        /// Byte counts
+        /// </summary>
         private int mFileCount;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsAtLeast3G;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsAtLeast4G;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsCellularConnection;
 
-        /**
-     * Network state.
-     */
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsConnected;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsFailover;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mIsRoaming;
+
+        /// <summary>
+        /// Used for calculating time remaining and speed
+        /// </summary>
         private long mMillisecondsAtSample;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
         private DownloadNotification mNotification;
+
+        /// <summary>
+        /// Package we are downloading for (defaults to package of application)
+        /// </summary>
         private PackageInfo mPackageInfo;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
         private PendingIntent mPendingIntent;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
         private bool mStateChanged;
-        private int mStatus;
-        public long mTotalLength;
+
+        /// <summary>
+        /// Bindings to important services
+        /// </summary>
         private WifiManager mWifiManager;
 
-        public DownloaderService()
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DownloaderService"/> class.
+        /// </summary>
+        protected DownloaderService()
             : base("LVLDownloadService")
         {
-            Log.Info(LOG_TAG, "DownloaderService()");
-            
-            mServiceStub = DownloaderServiceMarshaller.CreateStub(this);
-            mServiceMessenger = mServiceStub.GetMessenger();
-        }
+            Debug.WriteLine("LVLDL DownloaderService()");
 
-        #region IDownloaderService Members
-
-        public void RequestAbortDownload()
-        {
-            mControl = CONTROL_PAUSED;
-            mStatus = DownloadStatus.Canceled;
-        }
-
-        public void RequestPauseDownload()
-        {
-            mControl = CONTROL_PAUSED;
-            mStatus = DownloadStatus.PausedByApp;
-        }
-
-        public void SetDownloadFlags(DownloaderServiceFlags flags)
-        {
-            DownloadsDB.getDB(this).UpdateFlags(flags);
-        }
-
-        public void RequestContinueDownload()
-        {
-            if (mControl == CONTROL_PAUSED)
-            {
-                mControl = CONTROL_RUN;
-            }
-            var fileIntent = new Intent(this, GetType());
-            fileIntent.PutExtra(EXTRA_PENDING_INTENT, mPendingIntent);
-            StartService(fileIntent);
-        }
-
-        public void RequestDownloadStatus()
-        {
-            mNotification.resendState();
-        }
-
-        public void OnClientUpdated(Messenger clientMessenger)
-        {
-            mClientMessenger = clientMessenger;
-            mNotification.setMessenger(mClientMessenger);
+            this.serviceStub = DownloaderServiceMarshaller.CreateStub(this);
+            this.serviceMessenger = this.serviceStub.GetMessenger();
         }
 
         #endregion
 
+        #region Public Properties
+
         /// <summary>
-        /// Returns whether the status is informational (i.e. 1xx).
+        /// Download state
         /// </summary>
-        public static bool IsStatusInformational(int status)
+        public ControlAction Control { get; private set; }
+
+        /// <summary>
+        /// Download state
+        /// </summary>
+        public bool IsWiFi
         {
-            return (status >= 100 && status < 200);
-        }
-
-        /**
-     * Returns whether the status is a success (i.e. 2xx).
-     */
-
-        public static bool isStatusSuccess(int status)
-        {
-            return (status >= 200 && status < 300);
-        }
-
-        /**
-     * Returns whether the status is an error (i.e. 4xx or 5xx).
-     */
-
-        public static bool isStatusError(int status)
-        {
-            return (status >= 400 && status < 600);
-        }
-
-        /**
-     * Returns whether the status is a client error (i.e. 4xx).
-     */
-
-        public static bool isStatusClientError(int status)
-        {
-            return (status >= 400 && status < 500);
-        }
-
-        /**
-     * Returns whether the status is a server error (i.e. 5xx).
-     */
-
-        public static bool isStatusServerError(int status)
-        {
-            return (status >= 500 && status < 600);
-        }
-
-        /**
-     * Returns whether the download has completed (either with success or
-     * error).
-     */
-
-        public static bool isStatusCompleted(int status)
-        {
-            return (status >= 200 && status < 300) || (status >= 400 && status < 600);
-        }
-
-        public override IBinder OnBind(Intent paramIntent)
-        {
-            Log.Debug(TAG, "Service Bound");
-            return mServiceMessenger.Binder;
-        }
-
-        public bool isWiFi()
-        {
-            return mIsConnected && !mIsCellularConnection;
-        }
-
-        /**
-     * Updates the network type based upon the type and subtype returned from
-     * the connectivity manager. Subtype is only used for cellular signals.
-     * 
-     * @param type
-     * @param subType
-     */
-
-        private void updateNetworkType(int type, int subType)
-        {
-            switch ((ConnectivityType) type)
+            get
             {
-                case ConnectivityType.Wifi:
-                //case ConnectivityType.Ethernet:
-                //case ConnectivityType.Bluetooth:
-                    mIsCellularConnection = false;
-                    mIsAtLeast3G = false;
-                    mIsAtLeast4G = false;
-                    break;
-                case ConnectivityType.Wimax:
-                    mIsCellularConnection = true;
-                    mIsAtLeast3G = true;
-                    mIsAtLeast4G = true;
-                    break;
-                case ConnectivityType.Mobile:
-                    mIsCellularConnection = true;
-                    switch ((NetworkType) subType)
-                    {
-                        case NetworkType.OneXrtt:
-                        case NetworkType.Cdma:
-                        case NetworkType.Edge:
-                        case NetworkType.Gprs:
-                        case NetworkType.Iden:
-                            mIsAtLeast3G = false;
-                            mIsAtLeast4G = false;
-                            break;
-                        case NetworkType.Hsdpa:
-                        case NetworkType.Hsupa:
-                        case NetworkType.Hspa:
-                        case NetworkType.Evdo0:
-                        case NetworkType.EvdoA:
-                        case NetworkType.Umts:
-                            mIsAtLeast3G = true;
-                            mIsAtLeast4G = false;
-                            break;
-                        //case NetworkType.Lte: // 4G
-                        //case NetworkType.Ehrpd: // 3G ++ interop with 4G
-                        //case NetworkType.Hspap: // 3G ++ but marketed as 4G
-                        //    mIsAtLeast3G = true;
-                        //    mIsAtLeast4G = true;
-                        //    break;
-                        default:
-                            mIsCellularConnection = false;
-                            mIsAtLeast3G = false;
-                            mIsAtLeast4G = false;
-                            break;
-                    }
-                    break;
+                return this.mIsConnected && !this.mIsCellularConnection;
             }
         }
 
-        private void updateNetworkState(NetworkInfo info)
+        /// <summary>
+        /// Download state
+        /// </summary>
+        public DownloadStatus Status { get; private set; }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets AlarmReceiverClassName.
+        /// </summary>
+        protected abstract string AlarmReceiverClassName { get; }
+
+        /// <summary>
+        /// Gets PublicKey.
+        /// </summary>
+        protected abstract string PublicKey { get; }
+
+        /// <summary>
+        /// Gets Salt.
+        /// </summary>
+        protected abstract byte[] Salt { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the service is running.
+        /// Note: Only use this internally.
+        /// </summary>
+        private bool IsServiceRunning
         {
-            bool isConnected = mIsConnected;
-            bool isFailover = mIsFailover;
-            bool isCellularConnection = mIsCellularConnection;
-            bool isRoaming = mIsRoaming;
-            bool isAtLeast3G = mIsAtLeast3G;
-            if (info == null)
+            get
             {
-                mIsRoaming = false;
-                mIsFailover = false;
-                mIsConnected = false;
-                updateNetworkType(-1, -1);
-            }
-            else
-            {
-                mIsRoaming = info.IsRoaming;
-                mIsFailover = info.IsFailover;
-                mIsConnected = info.IsConnected;
-                updateNetworkType((int)info.Type, (int)info.Subtype);
-            }
-
-            mStateChanged = (mStateChanged ||
-                             isConnected != mIsConnected ||
-                             isFailover != mIsFailover ||
-                             isCellularConnection != mIsCellularConnection ||
-                             isRoaming != mIsRoaming ||
-                             isAtLeast3G != mIsAtLeast3G);
-
-            if (mStateChanged)
-            {
-                Log.Verbose(LOG_TAG, "Network state changed: ");
-                Log.Verbose(LOG_TAG, "Starting State: " +
-                                     (isConnected ? "Connected " : "Not Connected ") +
-                                     (isCellularConnection ? "Cellular " : "WiFi ") +
-                                     (isRoaming ? "Roaming " : "Local ") +
-                                     (isAtLeast3G ? "3G+ " : "<3G "));
-                Log.Verbose(LOG_TAG, "Ending State: " +
-                                     (mIsConnected ? "Connected " : "Not Connected ") +
-                                     (mIsCellularConnection ? "Cellular " : "WiFi ") +
-                                     (mIsRoaming ? "Roaming " : "Local ") +
-                                     (mIsAtLeast3G ? "3G+ " : "<3G "));
-
-                if (isServiceRunning())
+                lock (this.locker)
                 {
-                    if (mIsRoaming)
-                    {
-                        mStatus = DownloadStatus.WaitingForNetwork;
-                        mControl = CONTROL_PAUSED;
-                    }
-                    else if (mIsCellularConnection)
-                    {
-                        DownloadsDB db = DownloadsDB.getDB(this);
-                        DownloaderServiceFlags flags = db.getFlags();
-                        if (!flags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
-                        {
-                            mStatus = DownloadStatus.QueuedForWifi;
-                            mControl = CONTROL_PAUSED;
-                        }
-                    }
+                    return isRunning;
+                }
+            }
+
+            set
+            {
+                lock (this.locker)
+                {
+                    isRunning = value;
                 }
             }
         }
 
+        #endregion
+
+        #region Public Methods and Operators
+
         /// <summary>
-        /// Polls the network state, setting the flags appropriately.
+        /// The start download service if required.
         /// </summary>
-        private void PollNetworkState()
+        /// <param name="context">
+        /// The context.
+        /// </param>
+        /// <param name="intent">
+        /// The intent.
+        /// </param>
+        /// <param name="serviceClass">
+        /// The service class.
+        /// </param>
+        /// <returns>
+        /// The start download service if required.
+        /// </returns>
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, Intent intent, Type serviceClass)
         {
-            if (null == mConnectivityManager)
-            {
-                mConnectivityManager = GetSystemService(ConnectivityService).JavaCast<ConnectivityManager>();
-            }
-            if (null == mWifiManager)
-            {
-                mWifiManager = GetSystemService(WifiService).JavaCast<WifiManager>();
-            }
-            if (mConnectivityManager == null)
-            {
-                Log.Warn(TAG, "couldn't get connectivity manager to poll network state");
-            }
-            else
-            {
-                NetworkInfo activeInfo = mConnectivityManager.ActiveNetworkInfo;
-                updateNetworkState(activeInfo);
-            }
-        }
-
-        /**
-     * Returns true if the LVL check is required
-     * 
-     * @param db a downloads DB synchronized with the latest state
-     * @param pi the package info for the project
-     * @return returns true if the filenames need to be returned
-     */
-
-        private static bool isLVLCheckRequired(DownloadsDB db, PackageInfo pi)
-        {
-            // we need to update the LVL check and get a successful status to
-            // proceed
-            if (db.mVersionCode != pi.VersionCode)
-            {
-                return true;
-            }
-            return false;
-        }
-
-        /**
-     * Careful! Only use this internally.
-     * 
-     * @return whether we think the service is running
-     */
-
-        private bool isServiceRunning()
-        {
-            lock (_locker)
-                return sIsRunning;
-        }
-
-        private void setServiceRunning(bool isRunning)
-        {
-            lock (_locker)
-                sIsRunning = isRunning;
-        }
-
-        public static int StartDownloadServiceIfRequired(Context context, Intent intent, Type serviceClass)
-        {
-            var pendingIntent = (PendingIntent) intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
+            var pendingIntent = (PendingIntent)intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
             return StartDownloadServiceIfRequired(context, pendingIntent, serviceClass);
         }
 
         /// <summary>
+        /// <para>
         /// Starts the download if necessary. 
-        /// 
-        /// This function starts a flow that does many things:
-        ///  (1) Checks to see if the APK version has been checked and the metadata database updated 
-        ///  (2) If the APK version does not match, checks the new LVL status to see if a new download is required 
-        ///  (3) If the APK version does match, then checks to see if the download(s) have been completed
+        /// </para>
+        /// <para>
+        /// This function starts a flow that does many things:<br/>
+        ///  (1) Checks to see if the APK version has been checked and the metadata database updated <br/>
+        ///  (2) If the APK version does not match, checks the new LVL status to see if a new download is required <br/>
+        ///  (3) If the APK version does match, then checks to see if the download(s) have been completed <br/>
         ///  (4) If the downloads have been completed, returns NO_DOWNLOAD_REQUIRED.
-        /// 
+        /// </para>
+        /// <para>
         /// The idea is that this can be called during the startup of an application to quickly
         /// ascertain if the application needs to wait to hear about any updated APK expansion files.
-        /// 
-        /// Note that this does mean that the application MUST be run for the first time with a network connection, 
+        /// </para>
+        /// <para>
+        /// Note: this does mean that the application MUST be run for the first time with a network connection, 
         /// even if Market delivers all of the files.
+        /// </para>
         /// </summary>
+        /// <param name="context">
+        /// The context.
+        /// </param>
+        /// <param name="pendingIntent">
+        /// The pending Intent.
+        /// </param>
+        /// <param name="serviceClass">
+        /// The service Class.
+        /// </param>
         /// <returns>
-        ///  true if the app should wait for more guidance from the downloader, false if the app can continue
+        /// true if the app should wait for more guidance from the downloader, false if the app can continue
         /// </returns>
-        public static int StartDownloadServiceIfRequired(Context context, PendingIntent pendingIntent, Type serviceClass)
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, PendingIntent pendingIntent, Type serviceClass)
         {
-            System.Diagnostics.Debug.WriteLine("StartDownloadServiceIfRequired");
+            Debug.WriteLine("StartDownloadServiceIfRequired");
 
             // first: do we need to do an LVL update?
             // we begin by getting our APK version from the package manager
             PackageInfo pi = context.PackageManager.GetPackageInfo(context.PackageName, 0);
 
-            int status = NO_DOWNLOAD_REQUIRED;
+            DownloadServiceRequirement status = DownloadServiceRequirement.NoDownloadRequired;
 
             // the database automatically reads the metadata for version code
             // and download status when the instance is created
             DownloadsDB db = DownloadsDB.getDB(context);
 
             // we need to update the LVL check and get a successful status to proceed
-            if (isLVLCheckRequired(db, pi))
+            if (IsLvlCheckRequired(db, pi))
             {
-                status = LVL_CHECK_REQUIRED;
+                status = DownloadServiceRequirement.LvlCheckRequired;
             }
 
             // we don't have to update LVL. do we still have a download to start?
@@ -598,20 +471,20 @@ namespace ExpansionDownloader.impl
                 DownloadInfo[] infos = db.GetDownloads();
                 if (infos != null && infos.Any(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true)))
                 {
-                    status = DOWNLOAD_REQUIRED;
-                    db.updateStatus(-1);
+                    status = DownloadServiceRequirement.DownloadRequired;
+                    db.updateStatus(DownloadStatus.Unknown);
                 }
             }
             else
             {
-                status = DOWNLOAD_REQUIRED;
+                status = DownloadServiceRequirement.DownloadRequired;
             }
 
             switch (status)
             {
-                case DOWNLOAD_REQUIRED:
-                case LVL_CHECK_REQUIRED:
-                    System.Diagnostics.Debug.WriteLine("StartService: " + serviceClass);
+                case DownloadServiceRequirement.DownloadRequired:
+                case DownloadServiceRequirement.LvlCheckRequired:
+                    Debug.WriteLine("StartService: " + serviceClass);
                     var fileIntent = new Intent(context.ApplicationContext, serviceClass);
                     fileIntent.PutExtra(EXTRA_PENDING_INTENT, pendingIntent);
                     context.StartService(fileIntent);
@@ -621,104 +494,342 @@ namespace ExpansionDownloader.impl
             return status;
         }
 
-        public abstract string GetPublicKey(); // Your public licensing key.
-
-        public abstract byte[] GetSalt();
-
-        public abstract string GetAlarmReceiverClassName();
-
-       /// <summary>
-        /// Updates the LVL information from the server.
-       /// </summary>
-       /// <param name="context"></param>
-        public void UpdateLvl(DownloaderService context)
+        /// <summary>
+        /// Creates a filename (where the file should be saved) from info about a download.
+        /// </summary>
+        /// <param name="filename">
+        /// The filename.
+        /// </param>
+        /// <param name="filesize">
+        /// The filesize.
+        /// </param>
+        /// <returns>
+        /// The generate save file.
+        /// </returns>
+        public string GenerateSaveFile(string filename, long filesize)
         {
-            Debug.WriteLine("DownloaderService.UpdateLvl");
-            var h = new Handler(context.MainLooper);
-            h.Post(new LvlRunnable(context, mPendingIntent));
+            string path = this.GenerateTempSaveFileName(filename);
+
+            if (!Helpers.IsExternalMediaMounted())
+            {
+                Debug.WriteLine("External media not mounted: {0}", path);
+
+                throw new GenerateSaveFileError(DownloadStatus.DeviceNotFoundError, "external media is not yet mounted");
+            }
+
+            if (File.Exists(path))
+            {
+                Debug.WriteLine("File already exists: {0}", path);
+
+                throw new GenerateSaveFileError(
+                    DownloadStatus.FileAlreadyExists, "requested destination file already exists");
+            }
+
+            if (Helpers.GetAvailableBytes(Helpers.GetFileSystemRoot(path)) < filesize)
+            {
+                throw new GenerateSaveFileError(
+                    DownloadStatus.InsufficientSpaceError, "insufficient space on external storage");
+            }
+
+            return path;
         }
 
-        /**
-     * The APK has been updated and a filename has been sent down from the
-     * Market call. If the file has the same name as the previous file, we do
-     * nothing as the file is guaranteed to be the same. If the file does not
-     * have the same name, we download it if it hasn't already been delivered by
-     * Market.
-     * 
-     * @param index the index of the file from market (0 = main, 1 = patch)
-     * @param filename the name of the new file
-     * @param fileSize the size of the new file
-     * @return
-     */
+        /// <summary>
+        /// Returns the filename (where the file should be saved) from info about a download
+        /// </summary>
+        /// <param name="fileName">
+        /// The file Name.
+        /// </param>
+        /// <returns>
+        /// The generate temp save file name.
+        /// </returns>
+        public string GenerateTempSaveFileName(string fileName)
+        {
+            return string.Format(
+                "{0}{1}{2}{3}", 
+                Helpers.GetSaveFilePath(this), 
+                Path.DirectorySeparatorChar, 
+                fileName, 
+                TemporaryFileExtension);
+        }
 
+        /// <summary>
+        /// a non-localized string appropriate for logging corresponding to one of the NETWORK_* constants.
+        /// </summary>
+        /// <param name="networkError">
+        /// The network Error.
+        /// </param>
+        /// <returns>
+        /// The get log message for network error.
+        /// </returns>
+        public string GetLogMessageForNetworkError(NetworkConstants networkError)
+        {
+            switch (networkError)
+            {
+                case NetworkConstants.RecommendedUnusableDueToSize:
+                    return "download size exceeds recommended limit for mobile network";
+
+                case NetworkConstants.UnusableDueToSize:
+                    return "download size exceeds limit for mobile network";
+
+                case NetworkConstants.NoConnection:
+                    return "no network connection available";
+
+                case NetworkConstants.CannotUseRoaming:
+                    return "download cannot use the current network connection because it is roaming";
+
+                case NetworkConstants.TypeDisallowedByRequestor:
+                    return "download was requested to not use the current network type";
+
+                default:
+                    return "unknown error with network connectivity";
+            }
+        }
+
+        /// <summary>
+        /// The get network availability state.
+        /// </summary>
+        /// <param name="db">
+        /// The db.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        public NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
+        {
+            if (!this.mIsConnected)
+            {
+                return NetworkConstants.NoConnection;
+            }
+            
+            if (!this.mIsCellularConnection)
+            {
+                return NetworkConstants.Ok;
+            }
+            
+            if (this.mIsRoaming)
+            {
+                return NetworkConstants.CannotUseRoaming;
+            }
+            
+            if (!db.mFlags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
+            {
+                return NetworkConstants.TypeDisallowedByRequestor;
+            }
+            
+            return NetworkConstants.Ok;
+        }
+
+        /// <summary>
+        /// The APK has been updated and a filename has been sent down from the
+        /// Market call. If the file has the same name as the previous file, we do
+        /// nothing as the file is guaranteed to be the same. If the file does not
+        /// have the same name, we download it if it hasn't already been delivered by
+        /// Market.
+        /// </summary>
+        /// <param name="db">
+        /// The db.
+        /// </param>
+        /// <param name="index">
+        /// the index of the file from market (0 = main, 1 = patch)
+        /// </param>
+        /// <param name="filename">
+        /// the name of the new file
+        /// </param>
+        /// <param name="fileSize">
+        /// the size of the new file
+        /// </param>
+        /// <returns>
+        /// The handle file updated.
+        /// </returns>
         public bool HandleFileUpdated(DownloadsDB db, int index, string filename, long fileSize)
         {
             DownloadInfo di = db.getDownloadInfoByFileName(filename);
-            if (null != di)
-            {
-                string oldFile = di.FileName;
-                // cleanup
-                if (null != oldFile)
-                {
-                    if (filename == oldFile)
-                    {
-                        return false;
-                    }
 
-                    // remove partially downloaded file if it is there
-                    string deleteFile = Helpers.GenerateSaveFileName(this, oldFile);
-                    var f = new File(deleteFile);
-                    if (f.Exists())
-                        f.Delete();
+            if (di != null && di.FileName != null)
+            {
+                if (filename == di.FileName)
+                {
+                    return false;
+                }
+
+                // remove partially downloaded file if it is there
+                string deleteFile = Helpers.GenerateSaveFileName(this, di.FileName);
+                if (File.Exists(deleteFile))
+                {
+                    File.Delete(deleteFile);
                 }
             }
+
             return !Helpers.DoesFileExist(this, filename, fileSize, true);
         }
 
-        private void ScheduleAlarm(long wakeUp)
+        /// <summary>
+        /// Calculating a moving average for the speed so we don't get jumpy calculations for time etc.
+        /// </summary>
+        /// <param name="totalBytesSoFar">
+        /// The total Bytes So Far.
+        /// </param>
+        public void NotifyUpdateBytes(long totalBytesSoFar)
         {
-            var alarms = GetSystemService(AlarmService).JavaCast<AlarmManager>();
-            if (alarms == null)
+            long timeRemaining;
+            long currentTime = SystemClock.UptimeMillis();
+            if (0 != this.mMillisecondsAtSample)
             {
-                Log.Error(TAG, "couldn't get alarm manager");
-                return;
-            }
-
-                Log.Verbose(TAG, "scheduling retry in " + wakeUp + "ms");
-
-            string className = GetAlarmReceiverClassName();
-            var intent = new Intent(ActionRetry);
-            intent.PutExtra(EXTRA_PENDING_INTENT, mPendingIntent);
-            intent.SetClassName(PackageName, className);
-            mAlarmIntent = PendingIntent.GetBroadcast(this, 0, intent, PendingIntentFlags.OneShot);
-            alarms.Set(AlarmType.RtcWakeup, PolicyExtensions.GetCurrentMilliseconds() + wakeUp, mAlarmIntent);
-        }
-
-        private void CancelAlarms()
-        {
-            if (null != mAlarmIntent)
-            {
-                var alarms = GetSystemService(AlarmService).JavaCast<AlarmManager>();
-                if (alarms == null)
+                // we have a sample.
+                long timePassed = currentTime - this.mMillisecondsAtSample;
+                long bytesInSample = totalBytesSoFar - this.mBytesAtSample;
+                float currentSpeedSample = bytesInSample / (float)timePassed;
+                if (Math.Abs(0 - this.mAverageDownloadSpeed) > SmoothingFactor)
                 {
-                    Log.Error(TAG, "couldn't get alarm manager");
-                    return;
+                    var smoothSpeed = SmoothingFactor * currentSpeedSample;
+                    var averageSpeed = (1 - SmoothingFactor) * this.mAverageDownloadSpeed;
+                    this.mAverageDownloadSpeed = smoothSpeed + averageSpeed;
                 }
-                alarms.Cancel(mAlarmIntent);
-                mAlarmIntent = null;
+                else
+                {
+                    this.mAverageDownloadSpeed = currentSpeedSample;
+                }
+
+                timeRemaining = (long)((this.mTotalLength - totalBytesSoFar) / this.mAverageDownloadSpeed);
+            }
+            else
+            {
+                timeRemaining = -1;
+            }
+
+            this.mMillisecondsAtSample = currentTime;
+            this.mBytesAtSample = totalBytesSoFar;
+            this.mNotification.OnDownloadProgress(
+                new DownloadProgressInfo(this.mTotalLength, totalBytesSoFar, timeRemaining, this.mAverageDownloadSpeed));
+        }
+
+        /// <summary>
+        /// The on bind.
+        /// </summary>
+        /// <param name="intent">
+        /// The intent.
+        /// </param>
+        /// <returns>
+        /// the binder
+        /// </returns>
+        public override IBinder OnBind(Intent intent)
+        {
+            return this.serviceMessenger.Binder;
+        }
+
+        /// <summary>
+        /// The on client updated.
+        /// </summary>
+        /// <param name="clientMessenger">
+        /// The client messenger.
+        /// </param>
+        public void OnClientUpdated(Messenger clientMessenger)
+        {
+            this.mClientMessenger = clientMessenger;
+            this.mNotification.setMessenger(this.mClientMessenger);
+        }
+
+        /// <summary>
+        /// The on create.
+        /// </summary>
+        public override void OnCreate()
+        {
+            base.OnCreate();
+            try
+            {
+                this.mPackageInfo = this.PackageManager.GetPackageInfo(this.PackageName, 0);
+                string applicationLabel = this.PackageManager.GetApplicationLabel(this.ApplicationInfo);
+                this.mNotification = new DownloadNotification(this, applicationLabel);
+            }
+            catch (PackageManager.NameNotFoundException e)
+            {
+                e.PrintStackTrace();
             }
         }
 
-        /**
-     * This is the main thread for the Downloader. This thread is responsible
-     * for queuing up downloads and other goodness.
-     */
+        /// <summary>
+        /// The on destroy.
+        /// </summary>
+        public override void OnDestroy()
+        {
+            if (this.mConnReceiver != null)
+            {
+                this.UnregisterReceiver(this.mConnReceiver);
+                this.mConnReceiver = null;
+            }
 
+            this.serviceStub.Disconnect(this);
+            base.OnDestroy();
+        }
+
+        /// <summary>
+        /// The request abort download.
+        /// </summary>
+        public void RequestAbortDownload()
+        {
+            this.Control = ControlAction.Paused;
+            this.Status = DownloadStatus.Canceled;
+        }
+
+        /// <summary>
+        /// The request continue download.
+        /// </summary>
+        public void RequestContinueDownload()
+        {
+            if (this.Control == ControlAction.Paused)
+            {
+                this.Control = ControlAction.Run;
+            }
+
+            var fileIntent = new Intent(this, this.GetType());
+            fileIntent.PutExtra(EXTRA_PENDING_INTENT, this.mPendingIntent);
+            this.StartService(fileIntent);
+        }
+
+        /// <summary>
+        /// The request download status.
+        /// </summary>
+        public void RequestDownloadStatus()
+        {
+            this.mNotification.resendState();
+        }
+
+        /// <summary>
+        /// The request pause download.
+        /// </summary>
+        public void RequestPauseDownload()
+        {
+            this.Control = ControlAction.Paused;
+            this.Status = DownloadStatus.PausedByApp;
+        }
+
+        /// <summary>
+        /// The set download flags.
+        /// </summary>
+        /// <param name="flags">
+        /// The flags.
+        /// </param>
+        public void SetDownloadFlags(DownloaderServiceFlags flags)
+        {
+            DownloadsDB.getDB(this).UpdateFlags(flags);
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// This is the main thread for the Downloader. 
+        /// This thread is responsible for queuing up downloads and other goodness.
+        /// </summary>
+        /// <param name="intent">
+        /// The intent that was recieved.
+        /// </param>
         protected override void OnHandleIntent(Intent intent)
         {
             Debug.WriteLine("DownloaderService.OnHandleIntent");
-
-            setServiceRunning(true);
+            
+            this.IsServiceRunning = true;
             try
             {
                 // the database automatically reads the metadata for version code
@@ -728,56 +839,56 @@ namespace ExpansionDownloader.impl
 
                 if (null != pendingIntent)
                 {
-                    mNotification.setClientIntent(pendingIntent);
-                    mPendingIntent = pendingIntent;
+                    this.mNotification.setClientIntent(pendingIntent);
+                    this.mPendingIntent = pendingIntent;
                 }
-                else if (null != mPendingIntent)
+                else if (null != this.mPendingIntent)
                 {
-                    mNotification.setClientIntent(mPendingIntent);
+                    this.mNotification.setClientIntent(this.mPendingIntent);
                 }
                 else
                 {
-                    Log.Error(LOG_TAG, "Downloader started in bad state without notification intent.");
+                    Debug.WriteLine("LVLDL Downloader started in bad state without notification intent.");
                     return;
                 }
 
                 // when the LVL check completes, a successful response will update the service
-                if (isLVLCheckRequired(db, mPackageInfo))
+                if (IsLvlCheckRequired(db, this.mPackageInfo))
                 {
-                    UpdateLvl(this);
+                    this.UpdateLvl(this);
                     return;
                 }
 
                 // get each download
                 DownloadInfo[] infos = db.GetDownloads();
-                mBytesSoFar = 0;
-                mTotalLength = 0;
-                mFileCount = infos.Length;
+                this.mBytesSoFar = 0;
+                this.mTotalLength = 0;
+                this.mFileCount = infos.Length;
                 foreach (DownloadInfo info in infos)
                 {
                     // We do an (simple) integrity check on each file, just to 
                     // make sure and to verify that the file matches the state
-                    if (info.Status == DownloadStatus.Success &&
-                        !Helpers.DoesFileExist(this, info.FileName, info.TotalBytes, true))
+                    if (info.Status == DownloadStatus.Success
+                        && !Helpers.DoesFileExist(this, info.FileName, info.TotalBytes, true))
                     {
                         info.Status = 0;
                         info.CurrentBytes = 0;
                     }
 
                     // get aggregate data
-                    mTotalLength += info.TotalBytes;
-                    mBytesSoFar += info.CurrentBytes;
+                    this.mTotalLength += info.TotalBytes;
+                    this.mBytesSoFar += info.CurrentBytes;
                 }
 
-                PollNetworkState();
-                if (mConnReceiver == null)
+                this.PollNetworkState();
+                if (this.mConnReceiver == null)
                 {
                     // We use this to track network state, such as when WiFi, Cellular, etc. is enabled
                     // when downloads are paused or in progress.
-                    mConnReceiver = new InnerBroadcastReceiver(this);
+                    this.mConnReceiver = new InnerBroadcastReceiver(this);
                     var intentFilter = new IntentFilter(ConnectivityManager.ConnectivityAction);
                     intentFilter.AddAction(WifiManager.WifiStateChangedAction);
-                    RegisterReceiver(mConnReceiver, intentFilter);
+                    this.RegisterReceiver(this.mConnReceiver, intentFilter);
                 }
 
                 // loop through all downloads and fetch them
@@ -803,6 +914,7 @@ namespace ExpansionDownloader.impl
                     switch (info.Status)
                     {
                         case DownloadStatus.Forbidden:
+
                             // the URL is out of date
                             this.UpdateLvl(this);
                             return;
@@ -810,13 +922,17 @@ namespace ExpansionDownloader.impl
                             this.mBytesSoFar += info.CurrentBytes - startingCount;
                             db.updateMetadata(this.mPackageInfo.VersionCode, 0);
 
-                            if (index < infos.Length - 1) continue;
+                            if (index < infos.Length - 1)
+                            {
+                                continue;
+                            }
 
                             this.mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
                             return;
                         case DownloadStatus.FileDeliveredIncorrectly:
+
                             // we may be on a network that is returning us a web page on redirect
-                            notifyStatus = DownloaderClientState.STATE_PAUSED_NETWORK_SETUP_FAILURE;
+                            notifyStatus = DownloaderClientState.PausedNetworkSetupFailure;
                             info.CurrentBytes = 0;
                             db.updateDownload(info);
                             setWakeWatchdog = true;
@@ -830,6 +946,7 @@ namespace ExpansionDownloader.impl
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.QueuedForWifi:
+
                             // look for more detail here
                             notifyStatus = this.mWifiManager != null && !this.mWifiManager.IsWifiEnabled
                                                ? DownloaderClientState.PausedWifiDisabledNeedCellularPermission
@@ -837,24 +954,25 @@ namespace ExpansionDownloader.impl
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.Canceled:
-                            notifyStatus = DownloaderClientState.STATE_FAILED_CANCELED;
+                            notifyStatus = DownloaderClientState.FailedCanceled;
                             setWakeWatchdog = true;
                             break;
 
                         case DownloadStatus.InsufficientSpaceError:
-                            notifyStatus = DownloaderClientState.STATE_FAILED_SDCARD_FULL;
+                            notifyStatus = DownloaderClientState.FailedSdCardFull;
                             setWakeWatchdog = true;
                             break;
 
                         case DownloadStatus.DeviceNotFoundError:
-                            notifyStatus = DownloaderClientState.STATE_PAUSED_SDCARD_UNAVAILABLE;
+                            notifyStatus = DownloaderClientState.PausedSdCardUnavailable;
                             setWakeWatchdog = true;
                             break;
 
                         default:
-                            notifyStatus = DownloaderClientState.STATE_FAILED;
+                            notifyStatus = DownloaderClientState.Failed;
                             break;
                     }
+
                     if (setWakeWatchdog)
                     {
                         this.ScheduleAlarm(WATCHDOG_WAKE_TIMER);
@@ -863,6 +981,7 @@ namespace ExpansionDownloader.impl
                     {
                         this.CancelAlarms();
                     }
+
                     // failure or pause state
                     this.mNotification.OnDownloadStateChanged(notifyStatus);
                     return;
@@ -876,167 +995,17 @@ namespace ExpansionDownloader.impl
             }
             finally
             {
-                setServiceRunning(false);
+                this.IsServiceRunning = false;
             }
-        }
-
-        public override void OnDestroy()
-        {
-            if (null != mConnReceiver)
-            {
-                UnregisterReceiver(mConnReceiver);
-                mConnReceiver = null;
-            }
-            mServiceStub.Disconnect(this);
-            base.OnDestroy();
-        }
-
-        public int GetNetworkAvailabilityState(DownloadsDB db)
-        {
-            if (!mIsConnected)
-                return NetworkConstants.NETWORK_NO_CONNECTION;
-            else if (!mIsCellularConnection)
-                return NetworkConstants.NETWORK_OK;
-            else if (mIsRoaming)
-                return NetworkConstants.NETWORK_CANNOT_USE_ROAMING;
-            else if (!db.mFlags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
-                return NetworkConstants.NETWORK_TYPE_DISALLOWED_BY_REQUESTOR;
-            else
-                return NetworkConstants.NETWORK_OK;
-        }
-
-        public override void OnCreate()
-        {
-            base.OnCreate();
-            try
-            {
-                mPackageInfo = PackageManager.GetPackageInfo(PackageName, 0);
-                string applicationLabel = PackageManager.GetApplicationLabel(ApplicationInfo);
-                mNotification = new DownloadNotification(this, applicationLabel);
-            }
-            catch (PackageManager.NameNotFoundException e)
-            {
-                e.PrintStackTrace();
-            }
-        }
-
-     //   /**
-     //* Exception thrown from methods called by generateSaveFile() for any fatal
-     //* error.
-     //*/
-
-        /// <summary>
-        /// Returns the filename (where the file should be saved) from info about a download
-        /// </summary>
-        public string GenerateTempSaveFileName(string fileName)
-        {
-            return String.Format("{0}{1}{2}{3}",
-                                 Helpers.GetSaveFilePath(this), 
-                                 Path.DirectorySeparatorChar, 
-                                 fileName, 
-                                 TemporaryFileExtension);
-        }
-
-       /// <summary>
-        /// Creates a filename (where the file should be saved) from info about a download.
-       /// </summary>
-        public string GenerateSaveFile(string filename, long filesize)
-       {
-           string path = GenerateTempSaveFileName(filename);
-
-           if (!Helpers.IsExternalMediaMounted())
-           {
-               Debug.WriteLine("External media not mounted: {0}", path);
-
-               throw new GenerateSaveFileError(DownloadStatus.DeviceNotFoundError,
-                                               "external media is not yet mounted");
-           }
-           if (System.IO.File.Exists(path))
-           {
-               Debug.WriteLine("File already exists: {0}", path);
-
-               throw new GenerateSaveFileError(DownloadStatus.FileAlreadyExists,
-                                               "requested destination file already exists");
-           }
-
-           if (Helpers.GetAvailableBytes(Helpers.GetFileSystemRoot(path)) < filesize)
-           {
-               throw new GenerateSaveFileError(DownloadStatus.InsufficientSpaceError, "insufficient space on external storage");
-           }
-
-           return path;
-       }
-
-        /// <summary>
-        /// a non-localized string appropriate for logging corresponding to one of the NETWORK_* constants.
-        /// </summary>
-        public string GetLogMessageForNetworkError(int networkError)
-        {
-            switch (networkError)
-            {
-                case NetworkConstants.NETWORK_RECOMMENDED_UNUSABLE_DUE_TO_SIZE:
-                    return "download size exceeds recommended limit for mobile network";
-
-                case NetworkConstants.NETWORK_UNUSABLE_DUE_TO_SIZE:
-                    return "download size exceeds limit for mobile network";
-
-                case NetworkConstants.NETWORK_NO_CONNECTION:
-                    return "no network connection available";
-
-                case NetworkConstants.NETWORK_CANNOT_USE_ROAMING:
-                    return "download cannot use the current network connection because it is roaming";
-
-                case NetworkConstants.NETWORK_TYPE_DISALLOWED_BY_REQUESTOR:
-                    return "download was requested to not use the current network type";
-
-                default:
-                    return "unknown error with network connectivity";
-            }
-        }
-
-        public int getControl()
-        {
-            return mControl;
-        }
-
-        public int getStatus()
-        {
-            return mStatus;
         }
 
         /// <summary>
-        /// Calculating a moving average for the speed so we don't get jumpy calculations for time etc.
+        /// The should stop.
         /// </summary>
-        public void NotifyUpdateBytes(long totalBytesSoFar)
-        {
-            long timeRemaining;
-            long currentTime = SystemClock.UptimeMillis();
-            if (0 != mMillisecondsAtSample)
-            {
-                // we have a sample.
-                long timePassed = currentTime - mMillisecondsAtSample;
-                long bytesInSample = totalBytesSoFar - mBytesAtSample;
-                float currentSpeedSample = bytesInSample/(float) timePassed;
-                if (0 != mAverageDownloadSpeed)
-                {
-                    mAverageDownloadSpeed = SMOOTHING_FACTOR*currentSpeedSample + (1 - SMOOTHING_FACTOR)*mAverageDownloadSpeed;
-                }
-                else
-                {
-                    mAverageDownloadSpeed = currentSpeedSample;
-                }
-                timeRemaining = (long) ((mTotalLength - totalBytesSoFar)/mAverageDownloadSpeed);
-            }
-            else
-            {
-                timeRemaining = -1;
-            }
-            mMillisecondsAtSample = currentTime;
-            mBytesAtSample = totalBytesSoFar;
-            mNotification.OnDownloadProgress(new DownloadProgressInfo(mTotalLength, totalBytesSoFar, timeRemaining, mAverageDownloadSpeed));
-        }
-
-        protected override bool shouldStop()
+        /// <returns>
+        /// The should stop.
+        /// </returns>
+        protected override bool ShouldStop()
         {
             // the database automatically reads the metadata for version code and download
             // status when the instance is created
@@ -1045,25 +1014,257 @@ namespace ExpansionDownloader.impl
             {
                 return true;
             }
+
             return false;
         }
 
-        #region Nested type: GenerateSaveFileError
-
-        public class GenerateSaveFileError : Exception
+        /// <summary>
+        /// Updates the LVL information from the server.
+        /// </summary>
+        /// <param name="context">
+        /// </param>
+        protected void UpdateLvl(DownloaderService context)
         {
-            public int mStatus;
+            var h = new Handler(context.MainLooper);
+            h.Post(new LvlRunnable(context, this.mPendingIntent));
+        }
 
-            public GenerateSaveFileError(int status, string message)
-                : base(message)
+        /// <summary>
+        /// The cancel alarms.
+        /// </summary>
+        private void CancelAlarms()
+        {
+            if (null != this.mAlarmIntent)
             {
-                mStatus = status;
+                var alarms = this.GetSystemService(AlarmService).JavaCast<AlarmManager>();
+                if (alarms == null)
+                {
+                    Debug.WriteLine("LVLDL couldn't get alarm manager");
+                    return;
+                }
+
+                alarms.Cancel(this.mAlarmIntent);
+                this.mAlarmIntent = null;
+            }
+        }
+
+        /// <summary>
+        /// Polls the network state, setting the flags appropriately.
+        /// </summary>
+        private void PollNetworkState()
+        {
+            if (this.mConnectivityManager == null)
+            {
+                this.mConnectivityManager = this.GetSystemService(ConnectivityService).JavaCast<ConnectivityManager>();
+            }
+
+            if (this.mWifiManager == null)
+            {
+                this.mWifiManager = this.GetSystemService(WifiService).JavaCast<WifiManager>();
+            }
+
+            if (this.mConnectivityManager == null)
+            {
+                Debug.WriteLine("LVLDL couldn't get connectivity manager to poll network state");
+            }
+            else
+            {
+                NetworkInfo activeInfo = this.mConnectivityManager.ActiveNetworkInfo;
+                this.UpdateNetworkState(activeInfo);
+            }
+        }
+
+        /// <summary>
+        /// The schedule alarm.
+        /// </summary>
+        /// <param name="wakeUp">
+        /// The wake up.
+        /// </param>
+        private void ScheduleAlarm(long wakeUp)
+        {
+            var alarms = this.GetSystemService(AlarmService).JavaCast<AlarmManager>();
+            if (alarms == null)
+            {
+                Debug.WriteLine("LVLDL couldn't get alarm manager");
+                return;
+            }
+
+            Debug.WriteLine("LVLDL scheduling retry in " + wakeUp + "ms");
+
+            var intent = new Intent(DownloaderSeviceActions.ActionRetry);
+            intent.PutExtra(EXTRA_PENDING_INTENT, this.mPendingIntent);
+            intent.SetClassName(this.PackageName, this.AlarmReceiverClassName);
+            this.mAlarmIntent = PendingIntent.GetBroadcast(this, 0, intent, PendingIntentFlags.OneShot);
+            alarms.Set(AlarmType.RtcWakeup, PolicyExtensions.GetCurrentMilliseconds() + wakeUp, this.mAlarmIntent);
+        }
+
+        /// <summary>
+        /// The update network state.
+        /// </summary>
+        /// <param name="info">
+        /// The info.
+        /// </param>
+        private void UpdateNetworkState(NetworkInfo info)
+        {
+            bool isConnected = this.mIsConnected;
+            bool isFailover = this.mIsFailover;
+            bool isCellularConnection = this.mIsCellularConnection;
+            bool isRoaming = this.mIsRoaming;
+            bool isAtLeast3G = this.mIsAtLeast3G;
+            if (info == null)
+            {
+                this.mIsRoaming = false;
+                this.mIsFailover = false;
+                this.mIsConnected = false;
+                this.UpdateNetworkType(-1, -1);
+            }
+            else
+            {
+                this.mIsRoaming = info.IsRoaming;
+                this.mIsFailover = info.IsFailover;
+                this.mIsConnected = info.IsConnected;
+                this.UpdateNetworkType((int)info.Type, (int)info.Subtype);
+            }
+
+            this.mStateChanged = this.mStateChanged || isConnected != this.mIsConnected
+                                 || isFailover != this.mIsFailover || isCellularConnection != this.mIsCellularConnection
+                                 || isRoaming != this.mIsRoaming || isAtLeast3G != this.mIsAtLeast3G;
+
+            if (this.mStateChanged)
+            {
+                Debug.WriteLine("LVLDL Network state changed: ");
+                Debug.WriteLine(
+                    "LVLDL Starting State: {0}{1}{2}{3}", 
+                    isConnected ? "Connected " : "Not Connected ", 
+                    isCellularConnection ? "Cellular " : "WiFi ", 
+                    isRoaming ? "Roaming " : "Local ", 
+                    isAtLeast3G ? "3G+ " : "<3G ");
+                Debug.WriteLine(
+                    "LVLDL Ending State: {0}{1}{2}{3}", 
+                    this.mIsConnected ? "Connected " : "Not Connected ", 
+                    this.mIsCellularConnection ? "Cellular " : "WiFi ", 
+                    this.mIsRoaming ? "Roaming " : "Local ", 
+                    this.mIsAtLeast3G ? "3G+ " : "<3G ");
+
+                if (this.IsServiceRunning)
+                {
+                    if (this.mIsRoaming)
+                    {
+                        this.Status = DownloadStatus.WaitingForNetwork;
+                        this.Control = ControlAction.Paused;
+                    }
+                    else if (this.mIsCellularConnection)
+                    {
+                        DownloadsDB db = DownloadsDB.getDB(this);
+                        DownloaderServiceFlags flags = db.getFlags();
+                        if (!flags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
+                        {
+                            this.Status = DownloadStatus.QueuedForWifi;
+                            this.Control = ControlAction.Paused;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the network type based upon the type and subtype returned from
+        /// the connectivity manager. Subtype is only used for cellular signals.
+        /// </summary>
+        /// <param name="type">
+        /// The type.
+        /// </param>
+        /// <param name="subType">
+        /// The sub Type.
+        /// </param>
+        private void UpdateNetworkType(int type, int subType)
+        {
+            switch ((ConnectivityType)type)
+            {
+                case ConnectivityType.Wifi:
+
+                    // case ConnectivityType.Ethernet:
+                    // case ConnectivityType.Bluetooth:
+                    this.mIsCellularConnection = false;
+                    this.mIsAtLeast3G = false;
+                    this.mIsAtLeast4G = false;
+                    break;
+                case ConnectivityType.Wimax:
+                    this.mIsCellularConnection = true;
+                    this.mIsAtLeast3G = true;
+                    this.mIsAtLeast4G = true;
+                    break;
+                case ConnectivityType.Mobile:
+                    this.mIsCellularConnection = true;
+                    switch ((NetworkType)subType)
+                    {
+                        case NetworkType.OneXrtt:
+                        case NetworkType.Cdma:
+                        case NetworkType.Edge:
+                        case NetworkType.Gprs:
+                        case NetworkType.Iden:
+                            this.mIsAtLeast3G = false;
+                            this.mIsAtLeast4G = false;
+                            break;
+                        case NetworkType.Hsdpa:
+                        case NetworkType.Hsupa:
+                        case NetworkType.Hspa:
+                        case NetworkType.Evdo0:
+                        case NetworkType.EvdoA:
+                        case NetworkType.Umts:
+                            this.mIsAtLeast3G = true;
+                            this.mIsAtLeast4G = false;
+                            break;
+
+                            // case NetworkType.Lte: // 4G
+                            // case NetworkType.Ehrpd: // 3G ++ interop with 4G
+                            // case NetworkType.Hspap: // 3G ++ but marketed as 4G
+                            // mIsAtLeast3G = true;
+                            // mIsAtLeast4G = true;
+                            // break;
+                        default:
+                            this.mIsCellularConnection = false;
+                            this.mIsAtLeast3G = false;
+                            this.mIsAtLeast4G = false;
+                            break;
+                    }
+
+                    break;
             }
         }
 
         #endregion
 
-        #region Nested type: InnerBroadcastReceiver
+        /// <summary>
+        /// Exception thrown from methods called by generateSaveFile() for any fatal
+        /// error.
+        /// </summary>
+        public class GenerateSaveFileError : Exception
+        {
+            #region Constructors and Destructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="GenerateSaveFileError"/> class.
+            /// </summary>
+            /// <param name="status">
+            /// The status.
+            /// </param>
+            /// <param name="message">
+            /// The message.
+            /// </param>
+            public GenerateSaveFileError(DownloadStatus status, string message)
+                : base(message)
+            {
+                this.Status = status;
+            }
+
+            #endregion
+
+            /// <summary>
+            /// Gets the status.
+            /// </summary>
+            public DownloadStatus Status { get; private set; }
+        }
 
         /// <summary>
         /// We use this to track network state, such as when WiFi, Cellular, etc. is
@@ -1071,221 +1272,56 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private class InnerBroadcastReceiver : BroadcastReceiver
         {
-            private readonly DownloaderService mService;
+            #region Constants and Fields
 
+            /// <summary>
+            /// The m service.
+            /// </summary>
+            private readonly DownloaderService service;
+
+            #endregion
+
+            #region Constructors and Destructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="InnerBroadcastReceiver"/> class.
+            /// </summary>
+            /// <param name="service">
+            /// The service.
+            /// </param>
             internal InnerBroadcastReceiver(DownloaderService service)
             {
-                mService = service;
+                this.service = service;
             }
 
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// The on receive.
+            /// </summary>
+            /// <param name="context">
+            /// The context.
+            /// </param>
+            /// <param name="intent">
+            /// The intent.
+            /// </param>
             public override void OnReceive(Context context, Intent intent)
             {
-                mService.PollNetworkState();
-                if (mService.mStateChanged && !mService.isServiceRunning())
+                this.service.PollNetworkState();
+                if (this.service.mStateChanged && !this.service.IsServiceRunning)
                 {
-                    Log.Debug(TAG, "InnerBroadcastReceiver Called");
-                    var fileIntent = new Intent(context, mService.GetType());
-                    fileIntent.PutExtra(EXTRA_PENDING_INTENT, mService.mPendingIntent);
+                    Debug.WriteLine("LVLDL InnerBroadcastReceiver Called");
+                    var fileIntent = new Intent(context, this.service.GetType());
+                    fileIntent.PutExtra(EXTRA_PENDING_INTENT, this.service.mPendingIntent);
+
                     // send a new intent to the service
                     context.StartService(fileIntent);
                 }
             }
-        }
-
-        #endregion
-
-        #region Nested type: LVLRunnable
-
-        private class LvlRunnable : Object, IRunnable
-        {
-            private readonly DownloaderService _context;
-
-            internal LvlRunnable(DownloaderService context, PendingIntent intent)
-            {
-                Debug.WriteLine("DownloaderService.LvlRunnable.ctor");
-                _context = context;
-                _context.mPendingIntent = intent;
-            }
-
-            #region IRunnable Members
-
-            public void Run()
-            {
-                Debug.WriteLine("DownloaderService.LvlRunnable.Run");
-                _context.setServiceRunning(true);
-                _context.mNotification.OnDownloadStateChanged(DownloaderClientState.FetchingUrl);
-                string deviceId = Settings.Secure.GetString(_context.ContentResolver, Settings.Secure.AndroidId);
-
-                var aep = new ApkExpansionPolicy(_context, new AesObfuscator(_context.GetSalt(), _context.PackageName, deviceId));
-
-                // reset our policy back to the start of the world to force a re-check
-                aep.ResetPolicy();
-
-                // let's try and get the OBB file from LVL first
-                // Construct the LicenseChecker with a IPolicy.
-                var checker = new LicenseChecker(_context, aep, _context.GetPublicKey());
-                checker.CheckAccess(new ApkLicenseCheckerCallback(this, aep));
-            }
-
-            #endregion
-
-            #region Nested type: APKLicenseCheckerCallback
-
-            private class ApkLicenseCheckerCallback : ILicenseCheckerCallback
-            {
-                private readonly ApkExpansionPolicy _aep;
-                private readonly LvlRunnable _lvlRunnable;
-
-                public ApkLicenseCheckerCallback(LvlRunnable lvlRunnable, ApkExpansionPolicy aep)
-                {
-                    _lvlRunnable = lvlRunnable;
-                    _aep = aep;
-                }
-
-                #region LicenseCheckerCallback Members
-
-                public void Allow(PolicyServerResponse reason)
-                {
-                    Debug.WriteLine("DownloaderService.LvlRunnable.ApkLicenseCheckerCallback.Allow");
-                    try
-                    {
-                        int count = _aep.GetExpansionUrlCount();
-                        DownloadsDB db = DownloadsDB.getDB(Context);
-                        if (count == 0)
-                        {
-                            Debug.WriteLine("No expansion packs.");
-                        }
-
-                        int status = 0;
-                        for (int index = 0; index < count; index++)
-                        {
-                            string currentFileName = _aep.GetExpansionFileName(index);
-                            if (null != currentFileName)
-                            {
-                                var di = new DownloadInfo(index, currentFileName, Context.PackageName);
-
-                                long fileSize = _aep.GetExpansionFileSize(index);
-                                if (Context.HandleFileUpdated(db, index, currentFileName, fileSize))
-                                {
-                                    status |= -1;
-                                    di.ResetDownload();
-                                    di.Uri = _aep.GetExpansionUrl(index);
-                                    di.TotalBytes = fileSize;
-                                    di.Status = status;
-                                    db.updateDownload(di);
-                                }
-                                else
-                                {
-                                    // we need to read the download information from the database
-                                    DownloadInfo dbdi = db.getDownloadInfoByFileName(di.FileName);
-                                    if (dbdi == null)
-                                    {
-                                        // the file exists already and is the correct size
-                                        // was delivered by Market or through another mechanism
-                                        Debug.WriteLine("file {0} found. Not downloading.", di.FileName);
-                                        di.Status = DownloadStatus.Success;
-                                        di.TotalBytes = fileSize;
-                                        di.CurrentBytes = fileSize;
-                                        di.Uri = _aep.GetExpansionUrl(index);
-                                        db.updateDownload(di);
-                                    }
-                                    else if (dbdi.Status != DownloadStatus.Success)
-                                    {
-                                        // we just update the URL
-                                        dbdi.Uri = _aep.GetExpansionUrl(index);
-                                        db.updateDownload(dbdi);
-                                        status |= -1;
-                                    }
-                                }
-                            }
-                        }
-                        // first: do we need to do an LVL update?
-                        // we begin by getting our APK version from the package manager
-                        try
-                        {
-                            PackageInfo pi = Context.PackageManager.GetPackageInfo(Context.PackageName, 0);
-                            db.updateMetadata(pi.VersionCode, status);
-                            var required = StartDownloadServiceIfRequired(Context, Context.mPendingIntent, Context.GetType());
-                            switch (required)
-                            {
-                                case NO_DOWNLOAD_REQUIRED:
-                                    Context.mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
-                                    break;
-                                case LVL_CHECK_REQUIRED: // DANGER WILL ROBINSON!
-                                    Debug.WriteLine("In LVL checking loop!");
-                                    Context.mNotification.OnDownloadStateChanged(DownloaderClientState.STATE_FAILED_UNLICENSED);
-                                    throw new RuntimeException("Error with LVL checking and database integrity");
-                                case DOWNLOAD_REQUIRED:
-                                    // do nothing: the download will notify the application when things are done
-                                    break;
-                            }
-                        }
-                        catch (PackageManager.NameNotFoundException e1)
-                        {
-                            e1.PrintStackTrace();
-                            throw new RuntimeException("Error with getting information from package name");
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine("LVL Update Exception: " + ex.Message);
-                            throw;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine("Allow Exception: " + ex.Message);
-                        throw;
-                    }
-                    finally
-                    {
-                        Context.setServiceRunning(false);
-                    }
-                }
-
-                private DownloaderService Context
-                {
-                    get { return _lvlRunnable._context; }
-                }
-
-                public void DontAllow(PolicyServerResponse reason)
-                {
-                    Debug.WriteLine("DownloaderService.LvlRunnable.ApkLicenseCheckerCallback.DontAllow");
-                    try
-                    {
-                        switch (reason)
-                        {
-                            case PolicyServerResponse.NotLicensed:
-                                Context.mNotification.OnDownloadStateChanged(DownloaderClientState.STATE_FAILED_UNLICENSED);
-                                break;
-                            case PolicyServerResponse.Retry:
-                                Context.mNotification.OnDownloadStateChanged(DownloaderClientState.STATE_FAILED_FETCHING_URL);
-                                break;
-                        }
-                    }
-                    finally
-                    {
-                        Context.setServiceRunning(false);
-                    }
-                }
-
-                public void ApplicationError(CallbackErrorCode errorCode)
-                {
-                    try
-                    {
-                        Context.mNotification.OnDownloadStateChanged(DownloaderClientState.STATE_FAILED_FETCHING_URL);
-                    }
-                    finally
-                    {
-                        Context.setServiceRunning(false);
-                    }
-                }
-
-                #endregion
-            }
 
             #endregion
         }
-
-        #endregion
     }
 }

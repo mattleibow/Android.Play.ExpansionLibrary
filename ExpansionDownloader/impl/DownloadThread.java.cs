@@ -14,6 +14,7 @@ using File = Java.IO.File;
 using FileNotFoundException = Java.IO.FileNotFoundException;
 using IOException = Java.IO.IOException;
 using Process = Android.OS.Process;
+using Debug = System.Diagnostics.Debug;
 
 namespace ExpansionDownloader.impl
 {
@@ -88,12 +89,12 @@ namespace ExpansionDownloader.impl
 
             var state = new State(mInfo, mService);
             PowerManager.WakeLock wakeLock = null;
-            int finalStatus = DownloadStatus.UnknownError;
+            DownloadStatus finalStatus = DownloadStatus.UnknownError;
 
             try
             {
                 var pm = mContext.GetSystemService(Context.PowerService).JavaCast<PowerManager>();
-                wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, DownloaderService.TAG);
+                wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, this.GetType().Name);
                 wakeLock.Acquire();
 
                 bool finished = false;
@@ -145,7 +146,7 @@ namespace ExpansionDownloader.impl
             catch (StopRequestException error)
             {
                 // remove the cause before printing, in case it contains PII
-                Log.Warn(DownloaderService.TAG, "Aborting request for download " + mInfo.FileName + ": " + error.Message);
+                Debug.WriteLine("LVLDL Aborting request for download " + mInfo.FileName + ": " + error.Message);
                 System.Diagnostics.Debug.WriteLine(error.StackTrace);
                 finalStatus = error.mFinalStatus;
                 // fall through to finally block
@@ -153,7 +154,7 @@ namespace ExpansionDownloader.impl
             catch (Exception ex)
             {
                 //sometimes the socket code throws unchecked exceptions
-                Log.Warn(DownloaderService.TAG, "Exception for " + mInfo.FileName + ": " + ex);
+                Debug.WriteLine("LVLDL Exception for " + mInfo.FileName + ": " + ex);
                 finalStatus = DownloadStatus.UnknownError;
                 // falls through to the code that reports an error
             }
@@ -204,13 +205,13 @@ namespace ExpansionDownloader.impl
         {
             switch (mService.GetNetworkAvailabilityState(mDB))
             {
-                case NetworkConstants.NETWORK_OK:
+                case NetworkConstants.Ok:
                     return;
-                case NetworkConstants.NETWORK_NO_CONNECTION:
+                case NetworkConstants.NoConnection:
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "waiting for network to return");
-                case NetworkConstants.NETWORK_TYPE_DISALLOWED_BY_REQUESTOR:
+                case NetworkConstants.TypeDisallowedByRequestor:
                     throw new StopRequestException(DownloadStatus.QueuedForWifi, "waiting for wifi or for download over cellular to be authorized");
-                case NetworkConstants.NETWORK_CANNOT_USE_ROAMING:
+                case NetworkConstants.CannotUseRoaming:
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "roaming is not allowed");
             }
         }
@@ -278,11 +279,11 @@ namespace ExpansionDownloader.impl
         /// Called just before the thread finishes, regardless of status, to take any
         /// necessary action on the downloaded file.
         /// </summary>
-        private static void CleanupDestination(State state, int finalStatus)
+        private static void CleanupDestination(State state, DownloadStatus finalStatus)
         {
             CloseDestination(state);
             if (state.mFilename != null &&
-                DownloaderService.isStatusError(finalStatus) &&
+                DownloadStatusExtensions.IsError(finalStatus) &&
                 System.IO.File.Exists(state.mFilename))
             {
                 System.IO.File.Delete(state.mFilename);
@@ -303,19 +304,19 @@ namespace ExpansionDownloader.impl
             }
             catch (FileNotFoundException ex)
             {
-                Log.Warn(DownloaderService.TAG, "file " + state.mFilename + " not found: " + ex);
+                Debug.WriteLine("LVLDL file " + state.mFilename + " not found: " + ex);
             }
             catch (SyncFailedException ex)
             {
-                Log.Warn(DownloaderService.TAG, "file " + state.mFilename + " sync failed: " + ex);
+                Debug.WriteLine("LVLDL file " + state.mFilename + " sync failed: " + ex);
             }
             catch (IOException ex)
             {
-                Log.Warn(DownloaderService.TAG, "IOException trying to sync " + state.mFilename + ": " + ex);
+                Debug.WriteLine("LVLDL IOException trying to sync " + state.mFilename + ": " + ex);
             }
             catch (RuntimeException ex)
             {
-                Log.Warn(DownloaderService.TAG, "exception while syncing file: ", ex);
+                Debug.WriteLine("LVLDL exception while syncing file: ", ex);
             }
             finally
             {
@@ -327,11 +328,11 @@ namespace ExpansionDownloader.impl
                     }
                     catch (IOException ex)
                     {
-                        Log.Warn(DownloaderService.TAG, "IOException while closing synced file: ", ex);
+                        Debug.WriteLine("LVLDL IOException while closing synced file: ", ex);
                     }
                     catch (RuntimeException ex)
                     {
-                        Log.Warn(DownloaderService.TAG, "exception while closing file: ", ex);
+                        Debug.WriteLine("LVLDL exception while closing file: ", ex);
                     }
                 }
             }
@@ -363,9 +364,9 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private void CheckPausedOrCanceled(State state)
         {
-            if (mService.getControl() == DownloaderService.CONTROL_PAUSED)
+            if (mService.Control == ControlAction.Paused)
             {
-                int status = mService.getStatus();
+                DownloadStatus status = mService.Status;
                 if (status == DownloadStatus.PausedByApp)
                 {
                     throw new StopRequestException(status, "download paused");
@@ -470,7 +471,7 @@ namespace ExpansionDownloader.impl
             if (lengthMismatched)
             {
                 string message;
-                int finalStatus;
+                DownloadStatus finalStatus;
                 if (CannotResume(innerState))
                 {
                     finalStatus = DownloadStatus.CannotResume;
@@ -512,7 +513,7 @@ namespace ExpansionDownloader.impl
                 mDB.updateDownload(mInfo);
 
                 string message;
-                int finalStatus;
+                DownloadStatus finalStatus;
                 if (CannotResume(innerState))
                 {
                     finalStatus = DownloadStatus.CannotResume;
@@ -551,7 +552,7 @@ namespace ExpansionDownloader.impl
 
         private void LogNetworkState()
         {
-            var network = mService.GetNetworkAvailabilityState(mDB) == NetworkConstants.NETWORK_OK ? "Up" : "Down";
+            var network = mService.GetNetworkAvailabilityState(mDB) == NetworkConstants.Ok ? "Up" : "Down";
             System.Diagnostics.Debug.WriteLine(string.Format("Network is {0}.", network));
         }
 
@@ -574,7 +575,7 @@ namespace ExpansionDownloader.impl
                 }
                 catch (DownloaderService.GenerateSaveFileError exc)
                 {
-                    throw new StopRequestException(exc.mStatus, exc.Message);
+                    throw new StopRequestException(exc.Status, exc.Message);
                 }
 
                 try
@@ -661,7 +662,7 @@ namespace ExpansionDownloader.impl
                     // we're most likely on a bad wifi connection -- we should probably
                     // also look at the mime type --- but the size mismatch is enough
                     // to tell us that something is wrong here
-                    Log.Error(DownloaderService.TAG, "Incorrect file size delivered.");
+                    Debug.WriteLine("LVLDL Incorrect file size delivered.");
                 }
             }
             //}
@@ -725,16 +726,16 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private static void HandleOtherStatus(State state, InnerState innerState, HttpStatusCode statusCode)
         {
-            int finalStatus;
-            if (DownloaderService.isStatusError((int) statusCode))
+            DownloadStatus finalStatus;
+            if (DownloadStatusExtensions.IsError((DownloadStatus)statusCode))
             {
-                finalStatus = (int) statusCode;
+                finalStatus = (DownloadStatus)statusCode;
             }
-            else if ((int) statusCode >= 300 && (int) statusCode < 400)
+            else if ((int)statusCode >= 300 && (int)statusCode < 400)
             {
                 finalStatus = DownloadStatus.UnhandledRedirect;
             }
-            else if (innerState.mContinuingDownload && (int) statusCode == DownloadStatus.Success)
+            else if (innerState.mContinuingDownload && (DownloadStatus)statusCode == DownloadStatus.Success)
             {
                 finalStatus = DownloadStatus.CannotResume;
             }
@@ -826,9 +827,9 @@ namespace ExpansionDownloader.impl
                     {
                         state.mRetryAfter = DownloaderService.MinimumRetryAfter;
                     }
-                    else if (state.mRetryAfter > DownloaderService.MAX_RETRY_AFTER)
+                    else if (state.mRetryAfter > DownloaderService.MaxRetryAfter)
                     {
-                        state.mRetryAfter = DownloaderService.MAX_RETRY_AFTER;
+                        state.mRetryAfter = DownloaderService.MaxRetryAfter;
                     }
                     state.mRetryAfter += Helpers.Random.Next(DownloaderService.MinimumRetryAfter + 1);
                     state.mRetryAfter *= 1000;
@@ -858,9 +859,9 @@ namespace ExpansionDownloader.impl
             }
         }
 
-        private int GetFinalStatusForHttpError(State state)
+        private DownloadStatus GetFinalStatusForHttpError(State state)
         {
-            if (mService.GetNetworkAvailabilityState(mDB) != NetworkConstants.NETWORK_OK)
+            if (mService.GetNetworkAvailabilityState(mDB) != NetworkConstants.Ok)
             {
                 return DownloadStatus.WaitingForNetwork;
             }
@@ -871,7 +872,7 @@ namespace ExpansionDownloader.impl
             }
             else
             {
-                Log.Warn(DownloaderService.TAG, "reached max retries for " + mInfo.FailedCount);
+                Debug.WriteLine("LVLDL reached max retries for " + mInfo.FailedCount);
                 return DownloadStatus.HttpDataError;
             }
         }
@@ -940,19 +941,19 @@ namespace ExpansionDownloader.impl
      * Stores information about the completed download, and notifies the initiating application.
      */
 
-        private void NotifyDownloadCompleted(int status, bool countRetry, int retryAfter, int redirectCount, bool gotData, string filename)
+        private void NotifyDownloadCompleted(DownloadStatus status, bool countRetry, int retryAfter, int redirectCount, bool gotData, string filename)
         {
             System.Diagnostics.Debug.WriteLine("NotifyDownloadCompleted");
             UpdateDownloadDatabase(status, countRetry, retryAfter, redirectCount, gotData, filename);
-            if (DownloaderService.isStatusCompleted(status))
+            if (DownloadStatusExtensions.IsCompleted(status))
             {
                 // TBD: send status update?
             }
         }
 
-        private void UpdateDownloadDatabase(int status, bool countRetry, int retryAfter, int redirectCount, bool gotData, string filename)
+        private void UpdateDownloadDatabase(DownloadStatus status, bool countRetry, int retryAfter, int redirectCount, bool gotData, string filename)
         {
-            System.Diagnostics.Debug.WriteLine("UpdateDownloadDatabase");
+            Debug.WriteLine("UpdateDownloadDatabase");
             mInfo.Status = status;
             mInfo.RetryAfter = retryAfter;
             mInfo.RedirectCount = redirectCount;
@@ -1029,14 +1030,14 @@ namespace ExpansionDownloader.impl
 
         private class StopRequestException : Exception
         {
-            public readonly int mFinalStatus;
+            public readonly DownloadStatus mFinalStatus;
 
-            public StopRequestException(int finalStatus, string message)
+            public StopRequestException(DownloadStatus finalStatus, string message)
                 : this(finalStatus, message, null)
             {
             }
 
-            public StopRequestException(int finalStatus, string message, Exception throwable)
+            public StopRequestException(DownloadStatus finalStatus, string message, Exception throwable)
                 : base(message, throwable)
             {
                 System.Diagnostics.Debug.WriteLine(message);

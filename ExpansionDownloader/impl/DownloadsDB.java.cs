@@ -51,7 +51,7 @@ namespace ExpansionDownloader.impl
         internal DownloaderServiceFlags mFlags;
         private SQLiteStatement mGetDownloadByIndex;
         private long mMetadataRowID = -1;
-        internal int mStatus = -1;
+        internal DownloadStatus mStatus = DownloadStatus.Unknown;
         private SQLiteStatement mUpdateCurrentBytes;
         internal int mVersionCode = -1;
 
@@ -72,7 +72,7 @@ namespace ExpansionDownloader.impl
             {
                 mVersionCode = cur.GetInt(0);
                 mMetadataRowID = cur.GetLong(1);
-                mStatus = cur.GetInt(2);
+                mStatus = (DownloadStatus)cur.GetInt(2);
                 mFlags = (DownloaderServiceFlags)cur.GetInt(3);
                 cur.Close();
             }
@@ -191,7 +191,7 @@ namespace ExpansionDownloader.impl
             cv.Put(DownloadColumns.TOTALBYTES, di.TotalBytes);
             cv.Put(DownloadColumns.CURRENTBYTES, di.CurrentBytes);
             cv.Put(DownloadColumns.LASTMOD, di.LastModified);
-            cv.Put(DownloadColumns.STATUS, di.Status);
+            cv.Put(DownloadColumns.STATUS, (int)di.Status);
             cv.Put(DownloadColumns.CONTROL, di.Control);
             cv.Put(DownloadColumns.NUM_FAILED, di.FailedCount);
             cv.Put(DownloadColumns.RETRY_AFTER, di.RetryAfter);
@@ -273,12 +273,12 @@ namespace ExpansionDownloader.impl
             return false;
         }
 
-        public bool updateStatus(int status)
+        public bool updateStatus(DownloadStatus status)
         {
             if (mStatus != status)
             {
                 var cv = new ContentValues();
-                cv.Put(MetadataColumns.DOWNLOAD_STATUS, status);
+                cv.Put(MetadataColumns.DOWNLOAD_STATUS, (int)status);
                 if (updateMetadata(cv))
                 {
                     mStatus = status;
@@ -312,21 +312,20 @@ namespace ExpansionDownloader.impl
             return true;
         }
 
-        public bool updateMetadata(int apkVersion, int downloadStatus)
+        public bool updateMetadata(int apkVersion, DownloadStatus downloadStatus)
         {
             var cv = new ContentValues();
             cv.Put(MetadataColumns.APKVERSION, apkVersion);
-            cv.Put(MetadataColumns.DOWNLOAD_STATUS, downloadStatus);
-            if (updateMetadata(cv))
+            cv.Put(MetadataColumns.DOWNLOAD_STATUS, (int)downloadStatus);
+
+            if (this.updateMetadata(cv))
             {
                 mVersionCode = apkVersion;
                 mStatus = downloadStatus;
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public bool updateFromDb(DownloadInfo di)
@@ -365,7 +364,7 @@ namespace ExpansionDownloader.impl
             di.TotalBytes = cur.GetLong(TOTALBYTES_IDX);
             di.CurrentBytes = cur.GetLong(CURRENTBYTES_IDX);
             di.LastModified = cur.GetLong(LASTMOD_IDX);
-            di.Status = cur.GetInt(STATUS_IDX);
+            di.Status = (DownloadStatus)cur.GetInt(STATUS_IDX);
             di.Control = cur.GetInt(CONTROL_IDX);
             di.FailedCount = cur.GetInt(NUM_FAILED_IDX);
             di.RetryAfter = cur.GetInt(RETRY_AFTER_IDX);

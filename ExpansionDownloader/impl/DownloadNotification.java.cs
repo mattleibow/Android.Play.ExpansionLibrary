@@ -75,11 +75,11 @@ namespace ExpansionDownloader.impl
                         ongoingEvent = false;
                         break;
 
-                    case DownloaderClientState.STATE_FAILED:
-                    case DownloaderClientState.STATE_FAILED_CANCELED:
-                    case DownloaderClientState.STATE_FAILED_FETCHING_URL:
-                    case DownloaderClientState.STATE_FAILED_SDCARD_FULL:
-                    case DownloaderClientState.STATE_FAILED_UNLICENSED:
+                    case DownloaderClientState.Failed:
+                    case DownloaderClientState.FailedCanceled:
+                    case DownloaderClientState.FailedFetchingUrl:
+                    case DownloaderClientState.FailedSdCardFull:
+                    case DownloaderClientState.FailedUnlicensed:
                         iconResource = Resource.Drawable.StatSysWarning;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = false;

@@ -247,19 +247,19 @@ namespace ExpansionDownloader
                     return "Download paused because wifi is unavailable";
                 case DownloaderClientState.PausedRoaming:
                     return "Download paused because you are roaming";
-                case DownloaderClientState.STATE_PAUSED_NETWORK_SETUP_FAILURE:
+                case DownloaderClientState.PausedNetworkSetupFailure:
                     return "Download paused. Test a website in browser";
-                case DownloaderClientState.STATE_PAUSED_SDCARD_UNAVAILABLE:
+                case DownloaderClientState.PausedSdCardUnavailable:
                     return "Download paused because the external storage is unavailable";
-                case DownloaderClientState.STATE_FAILED_UNLICENSED:
+                case DownloaderClientState.FailedUnlicensed:
                     return "Download failed because you may not have purchased this app";
-                case DownloaderClientState.STATE_FAILED_FETCHING_URL:
+                case DownloaderClientState.FailedFetchingUrl:
                     return "Download failed because the resources could not be found";
-                case DownloaderClientState.STATE_FAILED_SDCARD_FULL:
+                case DownloaderClientState.FailedSdCardFull:
                     return "Download failed because the external storage is full";
-                case DownloaderClientState.STATE_FAILED:
+                case DownloaderClientState.Failed:
                     return "Download failed";
-                case DownloaderClientState.STATE_FAILED_CANCELED:
+                case DownloaderClientState.FailedCanceled:
                     return "Download cancelled";
                 default:
                     return "Starting...";
