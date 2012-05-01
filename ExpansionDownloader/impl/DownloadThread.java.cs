@@ -82,6 +82,8 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public void Run()
         {
+            System.Diagnostics.Debug.WriteLine("DownloadThread.RUN()");
+
             Process.SetThreadPriority(ThreadPriority.Background);
 
             var state = new State(mInfo, mService);
@@ -94,25 +96,22 @@ namespace ExpansionDownloader.impl
                 wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, DownloaderService.TAG);
                 wakeLock.Acquire();
 
-                System.Diagnostics.Debug.WriteLine("DownloadThread : initiating download for " + mInfo.FileName);
-                System.Diagnostics.Debug.WriteLine("DownloadThread :   at " + mInfo.Uri);
-
                 bool finished = false;
-                while (!finished)
+                do
                 {
                     System.Diagnostics.Debug.WriteLine("DownloadThread : initiating download for " + mInfo.FileName);
                     System.Diagnostics.Debug.WriteLine("DownloadThread :   at " + mInfo.Uri);
 
                     var requestUri = new Uri(state.mRequestUri);
-                    var minute = (int) TimeSpan.FromMinutes(1).TotalMilliseconds;
+                    var minute = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     var request = new HttpWebRequest(requestUri)
-                                      {
-                                          Proxy = WebRequest.DefaultWebProxy,
-                                          UserAgent = UserAgent(),
-                                          Timeout = minute,
-                                          ReadWriteTimeout = minute,
-                                          AllowAutoRedirect = false // todo
-                                      };
+                        {
+                            Proxy = WebRequest.DefaultWebProxy,
+                            UserAgent = UserAgent(),
+                            Timeout = minute,
+                            ReadWriteTimeout = minute,
+                            AllowAutoRedirect = false // todo
+                        };
 
                     try
                     {
@@ -125,7 +124,9 @@ namespace ExpansionDownloader.impl
                     }
                     catch (Exception ex)
                     {
+                        System.Diagnostics.Debug.WriteLine("An exception in the download thread...");
                         System.Diagnostics.Debug.WriteLine(ex.Message);
+                        System.Diagnostics.Debug.WriteLine(ex.StackTrace);
                         throw;
                     }
                     finally
@@ -133,6 +134,7 @@ namespace ExpansionDownloader.impl
                         request.Abort();
                     }
                 }
+                while (!finished);
 
                 System.Diagnostics.Debug.WriteLine("DownloadThread : download completed for " + mInfo.FileName);
                 System.Diagnostics.Debug.WriteLine("DownloadThread :   at " + mInfo.Uri);

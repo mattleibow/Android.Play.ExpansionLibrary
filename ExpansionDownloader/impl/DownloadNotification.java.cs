@@ -116,7 +116,7 @@ namespace ExpansionDownloader.impl
             {
                 mClientProxy.OnDownloadProgress(progress);
             }
-            if (progress.mOverallTotal <= 0)
+            if (progress.OverallTotal <= 0)
             {
                 // we just show the text
                 mNotification.TickerText = new String(mCurrentTitle);
@@ -126,13 +126,13 @@ namespace ExpansionDownloader.impl
             }
             else
             {
-                CustomNotificationFactory.Notification.setCurrentBytes(progress.mOverallProgress);
-                CustomNotificationFactory.Notification.setTotalBytes(progress.mOverallTotal);
+                CustomNotificationFactory.Notification.setCurrentBytes(progress.OverallProgress);
+                CustomNotificationFactory.Notification.setTotalBytes(progress.OverallTotal);
                 CustomNotificationFactory.Notification.setIcon(Resource.Drawable.StatSysDownload);
                 CustomNotificationFactory.Notification.setPendingIntent(mContentIntent);
                 CustomNotificationFactory.Notification.setTicker(mLabel + ": " + mCurrentText);
                 CustomNotificationFactory.Notification.setTitle(mLabel);
-                CustomNotificationFactory.Notification.setTimeRemaining(progress.mTimeRemaining);
+                CustomNotificationFactory.Notification.setTimeRemaining(progress.TimeRemaining);
                 mCurrentNotification = CustomNotificationFactory.Notification.updateNotification(mContext);
             }
             mNotificationManager.Notify(NOTIFICATION_ID, mCurrentNotification);

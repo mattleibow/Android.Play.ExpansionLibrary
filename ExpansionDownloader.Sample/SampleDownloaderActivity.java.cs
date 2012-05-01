@@ -141,14 +141,13 @@ namespace ExpansionDownloader.Sample
 
         public void OnDownloadProgress(DownloadProgressInfo progress)
         {
-            mAverageSpeed.Text = Helpers.GetSpeedString(progress.mCurrentSpeed) + " Kb/s";
-            mTimeRemaining.Text = "Time remaining: " + Helpers.GetTimeRemaining(progress.mTimeRemaining);
+            mAverageSpeed.Text = Helpers.GetSpeedString(progress.CurrentSpeed) + " Kb/s";
+            mTimeRemaining.Text = "Time remaining: " + Helpers.GetTimeRemaining(progress.TimeRemaining);
 
-            progress.mOverallTotal = progress.mOverallTotal;
-            mPB.Max = ((int) (progress.mOverallTotal >> 8));
-            mPB.Progress = ((int) (progress.mOverallProgress >> 8));
-            mProgressPercent.Text = (progress.mOverallProgress*100/progress.mOverallTotal) + "%";
-            mProgressFraction.Text = (Helpers.GetDownloadProgressString(progress.mOverallProgress, progress.mOverallTotal));
+            mPB.Max = ((int) (progress.OverallTotal >> 8));
+            mPB.Progress = ((int) (progress.OverallProgress >> 8));
+            mProgressPercent.Text = (progress.OverallProgress*100/progress.OverallTotal) + "%";
+            mProgressFraction.Text = (Helpers.GetDownloadProgressString(progress.OverallProgress, progress.OverallTotal));
         }
 
         #endregion

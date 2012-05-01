@@ -574,6 +574,8 @@ namespace ExpansionDownloader.impl
         /// </returns>
         public static int StartDownloadServiceIfRequired(Context context, PendingIntent pendingIntent, Type serviceClass)
         {
+            System.Diagnostics.Debug.WriteLine("StartDownloadServiceIfRequired");
+
             // first: do we need to do an LVL update?
             // we begin by getting our APK version from the package manager
             PackageInfo pi = context.PackageManager.GetPackageInfo(context.PackageName, 0);
@@ -609,6 +611,7 @@ namespace ExpansionDownloader.impl
             {
                 case DOWNLOAD_REQUIRED:
                 case LVL_CHECK_REQUIRED:
+                    System.Diagnostics.Debug.WriteLine("StartService: " + serviceClass);
                     var fileIntent = new Intent(context.ApplicationContext, serviceClass);
                     fileIntent.PutExtra(EXTRA_PENDING_INTENT, pendingIntent);
                     context.StartService(fileIntent);
@@ -707,11 +710,6 @@ namespace ExpansionDownloader.impl
         }
 
         /**
-     * We use this to track network state, such as when WiFi, Cellular, etc. is
-     * enabled when downloads are paused or in progress.
-     */
-
-        /**
      * This is the main thread for the Downloader. This thread is responsible
      * for queuing up downloads and other goodness.
      */
@@ -726,7 +724,7 @@ namespace ExpansionDownloader.impl
                 // the database automatically reads the metadata for version code
                 // and download status when the instance is created
                 DownloadsDB db = DownloadsDB.getDB(this);
-                var pendingIntent = (PendingIntent) intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
+                var pendingIntent = (PendingIntent)intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
 
                 if (null != pendingIntent)
                 {
@@ -757,45 +755,48 @@ namespace ExpansionDownloader.impl
                 mFileCount = infos.Length;
                 foreach (DownloadInfo info in infos)
                 {
-                    // We do an (simple) integrity check on each file, just to make sure
-                    if (info.Status == DownloadStatus.Success)
+                    // We do an (simple) integrity check on each file, just to 
+                    // make sure and to verify that the file matches the state
+                    if (info.Status == DownloadStatus.Success &&
+                        !Helpers.DoesFileExist(this, info.FileName, info.TotalBytes, true))
                     {
-                        // verify that the file matches the state
-                        if (!Helpers.DoesFileExist(this, info.FileName, info.TotalBytes, true))
-                        {
-                            info.Status = 0;
-                            info.CurrentBytes = 0;
-                        }
+                        info.Status = 0;
+                        info.CurrentBytes = 0;
                     }
+
                     // get aggregate data
                     mTotalLength += info.TotalBytes;
                     mBytesSoFar += info.CurrentBytes;
                 }
 
-                // loop through all downloads and fetch them
                 PollNetworkState();
                 if (mConnReceiver == null)
                 {
-                 // We use this to track network state, such as when WiFi, Cellular, etc. is enabled
-                 // when downloads are paused or in progress.
+                    // We use this to track network state, such as when WiFi, Cellular, etc. is enabled
+                    // when downloads are paused or in progress.
                     mConnReceiver = new InnerBroadcastReceiver(this);
                     var intentFilter = new IntentFilter(ConnectivityManager.ConnectivityAction);
                     intentFilter.AddAction(WifiManager.WifiStateChangedAction);
                     RegisterReceiver(mConnReceiver, intentFilter);
                 }
 
-                foreach (DownloadInfo info in infos)
+                // loop through all downloads and fetch them
+                for (int index = 0; index < infos.Length; index++)
                 {
+                    DownloadInfo info = infos[index];
+                    Debug.WriteLine("Starting download of " + info.FileName);
+
                     long startingCount = info.CurrentBytes;
 
                     if (info.Status != DownloadStatus.Success)
                     {
-                        var dt = new DownloadThread(info, this, mNotification);
-                        CancelAlarms();
-                        ScheduleAlarm(ACTIVE_THREAD_WATCHDOG);
+                        var dt = new DownloadThread(info, this, this.mNotification);
+                        this.CancelAlarms();
+                        this.ScheduleAlarm(ACTIVE_THREAD_WATCHDOG);
                         dt.Run();
-                        CancelAlarms();
+                        this.CancelAlarms();
                     }
+
                     db.updateFromDb(info);
                     bool setWakeWatchdog = false;
                     DownloaderClientState notifyStatus;
@@ -803,12 +804,15 @@ namespace ExpansionDownloader.impl
                     {
                         case DownloadStatus.Forbidden:
                             // the URL is out of date
-                            UpdateLvl(this);
+                            this.UpdateLvl(this);
                             return;
                         case DownloadStatus.Success:
-                            mBytesSoFar += info.CurrentBytes - startingCount;
-                            db.updateMetadata(mPackageInfo.VersionCode, 0);
-                            mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
+                            this.mBytesSoFar += info.CurrentBytes - startingCount;
+                            db.updateMetadata(this.mPackageInfo.VersionCode, 0);
+
+                            if (index < infos.Length - 1) continue;
+
+                            this.mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
                             return;
                         case DownloadStatus.FileDeliveredIncorrectly:
                             // we may be on a network that is returning us a web page on redirect
@@ -827,7 +831,7 @@ namespace ExpansionDownloader.impl
                             break;
                         case DownloadStatus.QueuedForWifi:
                             // look for more detail here
-                            notifyStatus = mWifiManager != null && !mWifiManager.IsWifiEnabled
+                            notifyStatus = this.mWifiManager != null && !this.mWifiManager.IsWifiEnabled
                                                ? DownloaderClientState.PausedWifiDisabledNeedCellularPermission
                                                : DownloaderClientState.PausedNeedCellularPermission;
                             setWakeWatchdog = true;
@@ -853,16 +857,22 @@ namespace ExpansionDownloader.impl
                     }
                     if (setWakeWatchdog)
                     {
-                        ScheduleAlarm(WATCHDOG_WAKE_TIMER);
+                        this.ScheduleAlarm(WATCHDOG_WAKE_TIMER);
                     }
                     else
                     {
-                        CancelAlarms();
+                        this.CancelAlarms();
                     }
                     // failure or pause state
-                    mNotification.OnDownloadStateChanged(notifyStatus);
+                    this.mNotification.OnDownloadStateChanged(notifyStatus);
                     return;
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Some blasted exception was thrown somewhere...");
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.StackTrace);
             }
             finally
             {
@@ -901,8 +911,7 @@ namespace ExpansionDownloader.impl
             try
             {
                 mPackageInfo = PackageManager.GetPackageInfo(PackageName, 0);
-                ApplicationInfo ai = ApplicationInfo;
-                string applicationLabel = PackageManager.GetApplicationLabel(ai);
+                string applicationLabel = PackageManager.GetApplicationLabel(ApplicationInfo);
                 mNotification = new DownloadNotification(this, applicationLabel);
             }
             catch (PackageManager.NameNotFoundException e)
@@ -1056,6 +1065,10 @@ namespace ExpansionDownloader.impl
 
         #region Nested type: InnerBroadcastReceiver
 
+        /// <summary>
+        /// We use this to track network state, such as when WiFi, Cellular, etc. is
+        /// enabled when downloads are paused or in progress.
+        /// </summary>
         private class InnerBroadcastReceiver : BroadcastReceiver
         {
             private readonly DownloaderService mService;
@@ -1144,10 +1157,8 @@ namespace ExpansionDownloader.impl
                         }
 
                         int status = 0;
-                        for (int i = 0; i < count; i++)
+                        for (int index = 0; index < count; index++)
                         {
-                            var index = i;
-
                             string currentFileName = _aep.GetExpansionFileName(index);
                             if (null != currentFileName)
                             {

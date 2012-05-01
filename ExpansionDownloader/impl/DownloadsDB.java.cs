@@ -22,11 +22,16 @@ namespace ExpansionDownloader.impl
 
         private static readonly string[] DC_PROJECTION = {
                                                              DownloadColumns.FILENAME,
-                                                             DownloadColumns.URI, DownloadColumns.ETAG,
-                                                             DownloadColumns.TOTALBYTES, DownloadColumns.CURRENTBYTES,
-                                                             DownloadColumns.LASTMOD, DownloadColumns.STATUS,
-                                                             DownloadColumns.CONTROL, DownloadColumns.NUM_FAILED,
-                                                             DownloadColumns.RETRY_AFTER, DownloadColumns.REDIRECT_COUNT,
+                                                             DownloadColumns.URI,
+                                                             DownloadColumns.ETAG,
+                                                             DownloadColumns.TOTALBYTES, 
+                                                             DownloadColumns.CURRENTBYTES,
+                                                             DownloadColumns.LASTMOD,
+                                                             DownloadColumns.STATUS,
+                                                             DownloadColumns.CONTROL,
+                                                             DownloadColumns.NUM_FAILED,
+                                                             DownloadColumns.RETRY_AFTER, 
+                                                             DownloadColumns.REDIRECT_COUNT,
                                                              DownloadColumns.INDEX
                                                          };
 
