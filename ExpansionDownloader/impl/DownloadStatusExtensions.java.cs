@@ -77,6 +77,20 @@ namespace ExpansionDownloader.impl
         }
 
         /// <summary>
+        /// Returns whether the status is a redirect (i.e. 3xx).
+        /// </summary>
+        /// <param name="status">
+        /// The status.
+        /// </param>
+        /// <returns>
+        /// The status a redirect.
+        /// </returns>
+        public static bool IsRedirect(this DownloadStatus status)
+        {
+            return status >= DownloadStatus.RedirectMinimum && status <= DownloadStatus.RedirectMaximum;
+        }
+
+        /// <summary>
         /// Returns whether the status is a server error (i.e. 5xx).
         /// </summary>
         /// <param name="status">

@@ -1,63 +1,65 @@
 using Android.Content;
-using LicenseVerificationLibrary.Tests;
 
-public abstract class TestCase
+namespace LicenseVerificationLibrary.Tests
 {
-    private readonly Context _context;
-
-    protected TestCase(Context context)
+    public abstract class TestCase
     {
-        _context = context;
-    }
+        private readonly Context _context;
 
-    public Context Context
-    {
-        get { return _context; }
-    }
+        protected TestCase(Context context)
+        {
+            _context = context;
+        }
 
-    public void AssertTrue(bool result)
-    {
-        if (!result)
-            throw new AssertionException();
-    }
+        public Context Context
+        {
+            get { return _context; }
+        }
 
-    public void AssertFalse(bool result)
-    {
-        if (result)
-            throw new AssertionException();
-    }
+        public void AssertTrue(bool result)
+        {
+            if (!result)
+                throw new AssertionException();
+        }
 
-    public void AssertEquals(long expected, long actual)
-    {
-        if (expected != actual)
-            throw new AssertionException("Expected: " + expected + " Actual: " + actual);
-    }
+        public void AssertFalse(bool result)
+        {
+            if (result)
+                throw new AssertionException();
+        }
 
-    public void AssertEquals(string expected, string actual)
-    {
-        if (expected != actual)
-            throw new AssertionException("Expected: " + expected + " Actual: " + actual);
-    }
+        public void AssertEquals(long expected, long actual)
+        {
+            if (expected != actual)
+                throw new AssertionException("Expected: " + expected + " Actual: " + actual);
+        }
 
-    public void Execute()
-    {
-        SetUp();
-        RunTests();
-        CleanUp();
-    }
+        public void AssertEquals(string expected, string actual)
+        {
+            if (expected != actual)
+                throw new AssertionException("Expected: " + expected + " Actual: " + actual);
+        }
 
-    public virtual void SetUp()
-    {
-    }
+        public void Execute()
+        {
+            SetUp();
+            RunTests();
+            CleanUp();
+        }
 
-    public abstract void RunTests();
+        public virtual void SetUp()
+        {
+        }
 
-    public virtual void CleanUp()
-    {
-    }
+        public abstract void RunTests();
 
-    protected void Fail(string message)
-    {
-        throw new AssertionException(message);
+        public virtual void CleanUp()
+        {
+        }
+
+        protected void Fail(string message)
+        {
+            throw new AssertionException(message);
+        }
     }
 }

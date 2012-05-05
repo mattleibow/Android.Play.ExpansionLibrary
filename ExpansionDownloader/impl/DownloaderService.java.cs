@@ -1,40 +1,20 @@
+using System.Runtime.CompilerServices;
+using System;
+using System.IO;
+using System.Linq;
+using Android.App;
+using Android.Content;
+using Android.Content.PM;
+using Android.Net;
+using Android.Net.Wifi;
+using Android.OS;
+using Android.Runtime;
+using Android.Telephony;
+using LicenseVerificationLibrary;
+using Debug = System.Diagnostics.Debug;
+
 namespace ExpansionDownloader.impl
 {
-    using System;
-    using System.IO;
-    using System.Linq;
-
-    using Android.App;
-    using Android.Content;
-    using Android.Content.PM;
-    using Android.Net;
-    using Android.Net.Wifi;
-    using Android.OS;
-    using Android.Runtime;
-    using Android.Telephony;
-
-    using LicenseVerificationLibrary;
-
-    using Debug = System.Diagnostics.Debug;
-
-    public enum DownloadServiceRequirement
-    {
-        /// <summary>
-        /// The download required.
-        /// </summary>
-        DownloadRequired = 2,
-
-        /// <summary>
-        /// The lvl check required.
-        /// </summary>
-        LvlCheckRequired = 1,
-
-        /// <summary>
-        /// The no download required.
-        /// </summary>
-        NoDownloadRequired = 0
-    }
-
     /// <summary>
     /// The downloader service.
     /// </summary>
@@ -46,58 +26,6 @@ namespace ExpansionDownloader.impl
         /// The downloads changed.
         /// </summary>
         public const string DownloadsChanged = "downloadsChanged";
-
-        /// <summary>
-        /// The extra file name.
-        /// </summary>
-        public const string EXTRA_FILE_NAME = "downloadId";
-
-        /// <summary>
-        /// For intents used to notify the user that a download exceeds a size
-        /// threshold, if this extra is true, WiFi is required for this download
-        /// size; otherwise, it is only recommended.
-        /// </summary>
-        public const string EXTRA_IS_WIFI_REQUIRED = "isWifiRequired";
-
-        /// <summary>
-        /// The extra message handler.
-        /// </summary>
-        public const string EXTRA_MESSAGE_HANDLER = "EMH";
-
-        /// <summary>
-        /// The extra package name.
-        /// </summary>
-        public const string EXTRA_PACKAGE_NAME = "EPN";
-
-        /// <summary>
-        /// The extra pending intent.
-        /// </summary>
-        public const string EXTRA_PENDING_INTENT = "EPI";
-
-        /// <summary>
-        /// Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_MOBILE}.
-        /// </summary>
-        public const int NETWORK_MOBILE = 1 << 0;
-
-        /// <summary>
-        /// Bit flag for {@link #setAllowedNetworkTypes} corresponding to {@link ConnectivityManager#TYPE_WIFI}.
-        /// </summary>
-        public const int NETWORK_WIFI = 1 << 1;
-
-        /// <summary>
-        /// This download doesn't show in the UI or in the notifications.
-        /// </summary>
-        public const int VISIBILITY_HIDDEN = 2;
-
-        /// <summary>
-        /// This download is visible but only shows in the notifications while it's in progress.
-        /// </summary>
-        public const int VISIBILITY_VISIBLE = 0;
-
-        /// <summary>
-        /// This download is visible and shows in the notifications while in progress and after completion.
-        /// </summary>
-        public const int VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1;
 
         /// <summary>
         /// The wake duration to check to see if the process was killed.
@@ -180,9 +108,6 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public long mTotalLength;
 
-        /// <summary>
-        /// The _locker.
-        /// </summary>
         private readonly object locker = new object();
 
         /// <summary>
@@ -208,7 +133,7 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// Service thread status
         /// </summary>
-        private static bool isRunning;
+        private volatile static bool isRunning;
 
         /// <summary>
         /// Our binding to the network state broadcasts
@@ -228,12 +153,12 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// Our binding to the network state broadcasts
         /// </summary>
-        private Messenger mClientMessenger;
+        private Messenger clientMessenger;
 
         /// <summary>
         /// Our binding to the network state broadcasts
         /// </summary>
-        private BroadcastReceiver mConnReceiver;
+        private BroadcastReceiver connectionReceiver;
 
         /// <summary>
         /// Bindings to important services
@@ -364,7 +289,7 @@ namespace ExpansionDownloader.impl
         /// Gets Salt.
         /// </summary>
         protected abstract byte[] Salt { get; }
-
+        
         /// <summary>
         /// Gets or sets a value indicating whether the service is running.
         /// Note: Only use this internally.
@@ -373,7 +298,7 @@ namespace ExpansionDownloader.impl
         {
             get
             {
-                lock (this.locker)
+                lock(locker)
                 {
                     return isRunning;
                 }
@@ -381,7 +306,7 @@ namespace ExpansionDownloader.impl
 
             set
             {
-                lock (this.locker)
+                lock (locker)
                 {
                     isRunning = value;
                 }
@@ -409,7 +334,7 @@ namespace ExpansionDownloader.impl
         /// </returns>
         public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, Intent intent, Type serviceClass)
         {
-            var pendingIntent = (PendingIntent)intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
+            var pendingIntent = (PendingIntent)intent.GetParcelableExtra(DownloaderServiceExtras.PendingIntent);
             return StartDownloadServiceIfRequired(context, pendingIntent, serviceClass);
         }
 
@@ -486,7 +411,7 @@ namespace ExpansionDownloader.impl
                 case DownloadServiceRequirement.LvlCheckRequired:
                     Debug.WriteLine("StartService: " + serviceClass);
                     var fileIntent = new Intent(context.ApplicationContext, serviceClass);
-                    fileIntent.PutExtra(EXTRA_PENDING_INTENT, pendingIntent);
+                    fileIntent.PutExtra(DownloaderServiceExtras.PendingIntent, pendingIntent);
                     context.StartService(fileIntent);
                     break;
             }
@@ -594,7 +519,7 @@ namespace ExpansionDownloader.impl
         /// </param>
         /// <returns>
         /// </returns>
-        public NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
+        internal NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
         {
             if (!this.mIsConnected)
             {
@@ -641,7 +566,7 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// The handle file updated.
         /// </returns>
-        public bool HandleFileUpdated(DownloadsDB db, int index, string filename, long fileSize)
+        internal bool HandleFileUpdated(DownloadsDB db, int index, string filename, long fileSize)
         {
             DownloadInfo di = db.getDownloadInfoByFileName(filename);
 
@@ -725,8 +650,8 @@ namespace ExpansionDownloader.impl
         /// </param>
         public void OnClientUpdated(Messenger clientMessenger)
         {
-            this.mClientMessenger = clientMessenger;
-            this.mNotification.setMessenger(this.mClientMessenger);
+            this.clientMessenger = clientMessenger;
+            this.mNotification.setMessenger(this.clientMessenger);
         }
 
         /// <summary>
@@ -752,10 +677,10 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public override void OnDestroy()
         {
-            if (this.mConnReceiver != null)
+            if (this.connectionReceiver != null)
             {
-                this.UnregisterReceiver(this.mConnReceiver);
-                this.mConnReceiver = null;
+                this.UnregisterReceiver(this.connectionReceiver);
+                this.connectionReceiver = null;
             }
 
             this.serviceStub.Disconnect(this);
@@ -782,7 +707,7 @@ namespace ExpansionDownloader.impl
             }
 
             var fileIntent = new Intent(this, this.GetType());
-            fileIntent.PutExtra(EXTRA_PENDING_INTENT, this.mPendingIntent);
+            fileIntent.PutExtra(DownloaderServiceExtras.PendingIntent, this.mPendingIntent);
             this.StartService(fileIntent);
         }
 
@@ -829,22 +754,22 @@ namespace ExpansionDownloader.impl
         {
             Debug.WriteLine("DownloaderService.OnHandleIntent");
             
-            this.IsServiceRunning = true;
+            IsServiceRunning = true;
             try
             {
                 // the database automatically reads the metadata for version code
                 // and download status when the instance is created
                 DownloadsDB db = DownloadsDB.getDB(this);
-                var pendingIntent = (PendingIntent)intent.GetParcelableExtra(EXTRA_PENDING_INTENT);
+                var pendingIntent = (PendingIntent)intent.GetParcelableExtra(DownloaderServiceExtras.PendingIntent);
 
                 if (null != pendingIntent)
                 {
-                    this.mNotification.setClientIntent(pendingIntent);
+                    this.mNotification.PendingIntent=(pendingIntent);
                     this.mPendingIntent = pendingIntent;
                 }
                 else if (null != this.mPendingIntent)
                 {
-                    this.mNotification.setClientIntent(this.mPendingIntent);
+                    this.mNotification.PendingIntent = (this.mPendingIntent);
                 }
                 else
                 {
@@ -881,14 +806,14 @@ namespace ExpansionDownloader.impl
                 }
 
                 this.PollNetworkState();
-                if (this.mConnReceiver == null)
+                if (this.connectionReceiver == null)
                 {
                     // We use this to track network state, such as when WiFi, Cellular, etc. is enabled
                     // when downloads are paused or in progress.
-                    this.mConnReceiver = new InnerBroadcastReceiver(this);
+                    this.connectionReceiver = new InnerBroadcastReceiver(this);
                     var intentFilter = new IntentFilter(ConnectivityManager.ConnectivityAction);
                     intentFilter.AddAction(WifiManager.WifiStateChangedAction);
-                    this.RegisterReceiver(this.mConnReceiver, intentFilter);
+                    this.RegisterReceiver(this.connectionReceiver, intentFilter);
                 }
 
                 // loop through all downloads and fetch them
@@ -995,7 +920,7 @@ namespace ExpansionDownloader.impl
             }
             finally
             {
-                this.IsServiceRunning = false;
+                IsServiceRunning = false;
             }
         }
 
@@ -1092,7 +1017,7 @@ namespace ExpansionDownloader.impl
             Debug.WriteLine("LVLDL scheduling retry in " + wakeUp + "ms");
 
             var intent = new Intent(DownloaderSeviceActions.ActionRetry);
-            intent.PutExtra(EXTRA_PENDING_INTENT, this.mPendingIntent);
+            intent.PutExtra(DownloaderServiceExtras.PendingIntent, this.mPendingIntent);
             intent.SetClassName(this.PackageName, this.AlarmReceiverClassName);
             this.mAlarmIntent = PendingIntent.GetBroadcast(this, 0, intent, PendingIntentFlags.OneShot);
             alarms.Set(AlarmType.RtcWakeup, PolicyExtensions.GetCurrentMilliseconds() + wakeUp, this.mAlarmIntent);
@@ -1146,7 +1071,7 @@ namespace ExpansionDownloader.impl
                     this.mIsRoaming ? "Roaming " : "Local ", 
                     this.mIsAtLeast3G ? "3G+ " : "<3G ");
 
-                if (this.IsServiceRunning)
+                if (IsServiceRunning)
                 {
                     if (this.mIsRoaming)
                     {
@@ -1314,7 +1239,7 @@ namespace ExpansionDownloader.impl
                 {
                     Debug.WriteLine("LVLDL InnerBroadcastReceiver Called");
                     var fileIntent = new Intent(context, this.service.GetType());
-                    fileIntent.PutExtra(EXTRA_PENDING_INTENT, this.service.mPendingIntent);
+                    fileIntent.PutExtra(DownloaderServiceExtras.PendingIntent, this.service.mPendingIntent);
 
                     // send a new intent to the service
                     context.StartService(fileIntent);

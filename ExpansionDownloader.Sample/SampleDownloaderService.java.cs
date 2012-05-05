@@ -46,7 +46,7 @@ namespace ExpansionDownloader.Sample
         {
             get
             {
-                return typeof(SampleAlarmReceiver).Name;
+                return "expansiondownloader.sample.SampleAlarmReceiver";
             }
         }
     }

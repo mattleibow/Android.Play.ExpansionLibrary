@@ -5,29 +5,30 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{C1B3041A-48E8-42A4-95DD-00159872548C}</ProjectGuid>
+    <ProjectGuid>{1AF7FCB0-6343-47E7-98F5-809D040E9DE5}</ProjectGuid>
     <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ExpansionDownloader</RootNamespace>
-    <AssemblyName>ExpansionDownloader</AssemblyName>
+    <RootNamespace>ExpansionDownloader.Sample</RootNamespace>
+    <AssemblyName>ExpansionDownloader.Sample</AssemblyName>
     <FileAlignment>512</FileAlignment>
+    <AndroidApplication>true</AndroidApplication>
+    <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <AndroidSupportedAbis>armeabi</AndroidSupportedAbis>
     <AndroidStoreUncompressedFileExtensions />
     <MandroidI18n />
-    <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
-    <DeployExternal>false</DeployExternal>
-    <AndroidApplication>True</AndroidApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NOTIFICATION_BUILDER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AndroidUseSharedRuntime>True</AndroidUseSharedRuntime>
     <AndroidLinkMode>None</AndroidLinkMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -37,58 +38,69 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
-    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Android" />
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DownloaderClientMarshaller.java.cs" />
-    <Compile Include="DownloaderClientState.java.cs" />
-    <Compile Include="DownloaderServiceFlags.cs" />
-    <Compile Include="DownloaderServiceMarshaller.java.cs" />
-    <Compile Include="DownloadProgressInfo.java.cs" />
-    <Compile Include="Helpers.java.cs" />
-    <Compile Include="IDownloaderClient.java.cs" />
-    <Compile Include="IDownloaderService.java.cs" />
-    <Compile Include="impl\ControlAction.java.cs" />
-    <Compile Include="impl\DownloaderService.LvlRunner.cs" />
-    <Compile Include="impl\CustomIntentService.java.cs" />
-    <Compile Include="impl\CustomNotificationFactory.java.cs" />
-    <Compile Include="impl\DownloaderService.java.cs" />
-    <Compile Include="impl\DownloaderServiceExtras.cs" />
-    <Compile Include="impl\DownloaderServiceVisibility.cs" />
-    <Compile Include="impl\DownloaderSeviceActions.java.cs" />
-    <Compile Include="impl\DownloadInfo.java.cs" />
-    <Compile Include="impl\DownloadNotification.java.cs" />
-    <Compile Include="impl\DownloadsDB.java.cs" />
-    <Compile Include="impl\DownloadServiceRequirement.cs" />
-    <Compile Include="impl\DownloadStatus.java.cs" />
-    <Compile Include="impl\DownloadStatusExtensions.java.cs" />
-    <Compile Include="impl\DownloadStatusExtras.java.cs" />
-    <Compile Include="impl\DownloadThread.java.cs" />
-    <Compile Include="impl\NetworkConstants.java.cs" />
-    <Compile Include="impl\NetworkSpeed.cs" />
-    <Compile Include="IStub.java.cs" />
+    <Compile Include="..\ExpansionDownloader.Sample\SampleAlarmReceiver.java.cs">
+      <Link>SampleAlarmReceiver.java.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderActivity.java.cs">
+      <Link>SampleDownloaderActivity.java.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderService.java.cs">
+      <Link>SampleDownloaderService.java.cs</Link>
+    </Compile>
+    <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SystemFacade.java.cs" />
+    <Compile Include="V11CustomNotification.java.cs" />
   </ItemGroup>
   <ItemGroup>
+    <AndroidResource Include="Resources\Layout\Main.axml">
+      <SubType>Designer</SubType>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\Values\Strings.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\Drawable\ic_launcher.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets\" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\Values\styles.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Properties\AndroidManifest.xml" />
+    <AndroidResource Include="Resources\Drawable\Icon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ExpansionDownloader\ExpansionDownloader.csproj">
+      <Project>{C1B3041A-48E8-42A4-95DD-00159872548C}</Project>
+      <Name>ExpansionDownloader</Name>
+    </ProjectReference>
     <ProjectReference Include="..\LicenseVerificationLibrary\LicenseVerificationLibrary.csproj">
       <Project>{C95FFDB8-C066-4669-8328-AAEEDBA94C87}</Project>
       <Name>LicenseVerificationLibrary</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Properties\AndroidManifest.xml" />
+    <ProjectReference Include="..\System.IO.Compression.Zip\System.IO.Compression.Zip.csproj">
+      <Project>{6064DA47-9606-45E5-B87E-13765E4BE628}</Project>
+      <Name>System.IO.Compression.Zip</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
+     Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">

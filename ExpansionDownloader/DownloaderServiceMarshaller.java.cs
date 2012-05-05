@@ -14,7 +14,7 @@ namespace ExpansionDownloader
         public const int MSG_REQUEST_CLIENT_UPDATE = 6;
 
         public const string PARAMS_FLAGS = "flags";
-        public const string PARAM_MESSENGER = DownloaderService.EXTRA_MESSAGE_HANDLER;
+        public const string PARAM_MESSENGER = DownloaderServiceExtras.MessageHandler;
 
         /**
      * Returns a proxy that will marshall calls to IDownloaderService methods

@@ -1,12 +1,12 @@
 ﻿using System;
 using Android.App;
 using Android.Content;
+using Android.Net;
 using Android.OS;
 using Android.Provider;
 using Android.Views;
 using Android.Widget;
 using Java.Lang;
-using Uri = Android.Net.Uri;
 
 namespace LicenseVerificationLibrary.Tests
 {

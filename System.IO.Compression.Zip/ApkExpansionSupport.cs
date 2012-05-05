@@ -61,7 +61,7 @@ namespace System.IO.Compression.Zip
         /// <returns>
         /// A list of obb files for this app.
         /// </returns>
-        private static IEnumerable<string> GetApkExpansionFiles(Context ctx, int mainVersion, int patchVersion)
+        public static IEnumerable<string> GetApkExpansionFiles(Context ctx, int mainVersion, int patchVersion)
         {
             var ret = new List<string>();
 

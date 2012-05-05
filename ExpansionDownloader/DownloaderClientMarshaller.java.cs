@@ -2,7 +2,6 @@ using System;
 using Android.App;
 using Android.Content;
 using Android.OS;
-using Android.Util;
 using ExpansionDownloader.impl;
 using Object = Java.Lang.Object;
 
@@ -16,7 +15,7 @@ namespace ExpansionDownloader
 
         public const string PARAM_NEW_STATE = "newState";
         public const string PARAM_PROGRESS = "progress";
-        public const string PARAM_MESSENGER = DownloaderService.EXTRA_MESSAGE_HANDLER;
+        public const string PARAM_MESSENGER = DownloaderServiceExtras.MessageHandler;
 
         /**
      * Returns a proxy that will marshal calls to IDownloaderClient methods
@@ -81,7 +80,7 @@ namespace ExpansionDownloader
          * This version assumes that the intent contains the pending intent as a parameter. This
          * is used for responding to alarms.
          * <p>The pending intent must be in an extra with the key {@link 
-         * impl.DownloaderService#EXTRA_PENDING_INTENT}.
+         * impl.DownloaderService#PendingIntent}.
          * 
          * @param context
          * @param notificationClient

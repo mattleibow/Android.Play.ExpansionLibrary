@@ -16,7 +16,7 @@ namespace ExpansionDownloader.impl
         private readonly Notification mNotification;
         private readonly NotificationManager mNotificationManager;
         private IDownloaderClient mClientProxy;
-        private PendingIntent mContentIntent;
+
         private Notification mCurrentNotification;
         private string mCurrentText;
         private string mCurrentTitle;
@@ -44,7 +44,7 @@ namespace ExpansionDownloader.impl
             if (newState != mState)
             {
                 mState = newState;
-                if (newState == DownloaderClientState.Idle || null == mContentIntent)
+                if (newState == DownloaderClientState.Idle || null == this.PendingIntent)
                 {
                     return;
                 }
@@ -95,7 +95,7 @@ namespace ExpansionDownloader.impl
                 mCurrentTitle = mLabel;
                 mCurrentNotification.TickerText = new String(mLabel + ": " + mCurrentText);
                 mCurrentNotification.Icon = iconResource;
-                mCurrentNotification.SetLatestEventInfo(mContext, mCurrentTitle, mCurrentText, mContentIntent);
+                mCurrentNotification.SetLatestEventInfo(mContext, mCurrentTitle, mCurrentText, this.PendingIntent);
                 if (ongoingEvent)
                 {
                     mCurrentNotification.Flags |= NotificationFlags.OngoingEvent;
@@ -121,19 +121,19 @@ namespace ExpansionDownloader.impl
                 // we just show the text
                 mNotification.TickerText = new String(mCurrentTitle);
                 mNotification.Icon = Resource.Drawable.StatSysDownload;
-                mNotification.SetLatestEventInfo(mContext, mLabel, mCurrentText, mContentIntent);
+                mNotification.SetLatestEventInfo(mContext, mLabel, mCurrentText, this.PendingIntent);
                 mCurrentNotification = mNotification;
             }
             else
             {
-                CustomNotificationFactory.Notification.setCurrentBytes(progress.OverallProgress);
-                CustomNotificationFactory.Notification.setTotalBytes(progress.OverallTotal);
-                CustomNotificationFactory.Notification.setIcon(Resource.Drawable.StatSysDownload);
-                CustomNotificationFactory.Notification.setPendingIntent(mContentIntent);
-                CustomNotificationFactory.Notification.setTicker(mLabel + ": " + mCurrentText);
-                CustomNotificationFactory.Notification.setTitle(mLabel);
-                CustomNotificationFactory.Notification.setTimeRemaining(progress.TimeRemaining);
-                mCurrentNotification = CustomNotificationFactory.Notification.updateNotification(mContext);
+                CustomNotificationFactory.Notification.CurrentBytes=(progress.OverallProgress);
+                CustomNotificationFactory.Notification.TotalBytes=(progress.OverallTotal);
+                CustomNotificationFactory.Notification.Icon=(Resource.Drawable.StatSysDownload);
+                CustomNotificationFactory.Notification.PendingIntent=(this.PendingIntent);
+                CustomNotificationFactory.Notification.Ticker=(mLabel + ": " + mCurrentText);
+                CustomNotificationFactory.Notification.Title=(mLabel);
+                CustomNotificationFactory.Notification.TimeRemaining=(progress.TimeRemaining);
+                mCurrentNotification = CustomNotificationFactory.Notification.UpdateNotification(mContext);
             }
             mNotificationManager.Notify(NOTIFICATION_ID, mCurrentNotification);
         }
@@ -144,15 +144,7 @@ namespace ExpansionDownloader.impl
 
         #endregion
 
-        public PendingIntent getClientIntent()
-        {
-            return mContentIntent;
-        }
-
-        public void setClientIntent(PendingIntent mClientIntent)
-        {
-            mContentIntent = mClientIntent;
-        }
+        public PendingIntent PendingIntent { get; set; }
 
         public void resendState()
         {
@@ -162,13 +154,11 @@ namespace ExpansionDownloader.impl
             }
         }
 
-        /**
-     * Called in response to OnClientUpdated. Creates a new proxy and notifies
-     * it of the current state.
-     * 
-     * @param msg the client Messenger to notify
-     */
-
+        /// <summary>
+        /// Called in response to OnClientUpdated. Creates a new proxy and 
+        /// notifies it of the current state.
+        /// </summary>
+        /// <param name="msg">the client Messenger to notify</param>
         public void setMessenger(Messenger msg)
         {
             mClientProxy = DownloaderClientMarshaller.CreateProxy(msg);
@@ -186,32 +176,31 @@ namespace ExpansionDownloader.impl
 
         public interface ICustomNotification
         {
-            void setTitle(string title);
+            string Title { set; }
 
-            void setTicker(string ticker);
+            string Ticker { set; }
 
-            void setPendingIntent(PendingIntent mContentIntent);
+            PendingIntent PendingIntent { set; }
 
-            void setPausedText(string pausedText);
+            string PausedText { set; }
 
-            void setTotalBytes(long totalBytes);
+            long TotalBytes { set; }
 
-            void setCurrentBytes(long currentBytes);
+            long CurrentBytes { set; }
 
-            void setIcon(int iconResource);
+            int Icon { set; }
 
-            void setTimeRemaining(long timeRemaining);
+            long TimeRemaining { set; }
 
-            Notification updateNotification(Context c);
+
+            /// <summary>
+            /// Constructor
+            /// </summary>
+            /// <param name="context">The context to use to obtain access to the Notification Service</param>
+            /// <returns></returns>
+            Notification UpdateNotification(Context context);
         }
 
         #endregion
-
-        /**
-     * Constructor
-     * 
-     * @param ctx The context to use to obtain access to the Notification
-     *            Service
-     */
     }
 }

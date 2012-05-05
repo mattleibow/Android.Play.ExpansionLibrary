@@ -1,10 +1,9 @@
+using System;
+using System.Collections.Generic;
+using Android.Content;
+
 namespace LicenseVerificationLibrary
 {
-    using System;
-    using System.Collections.Generic;
-
-    using Android.Content;
-
     /// <summary>
     /// Default policy. All policy decisions are based off of response data received
     /// from the licensing service. Specifically, the licensing server sends the
@@ -316,10 +315,9 @@ namespace LicenseVerificationLibrary
         /// </returns>
         public string GetExpansionUrl(int index)
         {
-            var index0 = index;
-            if (index0 < this.expansionUrls.Length)
+            if (index < this.expansionUrls.Length)
             {
-                return this.expansionUrls[index0];
+                return this.expansionUrls[index];
             }
 
             return null;
@@ -476,8 +474,7 @@ namespace LicenseVerificationLibrary
         /// </param>
         public void SetExpansionFileName(int index, string name)
         {
-            var index0 = index;
-            this.expansionFileNames[index0] = name;
+            this.expansionFileNames[index] = name;
         }
 
         /// <summary>
@@ -491,8 +488,7 @@ namespace LicenseVerificationLibrary
         /// </param>
         public void SetExpansionFileSize(int index, long size)
         {
-            var index0 = index;
-            this.expansionFileSizes[index0] = size;
+            this.expansionFileSizes[index] = size;
         }
 
         /// <summary>
@@ -510,8 +506,7 @@ namespace LicenseVerificationLibrary
         /// </param>
         public void SetExpansionUrl(int index, string url)
         {
-            var index0 = index;
-            this.expansionUrls[index0] = url;
+            this.expansionUrls[index] = url;
         }
 
         #endregion

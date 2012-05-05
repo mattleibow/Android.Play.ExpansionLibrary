@@ -48,12 +48,12 @@ namespace ExpansionDownloader.impl
         private static int REDIRECT_COUNT_IDX = 10;
         private static int INDEX_IDX = 11;
         private readonly SQLiteOpenHelper mHelper;
-        internal DownloaderServiceFlags mFlags;
+        public DownloaderServiceFlags mFlags;
         private SQLiteStatement mGetDownloadByIndex;
         private long mMetadataRowID = -1;
-        internal DownloadStatus mStatus = DownloadStatus.Unknown;
+        public DownloadStatus mStatus = DownloadStatus.Unknown;
         private SQLiteStatement mUpdateCurrentBytes;
-        internal int mVersionCode = -1;
+        public int mVersionCode = -1;
 
         private DownloadsDB(Context paramContext)
         {
@@ -115,7 +115,7 @@ namespace ExpansionDownloader.impl
             return mUpdateCurrentBytes;
         }
 
-        internal DownloadInfo getDownloadInfoByFileName(string fileName)
+        public DownloadInfo getDownloadInfoByFileName(string fileName)
         {
             SQLiteDatabase sqldb = mHelper.ReadableDatabase;
             ICursor itemcur = null;
@@ -461,7 +461,7 @@ namespace ExpansionDownloader.impl
 
         protected class DownloadsContentDBHelper : SQLiteOpenHelper
         {
-            internal DownloadsContentDBHelper(Context paramContext)
+            public DownloadsContentDBHelper(Context paramContext)
                 : base(paramContext, DATABASE_NAME, null, DATABASE_VERSION)
             {
             }
