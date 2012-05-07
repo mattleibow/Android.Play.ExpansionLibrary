@@ -1,5 +1,9 @@
 namespace System.IO.Compression.Zip
 {
+    using System.Diagnostics;
+    using System.Linq;
+    using Android.Util;
+    
     using System.Collections.Generic;
     using System.Text;
 
@@ -9,11 +13,6 @@ namespace System.IO.Compression.Zip
     public class ZipFile : IDisposable
     {
         #region Constants and Fields
-
-        /// <summary>
-        /// Static CRC32 Table
-        /// </summary>
-        private static readonly uint[] CrcTable;
 
         /// <summary>
         /// Default filename encoder
@@ -33,35 +32,6 @@ namespace System.IO.Compression.Zip
         #endregion
 
         #region Constructors and Destructors
-
-        /// <summary>
-        /// Initializes static members of the <see cref="ZipFile"/> class. 
-        /// Static constructor. 
-        /// Just invoked once in order to create the CRC32 lookup table.
-        /// </summary>
-        static ZipFile()
-        {
-            // Generate CRC32 table
-            CrcTable = new uint[256];
-            for (uint i = 0; i < CrcTable.Length; i++)
-            {
-                var c = i;
-
-                for (int j = 0; j < 8; j++)
-                {
-                    if ((c & 1) != 0)
-                    {
-                        c = 3988292384 ^ (c >> 1);
-                    }
-                    else
-                    {
-                        c >>= 1;
-                    }
-                }
-
-                CrcTable[i] = c;
-            }
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZipFile"/> class. 
@@ -296,7 +266,7 @@ namespace System.IO.Compression.Zip
 
             var result = new List<ZipFileEntry>();
 
-            for (int pointer = 0; pointer < this.centralDirImage.Length;)
+            for (int pointer = 0; pointer < this.centralDirImage.Length; )
             {
                 uint signature = BitConverter.ToUInt32(this.centralDirImage, pointer);
                 if (signature != 0x02014b50)
@@ -373,11 +343,11 @@ namespace System.IO.Compression.Zip
         private static DateTime DosTimeToDateTime(uint dosDateTime)
         {
             return new DateTime(
-                (int)(dosDateTime >> 25) + 1980, 
-                (int)(dosDateTime >> 21) & 15, 
-                (int)(dosDateTime >> 16) & 31, 
-                (int)(dosDateTime >> 11) & 31, 
-                (int)(dosDateTime >> 5) & 63, 
+                (int)(dosDateTime >> 25) + 1980,
+                (int)(dosDateTime >> 21) & 15,
+                (int)(dosDateTime >> 16) & 31,
+                (int)(dosDateTime >> 11) & 31,
+                (int)(dosDateTime >> 5) & 63,
                 (int)(dosDateTime & 31) * 2);
         }
 
@@ -412,16 +382,16 @@ namespace System.IO.Compression.Zip
 
             var zfe = new ZipFileEntry
                 {
-                    Method = (Compression)method, 
-                    FilenameInZip = encoder.GetString(this.centralDirImage, pointer + 46, filenameSize), 
-                    FileOffset = this.GetFileOffset(headerOffset), 
-                    FileSize = fileSize, 
-                    CompressedSize = comprSize, 
-                    HeaderOffset = headerOffset, 
-                    HeaderSize = (uint)headerSize, 
-                    Crc32 = crc32, 
-                    ModifyTime = DosTimeToDateTime(modifyTime), 
-                    Comment = comment ?? string.Empty, 
+                    Method = (Compression)method,
+                    FilenameInZip = encoder.GetString(this.centralDirImage, pointer + 46, filenameSize),
+                    FileOffset = this.GetFileOffset(headerOffset),
+                    FileSize = fileSize,
+                    CompressedSize = comprSize,
+                    HeaderOffset = headerOffset,
+                    HeaderSize = (uint)headerSize,
+                    Crc32 = crc32,
+                    ModifyTime = DosTimeToDateTime(modifyTime),
+                    Comment = comment ?? string.Empty,
                     ZipFileName = this.FileName
                 };
             pointer += headerSize;
@@ -507,5 +477,95 @@ namespace System.IO.Compression.Zip
         }
 
         #endregion
+
+        public static bool Validate(ZipFileValidationHandler validationHandler)
+        {
+            var buf = new byte[1024 * 256];
+            try
+            {
+                var zip = new ZipFile(validationHandler.Filename);
+                var entries = zip.GetAllEntries();
+
+                // First calculate the total compressed length
+                var totalCompressedLength = entries.Sum(entry => entry.CompressedSize);
+                float averageVerifySpeed = 0;
+                var totalBytesRemaining = totalCompressedLength;
+                validationHandler.TotalBytes = totalCompressedLength;
+
+                // Then calculate a CRC for every file in the Zip file,
+                // comparing it to what is stored in the Zip directory
+                foreach (ZipFileEntry entry in entries)
+                {
+                    if (entry.Crc32 != -1)
+                    {
+                        var startTime = DateTime.UtcNow;
+
+                        var crc = new Crc32();
+
+                        var offset = entry.FileOffset;
+                        var length = (int)entry.CompressedSize;
+
+                        using (var raf = new FileStream(validationHandler.Filename, FileMode.Open))
+                        {
+                            raf.Seek(offset, SeekOrigin.Begin);
+
+                            while (length > 0)
+                            {
+                                var seek = length > buf.Length ? buf.Length : length;
+                                raf.Read(buf, 0, seek);
+                                crc.Update(buf, 0, seek);
+                                length -= seek;
+
+                                var currentTime = DateTime.UtcNow;
+                                var timePassed = (float)(currentTime - startTime).TotalMilliseconds;
+                                if (timePassed > 0)
+                                {
+                                    var currentSpeedSample = seek / timePassed;
+                                    if (averageVerifySpeed != 0)
+                                    {
+                                        const float smoothingFactor = 0.005F;
+                                        averageVerifySpeed = smoothingFactor * currentSpeedSample + (1 - smoothingFactor) * averageVerifySpeed;
+                                    }
+                                    else
+                                    {
+                                        averageVerifySpeed = currentSpeedSample;
+                                    }
+                                    totalBytesRemaining -= seek;
+                                    var timeRemaining = (long)(totalBytesRemaining / averageVerifySpeed);
+
+                                    validationHandler.AverageSpeed = averageVerifySpeed;
+                                    validationHandler.CurrentBytes = totalCompressedLength - totalBytesRemaining;
+                                    validationHandler.TimeRemaining = timeRemaining;
+
+                                    validationHandler.UpdateUi(validationHandler);
+                                }
+
+                                startTime = currentTime;
+                                if (validationHandler.ShouldCancel)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        if (crc.Value != entry.Crc32)
+                        {
+                            Debug.WriteLine("CRC does not match for entry: " + entry.FilenameInZip);
+                            Debug.WriteLine("In file: " + entry.ZipFileName);
+
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e.ToString());
+                Console.Write(e.StackTrace);
+                return false;
+            }
+
+            return true;
+        }
     }
 }

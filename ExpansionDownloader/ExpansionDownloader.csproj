@@ -47,21 +47,19 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DownloaderClientMarshaller.java.cs" />
-    <Compile Include="DownloaderClientState.java.cs" />
-    <Compile Include="DownloaderServiceFlags.cs" />
-    <Compile Include="DownloaderServiceMarshaller.java.cs" />
+    <Compile Include="Client\DownloaderClientMarshaller.java.cs" />
+    <Compile Include="Client\DownloaderClientMessageParameters.cs" />
+    <Compile Include="Client\DownloaderClientState.java.cs" />
+    <Compile Include="Client\DownloaderClientMessages.java.cs" />
+    <Compile Include="Client\IDownloaderClient.java.cs" />
     <Compile Include="DownloadProgressInfo.java.cs" />
     <Compile Include="Helpers.java.cs" />
-    <Compile Include="IDownloaderClient.java.cs" />
-    <Compile Include="IDownloaderService.java.cs" />
     <Compile Include="impl\ControlAction.java.cs" />
     <Compile Include="impl\DownloaderService.LvlRunner.cs" />
     <Compile Include="impl\CustomIntentService.java.cs" />
     <Compile Include="impl\CustomNotificationFactory.java.cs" />
     <Compile Include="impl\DownloaderService.java.cs" />
     <Compile Include="impl\DownloaderServiceExtras.cs" />
-    <Compile Include="impl\DownloaderServiceVisibility.cs" />
     <Compile Include="impl\DownloaderSeviceActions.java.cs" />
     <Compile Include="impl\DownloadInfo.java.cs" />
     <Compile Include="impl\DownloadNotification.java.cs" />
@@ -72,9 +70,13 @@
     <Compile Include="impl\DownloadStatusExtras.java.cs" />
     <Compile Include="impl\DownloadThread.java.cs" />
     <Compile Include="impl\NetworkConstants.java.cs" />
-    <Compile Include="impl\NetworkSpeed.cs" />
-    <Compile Include="IStub.java.cs" />
+    <Compile Include="IDownloaderClientStub.java.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\DownloaderServiceFlags.cs" />
+    <Compile Include="Service\DownloaderServiceMarshaller.java.cs" />
+    <Compile Include="Service\DownloaderServiceMessages.java.cs" />
+    <Compile Include="Service\DownloaderServiceParameters.java.cs" />
+    <Compile Include="Service\IDownloaderService.java.cs" />
     <Compile Include="SystemFacade.java.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -86,6 +88,7 @@
   <ItemGroup>
     <Content Include="Properties\AndroidManifest.xml" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

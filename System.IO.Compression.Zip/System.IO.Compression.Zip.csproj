@@ -43,10 +43,12 @@
     <Compile Include="ApezProvider.cs" />
     <Compile Include="ApkExpansionSupport.cs" />
     <Compile Include="Compression.cs" />
+    <Compile Include="Crc32.cs" />
     <Compile Include="ExpansionZipFile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ZipFileEntry.cs" />
     <Compile Include="ZipFile.cs" />
+    <Compile Include="ZipFileValidationHandler.cs" />
     <Compile Include="ZipStream.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />

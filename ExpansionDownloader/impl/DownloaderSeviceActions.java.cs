@@ -31,5 +31,10 @@ namespace ExpansionDownloader.impl
         /// Broadcast intent action sent by the download manager when download status changes.
         /// </summary>
         public const string DownloadStatus = "lvldownloader.intent.action.DOWNLOAD_STATUS";
+
+        /// <summary>
+        /// The downloads changed.
+        /// </summary>
+        public const string DownloadsChanged = "downloadsChanged";
     }
 }

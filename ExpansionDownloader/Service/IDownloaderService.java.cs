@@ -1,8 +1,7 @@
-using Android.OS;
-using ExpansionDownloader.impl;
-
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Service
 {
+    using Android.OS;
+
     public interface IDownloaderService
     {
         /// <summary>

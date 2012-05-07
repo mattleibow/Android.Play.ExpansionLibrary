@@ -1,36 +1,30 @@
-using System.Runtime.CompilerServices;
-using System;
-using System.IO;
-using System.Linq;
-using Android.App;
-using Android.Content;
-using Android.Content.PM;
-using Android.Net;
-using Android.Net.Wifi;
-using Android.OS;
-using Android.Runtime;
-using Android.Telephony;
-using LicenseVerificationLibrary;
-using Debug = System.Diagnostics.Debug;
-
 namespace ExpansionDownloader.impl
 {
+    using System;
+    using System.IO;
+    using System.Linq;
+
+    using Android.App;
+    using Android.Content;
+    using Android.Content.PM;
+    using Android.Net;
+    using Android.Net.Wifi;
+    using Android.OS;
+    using Android.Runtime;
+    using Android.Telephony;
+
+    using ExpansionDownloader.Service;
+
+    using Java.Util;
+
+    using Debug = System.Diagnostics.Debug;
+
     /// <summary>
     /// The downloader service.
     /// </summary>
     public abstract partial class DownloaderService : CustomIntentService, IDownloaderService
     {
         #region Constants and Fields
-
-        /// <summary>
-        /// The downloads changed.
-        /// </summary>
-        public const string DownloadsChanged = "downloadsChanged";
-
-        /// <summary>
-        /// The wake duration to check to see if the process was killed.
-        /// </summary>
-        public const long ACTIVE_THREAD_WATCHDOG = 5 * 1000;
 
         /// <summary>
         /// The buffer size used to stream the data.
@@ -42,25 +36,10 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public const string DefaultUserAgent = "Android.LVLDM";
 
-        public static readonly string ExpansionPath = string.Format("{0}Android{0}obb{0}", Path.DirectorySeparatorChar);
-
-        /// <summary>
-        /// When a number has to be appended to the filename, this string is
-        /// used to separate the base filename from the sequence number.
-        /// </summary>
-        public const string FILENAME_SEQUENCE_SEPARATOR = "-";
-
         /// <summary>
         /// The maximum number of redirects. (can't be more than 7)
         /// </summary>
-        public const int MAX_REDIRECTS = 5;
-
-        public static readonly int MaxRetryAfter = (int)TimeSpan.FromDays(1).TotalSeconds;
-
-        /// <summary>
-        /// The maximum number of rows in the database (FIFO).
-        /// </summary>
-        public const int MaximumDownloads = 1000;
+        public const int MaxRedirects = 5;
 
         /// <summary>
         /// The number of times that the download manager will retry its network
@@ -91,34 +70,39 @@ namespace ExpansionDownloader.impl
         /// Each subsequent retry grows exponentially, doubling each time.
         /// The time is in seconds.
         /// </summary>
-        public const int RETRY_FIRST_DELAY = 30;
+        public const int RetryFirstDelay = 30;
 
         /// <summary>
-        /// The wake duration to check to see if a download is possible.
+        /// The wake duration to check to see if a download is possible. (seconds)
         /// </summary>
-        public const long WATCHDOG_WAKE_TIMER = 60 * 1000;
+        public const int WatchdogWakeTimer = 60;
 
         /// <summary>
-        /// Byte counts
+        /// The expansion path.
         /// </summary>
-        public long mBytesSoFar;
+        public static readonly string ExpansionPath = string.Format("{0}Android{0}obb{0}", Path.DirectorySeparatorChar);
 
         /// <summary>
-        /// Byte counts
+        /// The maximum amount of time that the download manager accepts for a 
+        /// Retry-After response header with a parameter in delta-seconds.
         /// </summary>
-        public long mTotalLength;
-
-        private readonly object locker = new object();
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private readonly Messenger serviceMessenger;
+        public static readonly int MaxRetryAfter = (int)TimeSpan.FromDays(1).TotalSeconds;
 
         /// <summary>
-        /// Our binding to the network state broadcasts
+        /// The wake duration to check to see if the process was killed. (seconds)
         /// </summary>
-        private readonly IStub serviceStub;
+        private const int ActiveThreadWatchdog = 5;
+
+        /// <summary>
+        /// When a number has to be appended to the filename, this string is
+        /// used to separate the base filename from the sequence number.
+        /// </summary>
+        private const string FilenameSequenceSeparator = "-";
+
+        /// <summary>
+        /// The maximum number of rows in the database (FIFO).
+        /// </summary>
+        private const int MaximumDownloads = 1000;
 
         /// <summary>
         /// Service thread status
@@ -131,9 +115,34 @@ namespace ExpansionDownloader.impl
         private const string TemporaryFileExtension = ".tmp";
 
         /// <summary>
+        /// The locker.
+        /// </summary>
+        private readonly object locker = new object();
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private readonly IDownloaderServiceConnection _serviceDownloaderServiceConnection;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private readonly Messenger serviceMessenger;
+
+        /// <summary>
         /// Service thread status
         /// </summary>
-        private volatile static bool isRunning;
+        private static volatile bool isRunning;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private Messenger clientMessenger;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private BroadcastReceiver connectionReceiver;
 
         /// <summary>
         /// Our binding to the network state broadcasts
@@ -151,16 +160,6 @@ namespace ExpansionDownloader.impl
         private long mBytesAtSample;
 
         /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private Messenger clientMessenger;
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private BroadcastReceiver connectionReceiver;
-
-        /// <summary>
         /// Bindings to important services
         /// </summary>
         private ConnectivityManager mConnectivityManager;
@@ -170,45 +169,38 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private int mFileCount;
 
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool mIsAtLeast3G;
+        [Flags]
+        protected enum NetworkState
+        {
+            Disconnected = 0,
+
+            Connected = 1,
+
+            Roaming = 2,
+
+            Is3G = 4,
+
+            Is4G = 8,
+
+            IsCellular = 16,
+
+            IsFailOver = 32
+        }
 
         /// <summary>
-        /// Network state.
+        /// The current network state.
         /// </summary>
-        private bool mIsAtLeast4G;
-
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool mIsCellularConnection;
-
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool mIsConnected;
-
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool mIsFailover;
-
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool mIsRoaming;
+        private NetworkState networkState;
 
         /// <summary>
         /// Used for calculating time remaining and speed
         /// </summary>
-        private long mMillisecondsAtSample;
+        private long millisecondsAtSample;
 
         /// <summary>
         /// Our binding to the network state broadcasts
         /// </summary>
-        private DownloadNotification mNotification;
+        private DownloadNotification downloadNotification;
 
         /// <summary>
         /// Package we are downloading for (defaults to package of application)
@@ -242,8 +234,8 @@ namespace ExpansionDownloader.impl
         {
             Debug.WriteLine("LVLDL DownloaderService()");
 
-            this.serviceStub = DownloaderServiceMarshaller.CreateStub(this);
-            this.serviceMessenger = this.serviceStub.GetMessenger();
+            this._serviceDownloaderServiceConnection = DownloaderServiceMarshaller.CreateStub(this);
+            this.serviceMessenger = this._serviceDownloaderServiceConnection.GetMessenger();
         }
 
         #endregion
@@ -251,25 +243,25 @@ namespace ExpansionDownloader.impl
         #region Public Properties
 
         /// <summary>
-        /// Download state
+        /// Gets the number of bytes downloaded so far
         /// </summary>
-        public ControlAction Control { get; private set; }
+        public long BytesSoFar { get; private set; }
 
         /// <summary>
         /// Download state
         /// </summary>
-        public bool IsWiFi
-        {
-            get
-            {
-                return this.mIsConnected && !this.mIsCellularConnection;
-            }
-        }
+        public ControlAction Control { get; private set; }
+
 
         /// <summary>
         /// Download state
         /// </summary>
         public DownloadStatus Status { get; private set; }
+
+        /// <summary>
+        /// Byte counts
+        /// </summary>
+        public long TotalLength { get; private set; }
 
         #endregion
 
@@ -289,7 +281,7 @@ namespace ExpansionDownloader.impl
         /// Gets Salt.
         /// </summary>
         protected abstract byte[] Salt { get; }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether the service is running.
         /// Note: Only use this internally.
@@ -298,7 +290,7 @@ namespace ExpansionDownloader.impl
         {
             get
             {
-                lock(locker)
+                lock (this.locker)
                 {
                     return isRunning;
                 }
@@ -306,7 +298,7 @@ namespace ExpansionDownloader.impl
 
             set
             {
-                lock (locker)
+                lock (this.locker)
                 {
                     isRunning = value;
                 }
@@ -332,7 +324,8 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// The start download service if required.
         /// </returns>
-        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, Intent intent, Type serviceClass)
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(
+            Context context, Intent intent, Type serviceClass)
         {
             var pendingIntent = (PendingIntent)intent.GetParcelableExtra(DownloaderServiceExtras.PendingIntent);
             return StartDownloadServiceIfRequired(context, pendingIntent, serviceClass);
@@ -370,10 +363,9 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// true if the app should wait for more guidance from the downloader, false if the app can continue
         /// </returns>
-        public static DownloadServiceRequirement StartDownloadServiceIfRequired(Context context, PendingIntent pendingIntent, Type serviceClass)
+        public static DownloadServiceRequirement StartDownloadServiceIfRequired(
+            Context context, PendingIntent pendingIntent, Type serviceClass)
         {
-            Debug.WriteLine("StartDownloadServiceIfRequired");
-
             // first: do we need to do an LVL update?
             // we begin by getting our APK version from the package manager
             PackageInfo pi = context.PackageManager.GetPackageInfo(context.PackageName, 0);
@@ -409,7 +401,6 @@ namespace ExpansionDownloader.impl
             {
                 case DownloadServiceRequirement.DownloadRequired:
                 case DownloadServiceRequirement.LvlCheckRequired:
-                    Debug.WriteLine("StartService: " + serviceClass);
                     var fileIntent = new Intent(context.ApplicationContext, serviceClass);
                     fileIntent.PutExtra(DownloaderServiceExtras.PendingIntent, pendingIntent);
                     context.StartService(fileIntent);
@@ -512,83 +503,6 @@ namespace ExpansionDownloader.impl
         }
 
         /// <summary>
-        /// The get network availability state.
-        /// </summary>
-        /// <param name="db">
-        /// The db.
-        /// </param>
-        /// <returns>
-        /// </returns>
-        internal NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
-        {
-            if (!this.mIsConnected)
-            {
-                return NetworkConstants.NoConnection;
-            }
-            
-            if (!this.mIsCellularConnection)
-            {
-                return NetworkConstants.Ok;
-            }
-            
-            if (this.mIsRoaming)
-            {
-                return NetworkConstants.CannotUseRoaming;
-            }
-            
-            if (!db.mFlags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
-            {
-                return NetworkConstants.TypeDisallowedByRequestor;
-            }
-            
-            return NetworkConstants.Ok;
-        }
-
-        /// <summary>
-        /// The APK has been updated and a filename has been sent down from the
-        /// Market call. If the file has the same name as the previous file, we do
-        /// nothing as the file is guaranteed to be the same. If the file does not
-        /// have the same name, we download it if it hasn't already been delivered by
-        /// Market.
-        /// </summary>
-        /// <param name="db">
-        /// The db.
-        /// </param>
-        /// <param name="index">
-        /// the index of the file from market (0 = main, 1 = patch)
-        /// </param>
-        /// <param name="filename">
-        /// the name of the new file
-        /// </param>
-        /// <param name="fileSize">
-        /// the size of the new file
-        /// </param>
-        /// <returns>
-        /// The handle file updated.
-        /// </returns>
-        internal bool HandleFileUpdated(DownloadsDB db, int index, string filename, long fileSize)
-        {
-            DownloadInfo di = db.getDownloadInfoByFileName(filename);
-
-            if (di != null && di.FileName != null)
-            {
-                if (filename == di.FileName)
-                {
-                    return false;
-                }
-
-                // remove partially downloaded file if it is there
-                string deleteFile = Helpers.GenerateSaveFileName(this, di.FileName);
-                if (File.Exists(deleteFile))
-                {
-                    File.Delete(deleteFile);
-                }
-            }
-
-            return !Helpers.DoesFileExist(this, filename, fileSize, true);
-        }
-
-        /// <summary>
         /// Calculating a moving average for the speed so we don't get jumpy calculations for time etc.
         /// </summary>
         /// <param name="totalBytesSoFar">
@@ -598,10 +512,10 @@ namespace ExpansionDownloader.impl
         {
             long timeRemaining;
             long currentTime = SystemClock.UptimeMillis();
-            if (0 != this.mMillisecondsAtSample)
+            if (0 != this.millisecondsAtSample)
             {
                 // we have a sample.
-                long timePassed = currentTime - this.mMillisecondsAtSample;
+                long timePassed = currentTime - this.millisecondsAtSample;
                 long bytesInSample = totalBytesSoFar - this.mBytesAtSample;
                 float currentSpeedSample = bytesInSample / (float)timePassed;
                 if (Math.Abs(0 - this.mAverageDownloadSpeed) > SmoothingFactor)
@@ -615,17 +529,17 @@ namespace ExpansionDownloader.impl
                     this.mAverageDownloadSpeed = currentSpeedSample;
                 }
 
-                timeRemaining = (long)((this.mTotalLength - totalBytesSoFar) / this.mAverageDownloadSpeed);
+                timeRemaining = (long)((this.TotalLength - totalBytesSoFar) / this.mAverageDownloadSpeed);
             }
             else
             {
                 timeRemaining = -1;
             }
 
-            this.mMillisecondsAtSample = currentTime;
+            this.millisecondsAtSample = currentTime;
             this.mBytesAtSample = totalBytesSoFar;
-            this.mNotification.OnDownloadProgress(
-                new DownloadProgressInfo(this.mTotalLength, totalBytesSoFar, timeRemaining, this.mAverageDownloadSpeed));
+            this.downloadNotification.OnDownloadProgress(
+                new DownloadProgressInfo(this.TotalLength, totalBytesSoFar, timeRemaining, this.mAverageDownloadSpeed));
         }
 
         /// <summary>
@@ -651,7 +565,7 @@ namespace ExpansionDownloader.impl
         public void OnClientUpdated(Messenger clientMessenger)
         {
             this.clientMessenger = clientMessenger;
-            this.mNotification.setMessenger(this.clientMessenger);
+            this.downloadNotification.setMessenger(this.clientMessenger);
         }
 
         /// <summary>
@@ -664,7 +578,7 @@ namespace ExpansionDownloader.impl
             {
                 this.mPackageInfo = this.PackageManager.GetPackageInfo(this.PackageName, 0);
                 string applicationLabel = this.PackageManager.GetApplicationLabel(this.ApplicationInfo);
-                this.mNotification = new DownloadNotification(this, applicationLabel);
+                this.downloadNotification = new DownloadNotification(this, applicationLabel);
             }
             catch (PackageManager.NameNotFoundException e)
             {
@@ -683,7 +597,7 @@ namespace ExpansionDownloader.impl
                 this.connectionReceiver = null;
             }
 
-            this.serviceStub.Disconnect(this);
+            this._serviceDownloaderServiceConnection.Disconnect(this);
             base.OnDestroy();
         }
 
@@ -716,7 +630,7 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public void RequestDownloadStatus()
         {
-            this.mNotification.resendState();
+            this.downloadNotification.resendState();
         }
 
         /// <summary>
@@ -744,6 +658,39 @@ namespace ExpansionDownloader.impl
         #region Methods
 
         /// <summary>
+        /// The get network availability state.
+        /// </summary>
+        /// <param name="db">
+        /// The db.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        internal NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
+        {
+            if (!this.networkState.HasFlag(NetworkState.Connected))
+            {
+                return NetworkConstants.NoConnection;
+            }
+
+            if (!this.networkState.HasFlag(NetworkState.IsCellular))
+            {
+                return NetworkConstants.Ok;
+            }
+
+            if (this.networkState.HasFlag(NetworkState.Roaming))
+            {
+                return NetworkConstants.CannotUseRoaming;
+            }
+
+            if (!db.mFlags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
+            {
+                return NetworkConstants.TypeDisallowedByRequestor;
+            }
+
+            return NetworkConstants.Ok;
+        }
+
+        /// <summary>
         /// This is the main thread for the Downloader. 
         /// This thread is responsible for queuing up downloads and other goodness.
         /// </summary>
@@ -753,8 +700,8 @@ namespace ExpansionDownloader.impl
         protected override void OnHandleIntent(Intent intent)
         {
             Debug.WriteLine("DownloaderService.OnHandleIntent");
-            
-            IsServiceRunning = true;
+
+            this.IsServiceRunning = true;
             try
             {
                 // the database automatically reads the metadata for version code
@@ -764,12 +711,12 @@ namespace ExpansionDownloader.impl
 
                 if (null != pendingIntent)
                 {
-                    this.mNotification.PendingIntent=(pendingIntent);
+                    this.downloadNotification.PendingIntent = pendingIntent;
                     this.mPendingIntent = pendingIntent;
                 }
                 else if (null != this.mPendingIntent)
                 {
-                    this.mNotification.PendingIntent = (this.mPendingIntent);
+                    this.downloadNotification.PendingIntent = this.mPendingIntent;
                 }
                 else
                 {
@@ -786,8 +733,8 @@ namespace ExpansionDownloader.impl
 
                 // get each download
                 DownloadInfo[] infos = db.GetDownloads();
-                this.mBytesSoFar = 0;
-                this.mTotalLength = 0;
+                this.BytesSoFar = 0;
+                this.TotalLength = 0;
                 this.mFileCount = infos.Length;
                 foreach (DownloadInfo info in infos)
                 {
@@ -801,8 +748,8 @@ namespace ExpansionDownloader.impl
                     }
 
                     // get aggregate data
-                    this.mTotalLength += info.TotalBytes;
-                    this.mBytesSoFar += info.CurrentBytes;
+                    this.TotalLength += info.TotalBytes;
+                    this.BytesSoFar += info.CurrentBytes;
                 }
 
                 this.PollNetworkState();
@@ -826,9 +773,9 @@ namespace ExpansionDownloader.impl
 
                     if (info.Status != DownloadStatus.Success)
                     {
-                        var dt = new DownloadThread(info, this, this.mNotification);
+                        var dt = new DownloadThread(info, this, this.downloadNotification);
                         this.CancelAlarms();
-                        this.ScheduleAlarm(ACTIVE_THREAD_WATCHDOG);
+                        this.ScheduleAlarm(ActiveThreadWatchdog);
                         dt.Run();
                         this.CancelAlarms();
                     }
@@ -844,7 +791,7 @@ namespace ExpansionDownloader.impl
                             this.UpdateLvl(this);
                             return;
                         case DownloadStatus.Success:
-                            this.mBytesSoFar += info.CurrentBytes - startingCount;
+                            this.BytesSoFar += info.CurrentBytes - startingCount;
                             db.updateMetadata(this.mPackageInfo.VersionCode, 0);
 
                             if (index < infos.Length - 1)
@@ -852,14 +799,14 @@ namespace ExpansionDownloader.impl
                                 continue;
                             }
 
-                            this.mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
+                            this.downloadNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
                             return;
                         case DownloadStatus.FileDeliveredIncorrectly:
 
                             // we may be on a network that is returning us a web page on redirect
                             notifyStatus = DownloaderClientState.PausedNetworkSetupFailure;
                             info.CurrentBytes = 0;
-                            db.updateDownload(info);
+                            db.UpdateDownload(info);
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.PausedByApp:
@@ -900,7 +847,7 @@ namespace ExpansionDownloader.impl
 
                     if (setWakeWatchdog)
                     {
-                        this.ScheduleAlarm(WATCHDOG_WAKE_TIMER);
+                        this.ScheduleAlarm(WatchdogWakeTimer);
                     }
                     else
                     {
@@ -908,19 +855,18 @@ namespace ExpansionDownloader.impl
                     }
 
                     // failure or pause state
-                    this.mNotification.OnDownloadStateChanged(notifyStatus);
+                    this.downloadNotification.OnDownloadStateChanged(notifyStatus);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Some blasted exception was thrown somewhere...");
                 Debug.WriteLine(ex.Message);
                 Debug.WriteLine(ex.StackTrace);
             }
             finally
             {
-                IsServiceRunning = false;
+                this.IsServiceRunning = false;
             }
         }
 
@@ -944,17 +890,6 @@ namespace ExpansionDownloader.impl
         }
 
         /// <summary>
-        /// Updates the LVL information from the server.
-        /// </summary>
-        /// <param name="context">
-        /// </param>
-        protected void UpdateLvl(DownloaderService context)
-        {
-            var h = new Handler(context.MainLooper);
-            h.Post(new LvlRunnable(context, this.mPendingIntent));
-        }
-
-        /// <summary>
         /// The cancel alarms.
         /// </summary>
         private void CancelAlarms()
@@ -971,6 +906,47 @@ namespace ExpansionDownloader.impl
                 alarms.Cancel(this.mAlarmIntent);
                 this.mAlarmIntent = null;
             }
+        }
+
+        /// <summary>
+        /// The APK has been updated and a filename has been sent down from the
+        /// Market call. If the file has the same name as the previous file, we do
+        /// nothing as the file is guaranteed to be the same. If the file does not
+        /// have the same name, we download it if it hasn't already been delivered by
+        /// Market.
+        /// </summary>
+        /// <param name="db">
+        /// The db.
+        /// </param>
+        /// <param name="filename">
+        /// the name of the new file
+        /// </param>
+        /// <param name="fileSize">
+        /// the size of the new file
+        /// </param>
+        /// <returns>
+        /// The handle file updated.
+        /// </returns>
+        private bool HandleFileUpdated(DownloadsDB db, string filename, long fileSize)
+        {
+            DownloadInfo di = db.getDownloadInfoByFileName(filename);
+
+            if (di != null && di.FileName != null)
+            {
+                if (filename == di.FileName)
+                {
+                    return false;
+                }
+
+                // remove partially downloaded file if it is there
+                string deleteFile = Helpers.GenerateSaveFileName(this, di.FileName);
+                if (File.Exists(deleteFile))
+                {
+                    File.Delete(deleteFile);
+                }
+            }
+
+            return !Helpers.DoesFileExist(this, filename, fileSize, true);
         }
 
         /// <summary>
@@ -1005,7 +981,7 @@ namespace ExpansionDownloader.impl
         /// <param name="wakeUp">
         /// The wake up.
         /// </param>
-        private void ScheduleAlarm(long wakeUp)
+        private void ScheduleAlarm(int wakeUp)
         {
             var alarms = this.GetSystemService(AlarmService).JavaCast<AlarmManager>();
             if (alarms == null)
@@ -1014,13 +990,27 @@ namespace ExpansionDownloader.impl
                 return;
             }
 
-            Debug.WriteLine("LVLDL scheduling retry in " + wakeUp + "ms");
+            Calendar cal = Calendar.Instance;
+            cal.Add(CalendarField.Second, wakeUp);
+
+            Debug.WriteLine("LVLDL scheduling retry in {0} seconds ({1})", wakeUp, cal.Time.ToLocaleString());
 
             var intent = new Intent(DownloaderSeviceActions.ActionRetry);
             intent.PutExtra(DownloaderServiceExtras.PendingIntent, this.mPendingIntent);
             intent.SetClassName(this.PackageName, this.AlarmReceiverClassName);
             this.mAlarmIntent = PendingIntent.GetBroadcast(this, 0, intent, PendingIntentFlags.OneShot);
-            alarms.Set(AlarmType.RtcWakeup, PolicyExtensions.GetCurrentMilliseconds() + wakeUp, this.mAlarmIntent);
+            alarms.Set(AlarmType.RtcWakeup, cal.TimeInMillis, this.mAlarmIntent);
+        }
+
+        /// <summary>
+        /// Updates the LVL information from the server.
+        /// </summary>
+        /// <param name="context">
+        /// </param>
+        private void UpdateLvl(DownloaderService context)
+        {
+            var h = new Handler(context.MainLooper);
+            h.Post(new LvlRunnable(context, this.mPendingIntent));
         }
 
         /// <summary>
@@ -1031,54 +1021,43 @@ namespace ExpansionDownloader.impl
         /// </param>
         private void UpdateNetworkState(NetworkInfo info)
         {
-            bool isConnected = this.mIsConnected;
-            bool isFailover = this.mIsFailover;
-            bool isCellularConnection = this.mIsCellularConnection;
-            bool isRoaming = this.mIsRoaming;
-            bool isAtLeast3G = this.mIsAtLeast3G;
-            if (info == null)
+            NetworkState tempState = this.networkState;
+
+            this.networkState = NetworkState.Disconnected;
+
+            if (info != null && info.IsConnected)
             {
-                this.mIsRoaming = false;
-                this.mIsFailover = false;
-                this.mIsConnected = false;
-                this.UpdateNetworkType(-1, -1);
-            }
-            else
-            {
-                this.mIsRoaming = info.IsRoaming;
-                this.mIsFailover = info.IsFailover;
-                this.mIsConnected = info.IsConnected;
-                this.UpdateNetworkType((int)info.Type, (int)info.Subtype);
+                this.networkState = NetworkState.Connected;
+
+                if (info.IsRoaming)
+                {
+                    this.networkState |= NetworkState.Roaming;
+                }
+
+                if (info.IsFailover)
+                {
+                    this.networkState |= NetworkState.IsFailOver;
+                }
+
+                this.networkState |= GetNetworkState(info);
             }
 
-            this.mStateChanged = this.mStateChanged || isConnected != this.mIsConnected
-                                 || isFailover != this.mIsFailover || isCellularConnection != this.mIsCellularConnection
-                                 || isRoaming != this.mIsRoaming || isAtLeast3G != this.mIsAtLeast3G;
+            this.mStateChanged = this.mStateChanged || this.networkState != tempState;
 
             if (this.mStateChanged)
             {
                 Debug.WriteLine("LVLDL Network state changed: ");
-                Debug.WriteLine(
-                    "LVLDL Starting State: {0}{1}{2}{3}", 
-                    isConnected ? "Connected " : "Not Connected ", 
-                    isCellularConnection ? "Cellular " : "WiFi ", 
-                    isRoaming ? "Roaming " : "Local ", 
-                    isAtLeast3G ? "3G+ " : "<3G ");
-                Debug.WriteLine(
-                    "LVLDL Ending State: {0}{1}{2}{3}", 
-                    this.mIsConnected ? "Connected " : "Not Connected ", 
-                    this.mIsCellularConnection ? "Cellular " : "WiFi ", 
-                    this.mIsRoaming ? "Roaming " : "Local ", 
-                    this.mIsAtLeast3G ? "3G+ " : "<3G ");
+                Debug.WriteLine("LVLDL Starting State: {0}", tempState);
+                Debug.WriteLine("LVLDL Ending State: {0}", this.networkState);
 
-                if (IsServiceRunning)
+                if (this.IsServiceRunning)
                 {
-                    if (this.mIsRoaming)
+                    if (this.networkState.HasFlag(NetworkState.Roaming))
                     {
                         this.Status = DownloadStatus.WaitingForNetwork;
                         this.Control = ControlAction.Paused;
                     }
-                    else if (this.mIsCellularConnection)
+                    else if (this.networkState.HasFlag(NetworkState.IsCellular))
                     {
                         DownloadsDB db = DownloadsDB.getDB(this);
                         DownloaderServiceFlags flags = db.getFlags();
@@ -1093,69 +1072,39 @@ namespace ExpansionDownloader.impl
         }
 
         /// <summary>
-        /// Updates the network type based upon the type and subtype returned from
-        /// the connectivity manager. Subtype is only used for cellular signals.
+        /// Updates the network type based upon the info returned from the 
+        /// connectivity manager. 
         /// </summary>
-        /// <param name="type">
-        /// The type.
-        /// </param>
-        /// <param name="subType">
-        /// The sub Type.
-        /// </param>
-        private void UpdateNetworkType(int type, int subType)
+        /// <param name="info"></param>
+        /// <returns></returns>
+        protected virtual NetworkState GetNetworkState(NetworkInfo info)
         {
-            switch ((ConnectivityType)type)
+            var state = NetworkState.Disconnected;
+            
+            switch (info.Type)
             {
-                case ConnectivityType.Wifi:
-
-                    // case ConnectivityType.Ethernet:
-                    // case ConnectivityType.Bluetooth:
-                    this.mIsCellularConnection = false;
-                    this.mIsAtLeast3G = false;
-                    this.mIsAtLeast4G = false;
-                    break;
                 case ConnectivityType.Wimax:
-                    this.mIsCellularConnection = true;
-                    this.mIsAtLeast3G = true;
-                    this.mIsAtLeast4G = true;
+                    state = NetworkState.Is3G | NetworkState.Is3G | NetworkState.IsCellular;
                     break;
+
                 case ConnectivityType.Mobile:
-                    this.mIsCellularConnection = true;
-                    switch ((NetworkType)subType)
+                    state = NetworkState.IsCellular;
+                    switch ((NetworkType)info.Subtype)
                     {
-                        case NetworkType.OneXrtt:
-                        case NetworkType.Cdma:
-                        case NetworkType.Edge:
-                        case NetworkType.Gprs:
-                        case NetworkType.Iden:
-                            this.mIsAtLeast3G = false;
-                            this.mIsAtLeast4G = false;
-                            break;
                         case NetworkType.Hsdpa:
                         case NetworkType.Hsupa:
                         case NetworkType.Hspa:
                         case NetworkType.Evdo0:
                         case NetworkType.EvdoA:
                         case NetworkType.Umts:
-                            this.mIsAtLeast3G = true;
-                            this.mIsAtLeast4G = false;
-                            break;
-
-                            // case NetworkType.Lte: // 4G
-                            // case NetworkType.Ehrpd: // 3G ++ interop with 4G
-                            // case NetworkType.Hspap: // 3G ++ but marketed as 4G
-                            // mIsAtLeast3G = true;
-                            // mIsAtLeast4G = true;
-                            // break;
-                        default:
-                            this.mIsCellularConnection = false;
-                            this.mIsAtLeast3G = false;
-                            this.mIsAtLeast4G = false;
+                            state |= NetworkState.Is3G;
                             break;
                     }
 
                     break;
             }
+
+            return state;
         }
 
         #endregion
@@ -1185,10 +1134,14 @@ namespace ExpansionDownloader.impl
 
             #endregion
 
+            #region Public Properties
+
             /// <summary>
             /// Gets the status.
             /// </summary>
             public DownloadStatus Status { get; private set; }
+
+            #endregion
         }
 
         /// <summary>

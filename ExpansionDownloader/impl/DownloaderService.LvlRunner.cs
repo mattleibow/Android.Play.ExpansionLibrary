@@ -74,13 +74,11 @@ namespace ExpansionDownloader.impl
             /// </summary>
             public void Run()
             {
-                Debug.WriteLine("DownloaderService.LvlRunnable.Run");
                 this.context.IsServiceRunning = true;
-                this.context.mNotification.OnDownloadStateChanged(DownloaderClientState.FetchingUrl);
+                this.context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FetchingUrl);
                 string deviceId = Settings.Secure.GetString(this.context.ContentResolver, Settings.Secure.AndroidId);
 
-                var aep = new ApkExpansionPolicy(
-                    this.context, new AesObfuscator(this.context.Salt, this.context.PackageName, deviceId));
+                var aep = new ApkExpansionPolicy(this.context, new AesObfuscator(this.context.Salt, this.context.PackageName, deviceId));
 
                 // reset our policy back to the start of the world to force a re-check
                 aep.ResetPolicy();
@@ -162,11 +160,11 @@ namespace ExpansionDownloader.impl
                 /// </exception>
                 public void Allow(PolicyServerResponse reason)
                 {
-                    Debug.WriteLine("DownloaderService.LvlRunnable.ApkLicenseCheckerCallback.Allow");
                     try
                     {
-                        int count = this.policy.GetExpansionUrlCount();
                         DownloadsDB db = DownloadsDB.getDB(this.Context);
+
+                        int count = this.policy.GetExpansionUrlCount();
                         if (count == 0)
                         {
                             Debug.WriteLine("No expansion packs.");
@@ -176,19 +174,19 @@ namespace ExpansionDownloader.impl
                         for (int index = 0; index < count; index++)
                         {
                             string currentFileName = this.policy.GetExpansionFileName(index);
-                            if (null != currentFileName)
+                            if (currentFileName != null)
                             {
                                 var di = new DownloadInfo(index, currentFileName, this.Context.PackageName);
 
                                 long fileSize = this.policy.GetExpansionFileSize(index);
-                                if (this.Context.HandleFileUpdated(db, index, currentFileName, fileSize))
+                                if (this.Context.HandleFileUpdated(db, currentFileName, fileSize))
                                 {
                                     status = DownloadStatus.Unknown;
                                     di.ResetDownload();
                                     di.Uri = this.policy.GetExpansionUrl(index);
                                     di.TotalBytes = fileSize;
                                     di.Status = status;
-                                    db.updateDownload(di);
+                                    db.UpdateDownload(di);
                                 }
                                 else
                                 {
@@ -203,13 +201,13 @@ namespace ExpansionDownloader.impl
                                         di.TotalBytes = fileSize;
                                         di.CurrentBytes = fileSize;
                                         di.Uri = this.policy.GetExpansionUrl(index);
-                                        db.updateDownload(di);
+                                        db.UpdateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
                                         dbdi.Uri = this.policy.GetExpansionUrl(index);
-                                        db.updateDownload(dbdi);
+                                        db.UpdateDownload(dbdi);
                                         status = DownloadStatus.Unknown;
                                     }
                                 }
@@ -222,20 +220,19 @@ namespace ExpansionDownloader.impl
                         {
                             PackageInfo pi = this.Context.PackageManager.GetPackageInfo(this.Context.PackageName, 0);
                             db.updateMetadata(pi.VersionCode, status);
-                            var required = StartDownloadServiceIfRequired(
-                                this.Context, this.Context.mPendingIntent, this.Context.GetType());
+                            var required = StartDownloadServiceIfRequired(this.Context, this.Context.mPendingIntent, this.Context.GetType());
                             switch (required)
                             {
                                 case DownloadServiceRequirement.NoDownloadRequired:
-                                    this.Context.mNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
+                                    this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
                                     break;
+
                                 case DownloadServiceRequirement.LvlCheckRequired: // DANGER WILL ROBINSON!
                                     Debug.WriteLine("In LVL checking loop!");
-                                    this.Context.mNotification.OnDownloadStateChanged(
-                                        DownloaderClientState.FailedUnlicensed);
+                                    this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FailedUnlicensed);
                                     throw new Java.Lang.RuntimeException("Error with LVL checking and database integrity");
-                                case DownloadServiceRequirement.DownloadRequired:
 
+                                case DownloadServiceRequirement.DownloadRequired:
                                     // do nothing: the download will notify the application when things are done
                                     break;
                             }
@@ -272,7 +269,7 @@ namespace ExpansionDownloader.impl
                 {
                     try
                     {
-                        this.Context.mNotification.OnDownloadStateChanged(DownloaderClientState.FailedFetchingUrl);
+                        this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FailedFetchingUrl);
                     }
                     finally
                     {
@@ -288,17 +285,16 @@ namespace ExpansionDownloader.impl
                 /// </param>
                 public void DontAllow(PolicyServerResponse reason)
                 {
-                    Debug.WriteLine("DownloaderService.LvlRunnable.ApkLicenseCheckerCallback.DontAllow");
                     try
                     {
                         switch (reason)
                         {
                             case PolicyServerResponse.NotLicensed:
-                                this.Context.mNotification.OnDownloadStateChanged(
+                                this.Context.downloadNotification.OnDownloadStateChanged(
                                     DownloaderClientState.FailedUnlicensed);
                                 break;
                             case PolicyServerResponse.Retry:
-                                this.Context.mNotification.OnDownloadStateChanged(
+                                this.Context.downloadNotification.OnDownloadStateChanged(
                                     DownloaderClientState.FailedFetchingUrl);
                                 break;
                         }

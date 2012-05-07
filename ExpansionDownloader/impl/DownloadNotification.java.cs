@@ -7,6 +7,8 @@ using Java.Lang;
 
 namespace ExpansionDownloader.impl
 {
+    using ExpansionDownloader.Client;
+
     public class DownloadNotification : IDownloaderClient
     {
         private static string LOGTAG = "DownloadNotification";

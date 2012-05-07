@@ -1,6 +1,8 @@
 namespace ExpansionDownloader.Sample
 {
     using Android.App;
+    using Android.Net;
+    using Android.Telephony;
 
     using ExpansionDownloader.impl;
 
@@ -49,5 +51,36 @@ namespace ExpansionDownloader.Sample
                 return "expansiondownloader.sample.SampleAlarmReceiver";
             }
         }
+
+#if NOTIFICATION_BUILDER
+
+        /// <summary>
+        /// Updates the network type based upon the info returned from the 
+        /// connectivity manager. 
+        /// </summary>
+        /// <param name="info"></param>
+        /// <returns></returns>
+        protected override NetworkState GetNetworkState(NetworkInfo info)
+        {
+            var state = NetworkState.Disconnected;
+
+            if (info.Type == ConnectivityType.Mobile)
+            {
+                var networkType = (NetworkType)info.Subtype;
+                switch (networkType)
+                {
+                    case NetworkType.Hspap:
+                    case NetworkType.Ehrpd:
+                    case NetworkType.Lte:
+                        state = NetworkState.Is3G | NetworkState.Is4G;
+                        break;
+                }
+            }
+
+            return base.GetNetworkState(info) | state;
+        }
+
+#endif
+
     }
 }

@@ -5,17 +5,16 @@ using Android.Database;
 using Android.Database.Sqlite;
 using Android.Provider;
 using Android.Util;
-using Java.Lang;
-using LicenseVerificationLibrary;
 using Exception = Java.Lang.Exception;
 
 namespace ExpansionDownloader.impl
 {
+    using ExpansionDownloader.Service;
+
     public class DownloadsDB
     {
         private static string DATABASE_NAME = "DownloadsDB";
         private static int DATABASE_VERSION = 7;
-        public static string LOG_TAG = typeof (DownloadsDB).Name;
         private static DownloadsDB mDownloadsDB;
 
         private static readonly object _locker = new object();
@@ -181,7 +180,7 @@ namespace ExpansionDownloader.impl
      * @return the row id of the record to be updated/inserted, or -1
      */
 
-        public bool updateDownload(DownloadInfo di)
+        public bool UpdateDownload(DownloadInfo di)
         {
             var cv = new ContentValues();
             cv.Put(DownloadColumns.INDEX, di.ExpansionFileType);
@@ -196,10 +195,10 @@ namespace ExpansionDownloader.impl
             cv.Put(DownloadColumns.NUM_FAILED, di.FailedCount);
             cv.Put(DownloadColumns.RETRY_AFTER, di.RetryAfter);
             cv.Put(DownloadColumns.REDIRECT_COUNT, di.RedirectCount);
-            return updateDownload(di, cv);
+            return this.UpdateDownload(di, cv);
         }
 
-        public bool updateDownload(DownloadInfo di, ContentValues cv)
+        public bool UpdateDownload(DownloadInfo di, ContentValues cv)
         {
             long id = di == null ? -1 : getIDForDownloadInfo(di);
             try

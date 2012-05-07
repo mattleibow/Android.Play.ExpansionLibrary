@@ -53,6 +53,9 @@
     <Compile Include="..\ExpansionDownloader.Sample\SampleAlarmReceiver.java.cs">
       <Link>SampleAlarmReceiver.java.cs</Link>
     </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderActivity.Design.cs">
+      <Link>SampleDownloaderActivity.Design.cs</Link>
+    </Compile>
     <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderActivity.java.cs">
       <Link>SampleDownloaderActivity.java.cs</Link>
     </Compile>

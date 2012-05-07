@@ -7,6 +7,8 @@ using ExpansionDownloader.impl;
 
 namespace ExpansionDownloader
 {
+    using ExpansionDownloader.Client;
+
     public static class Helpers
     {
         public static readonly Random Random;

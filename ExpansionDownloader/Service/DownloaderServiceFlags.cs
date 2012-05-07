@@ -1,4 +1,4 @@
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Service
 {
     using System;
 

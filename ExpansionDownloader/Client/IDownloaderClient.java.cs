@@ -1,4 +1,4 @@
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Client
 {
     using Android.OS;
 
@@ -62,7 +62,7 @@ namespace ExpansionDownloader
         /// {@link DownloaderServiceMarshaller#CreateProxy} to instantiate a member
         /// instance of {@link IDownloaderService}, then call {@link
         /// IDownloaderService#OnClientUpdated} with the Messenger retrieved from your
-        /// {@link IStub} proxy object.
+        /// {@link IDownloaderServiceConnection} proxy object.
         /// </para>
         /// </summary>
         /// <param name="m">

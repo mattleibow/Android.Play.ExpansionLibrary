@@ -145,7 +145,7 @@ namespace ExpansionDownloader.impl
 
             var fuzz = 1000 + this.Fuzz;
             var failCount = 1 << (this.FailedCount - 1);
-            var i = DownloaderService.RETRY_FIRST_DELAY * fuzz * failCount;
+            var i = DownloaderService.RetryFirstDelay * fuzz * failCount;
             var restartTime = this.LastModified + i;
             return restartTime;
         }
