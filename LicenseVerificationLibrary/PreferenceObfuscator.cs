@@ -1,61 +1,92 @@
-using System;
-using System.Diagnostics;
-using Android.Content;
-
 namespace LicenseVerificationLibrary
 {
+    using System;
+    using System.Diagnostics;
+
+    using Android.Content;
+
     /// <summary>
-    ///   An wrapper for SharedPreferences that transparently performs data
+    /// An wrapper for SharedPreferences that transparently performs data
     ///   obfuscation.
     /// </summary>
     public class PreferenceObfuscator
     {
-        private readonly IObfuscator _obfuscator;
-        private readonly ISharedPreferences _preferences;
-        private ISharedPreferencesEditor _editor;
+        #region Constants and Fields
 
         /// <summary>
-        ///   Constructor.
+        /// The obfuscator.
         /// </summary>
-        /// <param name = "sp">A SharedPreferences instance provided by the system.</param>
-        /// <param name = "o">The Obfuscator to use when reading or writing data.</param>
+        private readonly IObfuscator obfuscator;
+
+        /// <summary>
+        /// The preferences.
+        /// </summary>
+        private readonly ISharedPreferences preferences;
+
+        /// <summary>
+        /// The editor.
+        /// </summary>
+        private ISharedPreferencesEditor editor;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PreferenceObfuscator"/> class. 
+        /// Constructor.
+        /// </summary>
+        /// <param name="sp">
+        /// A SharedPreferences instance provided by the system.
+        /// </param>
+        /// <param name="o">
+        /// The Obfuscator to use when reading or writing data.
+        /// </param>
         public PreferenceObfuscator(ISharedPreferences sp, IObfuscator o)
         {
-            _preferences = sp;
-            _obfuscator = o;
-            _editor = null;
+            this.preferences = sp;
+            this.obfuscator = o;
+            this.editor = null;
         }
 
-        public void PutValue<T>(string key, T value)
-        {
-            PutString(key, value.ToString());
-        }
+        #endregion
 
-        public void PutString(string key, string value)
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// The commit.
+        /// </summary>
+        public void Commit()
         {
-            if (_editor == null)
+            if (this.editor != null)
             {
-                _editor = _preferences.Edit();
+                this.editor.Commit();
+                this.editor = null;
             }
-
-            _editor.PutString(key, _obfuscator.Obfuscate(value, key));
         }
 
-        public T GetValue<T>(string key, T defValue)
-        {
-            return (T) Convert.ChangeType(GetString(key, defValue.ToString()), typeof(T));
-        }
-
+        /// <summary>
+        /// The get string.
+        /// </summary>
+        /// <param name="key">
+        /// The key.
+        /// </param>
+        /// <param name="defValue">
+        /// The def value.
+        /// </param>
+        /// <returns>
+        /// The get string.
+        /// </returns>
         public string GetString(string key, string defValue)
         {
             string result = defValue;
-            string value = _preferences.GetString(key, null);
+            string value = this.preferences.GetString(key, null);
 
             if (value != null)
             {
                 try
                 {
-                    result = _obfuscator.Unobfuscate(value, key);
+                    result = this.obfuscator.Unobfuscate(value, key);
                 }
                 catch (ValidationException ex)
                 {
@@ -68,13 +99,59 @@ namespace LicenseVerificationLibrary
             return result;
         }
 
-        public void Commit()
+        /// <summary>
+        /// The get value.
+        /// </summary>
+        /// <param name="key">
+        /// The key.
+        /// </param>
+        /// <param name="defValue">
+        /// The def value.
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        /// <returns>
+        /// </returns>
+        public T GetValue<T>(string key, T defValue)
         {
-            if (_editor != null)
-            {
-                _editor.Commit();
-                _editor = null;
-            }
+            return (T)Convert.ChangeType(this.GetString(key, defValue.ToString()), typeof(T));
         }
+
+        /// <summary>
+        /// The put string.
+        /// </summary>
+        /// <param name="key">
+        /// The key.
+        /// </param>
+        /// <param name="value">
+        /// The value.
+        /// </param>
+        public void PutString(string key, string value)
+        {
+            if (this.editor == null)
+            {
+                this.editor = this.preferences.Edit();
+            }
+
+            this.editor.PutString(key, this.obfuscator.Obfuscate(value, key));
+        }
+
+        /// <summary>
+        /// The put value.
+        /// </summary>
+        /// <param name="key">
+        /// The key.
+        /// </param>
+        /// <param name="value">
+        /// The value.
+        /// </param>
+        /// <typeparam name="T">
+        /// </typeparam>
+        public void PutValue<T>(string key, T value)
+        {
+            this.PutString(key, value.ToString());
+        }
+
+        #endregion
     }
 }

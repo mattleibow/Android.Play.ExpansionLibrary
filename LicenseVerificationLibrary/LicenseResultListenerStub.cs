@@ -1,33 +1,50 @@
-using Android.OS;
-
 namespace LicenseVerificationLibrary
 {
+    using Android.OS;
+
     /// <summary>
     /// Local-side IPC implementation stub class.
     /// </summary>
     internal abstract class LicenseResultListenerStub : Binder, ILicenseResultListener
     {
-        private const int TransactionVerifyLicense = (BinderConsts.FirstCallTransaction + 0);
+        #region Constants and Fields
+
+        /// <summary>
+        /// The descriptor.
+        /// </summary>
         private const string Descriptor = "com.android.vending.licensing.ILicenseResultListener";
 
         /// <summary>
+        /// The transaction verify license.
+        /// </summary>
+        private const int TransactionVerifyLicense = BinderConsts.FirstCallTransaction + 0;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LicenseResultListenerStub"/> class. 
         /// Construct the stub at attach it to the interface.
         /// </summary>
         protected LicenseResultListenerStub()
         {
-            AttachInterface(this, Descriptor);
+            System.Diagnostics.Debug.WriteLine(Descriptor);
+            this.AttachInterface(this, Descriptor);
         }
+
+        #endregion
+
+        #region Public Methods and Operators
 
         /// <summary>
-        /// Cast an IBinder object into an ILicenseResultListener interface, generating a proxy if needed.
+        /// The as interface.
         /// </summary>
-        public IBinder AsBinder()
-        {
-            return this;
-        }
-
-        public abstract void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature);
-
+        /// <param name="obj">
+        /// The obj.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public static ILicenseResultListener AsInterface(IBinder obj)
         {
             ILicenseResultListener result = null;
@@ -41,6 +58,50 @@ namespace LicenseVerificationLibrary
             return result;
         }
 
+        /// <summary>
+        /// Cast an IBinder object into an ILicenseResultListener interface, generating a proxy if needed.
+        /// </summary>
+        public IBinder AsBinder()
+        {
+            return this;
+        }
+
+        /// <summary>
+        /// The verify license.
+        /// </summary>
+        /// <param name="responseCode">
+        /// The response code.
+        /// </param>
+        /// <param name="signedData">
+        /// The signed data.
+        /// </param>
+        /// <param name="signature">
+        /// The signature.
+        /// </param>
+        public abstract void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature);
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// The on transact.
+        /// </summary>
+        /// <param name="code">
+        /// The code.
+        /// </param>
+        /// <param name="data">
+        /// The data.
+        /// </param>
+        /// <param name="reply">
+        /// The reply.
+        /// </param>
+        /// <param name="flags">
+        /// The flags.
+        /// </param>
+        /// <returns>
+        /// The on transact.
+        /// </returns>
         protected override bool OnTransact(int code, Parcel data, Parcel reply, int flags)
         {
             var handled = false;
@@ -57,7 +118,7 @@ namespace LicenseVerificationLibrary
                     var responseCode = data.ReadInt();
                     var signedData = data.ReadString();
                     var signature = data.ReadString();
-                    VerifyLicense((ServerResponseCode) responseCode, signedData, signature);
+                    this.VerifyLicense((ServerResponseCode)responseCode, signedData, signature);
                     handled = true;
                     break;
             }
@@ -65,42 +126,95 @@ namespace LicenseVerificationLibrary
             return handled || base.OnTransact(code, data, reply, flags);
         }
 
+        #endregion
+
+        /// <summary>
+        /// The proxy.
+        /// </summary>
         private class Proxy : Binder, ILicenseResultListener
         {
-            private readonly IBinder _remote;
+            #region Constants and Fields
 
+            /// <summary>
+            /// The remote.
+            /// </summary>
+            private readonly IBinder remote;
+
+            #endregion
+
+            #region Constructors and Destructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Proxy"/> class.
+            /// </summary>
+            /// <param name="remote">
+            /// The remote.
+            /// </param>
             public Proxy(IBinder remote)
             {
-                _remote = remote;
+                this.remote = remote;
             }
 
+            #endregion
+
+            #region Public Properties
+
+            /// <summary>
+            /// Gets InterfaceDescriptor.
+            /// </summary>
             public override string InterfaceDescriptor
             {
-                get { return Descriptor; }
+                get
+                {
+                    return Descriptor;
+                }
             }
 
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// The as binder.
+            /// </summary>
+            /// <returns>
+            /// </returns>
             public IBinder AsBinder()
             {
-                return _remote;
+                return this.remote;
             }
 
+            /// <summary>
+            /// The verify license.
+            /// </summary>
+            /// <param name="responseCode">
+            /// The response code.
+            /// </param>
+            /// <param name="signedData">
+            /// The signed data.
+            /// </param>
+            /// <param name="signature">
+            /// The signature.
+            /// </param>
             public void VerifyLicense(ServerResponseCode responseCode, string signedData, string signature)
             {
                 Parcel data = Parcel.Obtain();
                 try
                 {
                     data.WriteInterfaceToken(Descriptor);
-                    data.WriteInt((int) responseCode);
+                    data.WriteInt((int)responseCode);
                     data.WriteString(signedData);
                     data.WriteString(signature);
 
-                    _remote.Transact(TransactionVerifyLicense, data, null, TransactionFlags.Oneway);
+                    this.remote.Transact(TransactionVerifyLicense, data, null, TransactionFlags.Oneway);
                 }
                 finally
                 {
                     data.Recycle();
                 }
             }
+
+            #endregion
         }
     }
 }

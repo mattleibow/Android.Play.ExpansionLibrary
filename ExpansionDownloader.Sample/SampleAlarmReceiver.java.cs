@@ -5,6 +5,8 @@ namespace ExpansionDownloader.Sample
     using Android.Content;
     using Android.Content.PM;
 
+    using ExpansionDownloader.Client;
+
     /// <summary>
     /// The alarm receiver for this sample.
     /// </summary>

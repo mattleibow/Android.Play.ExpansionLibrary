@@ -20,15 +20,18 @@ namespace LicenseVerificationLibrary
     /// Client library for Android Market license verifications.
     /// </para>
     /// <para>
-    /// The LicenseChecker is configured via a <see cref="IPolicy"/> which contains the
-    ///  logic to determine whether a user should have access to the application. For
-    ///  example, the IPolicy can define a threshold for allowable number of server or
-    ///  client failures before the library reports the user as not having access.
+    /// The LicenseChecker is configured via a <see cref="IPolicy"/> which 
+    /// contains the logic to determine whether a user should have access to 
+    /// the application. 
+    /// For example, the <see cref="IPolicy"/> can define a threshold for 
+    /// allowable number of server or client failures before the library 
+    /// reports the user as not having access.
     /// </para>
     /// </summary>
     /// <remarks>
-    /// Must also provide the Base64-encoded RSA public key associated with your
-    ///  developer account. The public key is obtainable from the publisher site.
+    /// Must also provide the Base64-encoded RSA public key associated with 
+    /// your developer account. 
+    /// The public key is obtainable from the publisher site.
     /// </remarks>
     public class LicenseChecker : Java.Lang.Object, IServiceConnection
     {
@@ -175,7 +178,12 @@ namespace LicenseVerificationLibrary
                 */
                 {
                     var validator = new LicenseValidator(
-                        this.policy, new NullDeviceLimiter(), callback, GenerateNumberUsedOnce(), this.packageName, this.versionCode);
+                        this.policy, 
+                        new NullDeviceLimiter(), 
+                        callback, 
+                        GenerateNumberUsedOnce(), 
+                        this.packageName, 
+                        this.versionCode);
 
                     if (this.licensingService == null)
                     {
@@ -414,7 +422,8 @@ namespace LicenseVerificationLibrary
                 try
                 {
                     Debug.WriteLine("Calling CheckLicense on service for " + validator.GetPackageName());
-                    this.licensingService.CheckLicense(validator.GetNumberUsedOnce(), validator.GetPackageName(), new ResultListener(validator, this));
+                    this.licensingService.CheckLicense(
+                        validator.GetNumberUsedOnce(), validator.GetPackageName(), new ResultListener(validator, this));
                     this.checksInProgress.Add(validator);
                 }
                 catch (RemoteException e)
@@ -504,7 +513,8 @@ namespace LicenseVerificationLibrary
                             if (this.checker.checksInProgress.Contains(this.licenseValidator))
                             {
                                 this.ClearTimeout();
-                                this.licenseValidator.Verify(this.checker.publicKey, responseCode, signedData, signature);
+                                this.licenseValidator.Verify(
+                                    this.checker.publicKey, responseCode, signedData, signature);
                                 this.checker.FinishCheck(this.licenseValidator);
                             }
 
@@ -558,7 +568,8 @@ namespace LicenseVerificationLibrary
 
                 if (logResponse)
                 {
-                    string androidId = Settings.Secure.GetString(this.checker.context.ContentResolver, Settings.Secure.AndroidId);
+                    string androidId = Settings.Secure.GetString(
+                        this.checker.context.ContentResolver, Settings.Secure.AndroidId);
                     Debug.WriteLine("License Server Failure: " + stringError);
                     Debug.WriteLine("Android ID: " + androidId);
                     Debug.WriteLine("Time: " + DateTime.Now);

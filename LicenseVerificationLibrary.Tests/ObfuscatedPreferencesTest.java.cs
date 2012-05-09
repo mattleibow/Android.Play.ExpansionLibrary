@@ -5,7 +5,8 @@ namespace LicenseVerificationLibrary.Tests
 {
     public class ObfuscatedPreferencesTest : TestCase
     {
-        private static string filename = "com.android.vending.licnese.test.ObfuscatedPreferencePopulatedTest";
+        private const string Filename = "com.android.vending.licnese.test.ObfuscatedPreferencePopulatedTest";
+
         private PreferenceObfuscator op;
         private ISharedPreferences sp;
 
@@ -15,12 +16,12 @@ namespace LicenseVerificationLibrary.Tests
 
         public override void SetUp()
         {
-            var SALT = new byte[] {104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33};
+            var salt = new byte[] { 104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33 };
 
             // Prepare PreferenceObfuscator instance
-            sp = Context.GetSharedPreferences(filename, FileCreationMode.Private);
+            sp = Context.GetSharedPreferences(Filename, FileCreationMode.Private);
             string deviceId = Settings.Secure.GetString(Context.ContentResolver, Settings.Secure.AndroidId);
-            IObfuscator o = new AesObfuscator(SALT, Context.PackageName, deviceId);
+            IObfuscator o = new AesObfuscator(salt, Context.PackageName, deviceId);
             op = new PreferenceObfuscator(sp, o);
 
             // Populate with test data
@@ -38,28 +39,28 @@ namespace LicenseVerificationLibrary.Tests
 
         public override void RunTests()
         {
-            testCorruptDataRetunsDefaultString();
-            testGetDefaultNullString();
-            testGetDefaultString();
-            testGetString();
+            this.TestCorruptDataRetunsDefaultString();
+            this.TestGetDefaultNullString();
+            this.TestGetDefaultString();
+            this.TestGetString();
         }
 
-        public void testGetString()
+        private void TestGetString()
         {
             AssertEquals("Hello world", op.GetString("testString", "fail"));
         }
 
-        public void testGetDefaultString()
+        private void TestGetDefaultString()
         {
             AssertEquals("Android rocks", op.GetString("noExist", "Android rocks"));
         }
 
-        public void testGetDefaultNullString()
+        private void TestGetDefaultNullString()
         {
             AssertEquals(null, op.GetString("noExist", null));
         }
 
-        public void testCorruptDataRetunsDefaultString()
+        private void TestCorruptDataRetunsDefaultString()
         {
             // Insert non-obfuscated string
             ISharedPreferencesEditor spe = sp.Edit();

@@ -1,80 +1,78 @@
 namespace ExpansionDownloader.impl
 {
     /// <summary>
-    /// <para>
     /// Lists the states that the download manager can set on a download to 
     /// notify applications of the download progress.
-    /// </para>
-    /// <para>
+    /// </summary>
+    /// <remarks>
     /// The codes follow the HTTP families:
     ///   1xx: informational
     ///   2xx: success
     ///   3xx: redirects (not used by the download manager)
     ///   4xx: client errors
     ///   5xx: server errors
-    /// </para>
-    /// </summary>
+    /// </remarks>
     public enum DownloadStatus
     {
         /// <summary>
         /// Start of informational status codes
         /// </summary>
-        InformationalMinimum = 100,
+        InformationalMinimum = 100, 
 
         /// <summary>
         /// End of informational status codes
         /// </summary>
-        InformationalMaximum = 199,
+        InformationalMaximum = 199, 
 
         /// <summary>
         /// Start of succss status codes
         /// </summary>
-        SuccessMinimum = 200,
+        SuccessMinimum = 200, 
 
         /// <summary>
         /// End of succss status codes
         /// </summary>
-        SuccessMaximum = 299,
+        SuccessMaximum = 299, 
 
         /// <summary>
         /// Start of redirect status codes
         /// </summary>
-        RedirectMinimum = 300,
+        RedirectMinimum = 300, 
 
         /// <summary>
         /// End of redirect status codes
         /// </summary>
-        RedirectMaximum = 399,
+        RedirectMaximum = 399, 
 
         /// <summary>
         /// Start of client error status codes
         /// </summary>
-        ClientErrorMinimum = 400,
+        ClientErrorMinimum = 400, 
 
         /// <summary>
         /// Start of any error status codes
         /// </summary>
-        AnyErrorMinimum = 400,
+        AnyErrorMinimum = 400, 
 
         /// <summary>
         /// End of client error status codes
         /// </summary>
-        ClientErrorMaximum = 499,
+        ClientErrorMaximum = 499, 
 
         /// <summary>
         /// Start of server error status codes
         /// </summary>
-        ServerErrorMinimum = 500,
+        ServerErrorMinimum = 500, 
 
         /// <summary>
         /// End of server error status codes
         /// </summary>
-        ServerErrorMaximum = 599,
+        ServerErrorMaximum = 599, 
 
         /// <summary>
         /// End of any error status codes
         /// </summary>
-        AnyErrorMaximum = 599,
+        AnyErrorMaximum = 599, 
 
         /// <summary>
         /// This download hasn't stated yet.
@@ -241,7 +239,7 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The current status has not been set
         /// </summary>
-        Unknown = -1,
+        Unknown = -1, 
 
         /// <summary>
         /// The current status has not been set

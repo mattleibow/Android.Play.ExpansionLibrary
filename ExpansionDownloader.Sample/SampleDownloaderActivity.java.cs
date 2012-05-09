@@ -17,36 +17,70 @@ namespace ExpansionDownloader.Sample
     using ExpansionDownloader.impl;
     using ExpansionDownloader.Service;
 
+    /// <summary>
+    /// The sample downloader activity.
+    /// </summary>
     [Activity(Label = "ExpansionDownloader.Sample", MainLauncher = true, Icon = "@drawable/icon")]
     public partial class SampleDownloaderActivity : Activity, IDownloaderClient
     {
-        private IDownloaderServiceConnection _downloaderServiceConnection;
-        private IDownloaderService downloaderService;
-        private DownloaderClientState downloaderState;
-        private bool isPaused;
-        
-        #region IDownloaderClient Members
-        
+        #region Constants and Fields
+
         /// <summary>
-        /// Create the remote service and marshaler.
+        /// The downloader service.
         /// </summary>
-        /// <remarks>
-        /// This is how we pass the client information back to the service so 
-        /// the client can be properly notified of changes. 
-        /// Do this every time we reconnect to the service.
-        /// </remarks>
-        /// <param name="m">The messenger to use.</param>
-        public void OnServiceConnected(Messenger m)
+        private IDownloaderService downloaderService;
+
+        /// <summary>
+        /// The downloader service connection.
+        /// </summary>
+        private IDownloaderServiceConnection downloaderServiceConnection;
+
+        /// <summary>
+        /// The downloader state.
+        /// </summary>
+        private DownloaderClientState downloaderState;
+
+        /// <summary>
+        /// The is paused.
+        /// </summary>
+        private bool isPaused;
+
+        /// <summary>
+        /// The zip file validation handler.
+        /// </summary>
+        private ZipFileValidationHandler zipFileValidationHandler;
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// Sets the state of the various controls based on the progressinfo 
+        /// object sent from the downloader service.
+        /// </summary>
+        /// <param name="progress">
+        /// The progressinfo object sent from the downloader service.
+        /// </param>
+        public void OnDownloadProgress(DownloadProgressInfo progress)
         {
-            this.downloaderService = DownloaderServiceMarshaller.CreateProxy(m);
-            this.downloaderService.OnClientUpdated(this._downloaderServiceConnection.GetMessenger());
+            this.averageSpeedTextView.Text = string.Format("{0} Kb/s", Helpers.GetSpeedString(progress.CurrentSpeed));
+            this.timeRemainingTextView.Text = string.Format(
+                "Time remaining: {0}", Helpers.GetTimeRemaining(progress.TimeRemaining));
+            this.progressBar.Max = (int)(progress.OverallTotal >> 8);
+            this.progressBar.Progress = (int)(progress.OverallProgress >> 8);
+            this.progressPercentTextView.Text = string.Format(
+                "{0}%", progress.OverallProgress * 100 / progress.OverallTotal);
+            this.progressFractionTextView.Text = Helpers.GetDownloadProgressString(
+                progress.OverallProgress, progress.OverallTotal);
         }
 
         /// <summary>
         /// The download state should trigger changes in the UI.
         /// It may be useful to show the state as being indeterminate at times.  
         /// </summary>
-        /// <param name="newState">The new state.</param>
+        /// <param name="newState">
+        /// The new state.
+        /// </param>
         public void OnDownloadStateChanged(DownloaderClientState newState)
         {
             if (this.downloaderState != newState)
@@ -111,35 +145,94 @@ namespace ExpansionDownloader.Sample
         }
 
         /// <summary>
-        /// Sets the state of the various controls based on the progressinfo 
-        /// object sent from the downloader service.
+        /// Create the remote service and marshaler.
         /// </summary>
-        /// <param name="progress">
-        /// The progressinfo object sent from the downloader service.
+        /// <remarks>
+        /// This is how we pass the client information back to the service so 
+        /// the client can be properly notified of changes. 
+        /// Do this every time we reconnect to the service.
+        /// </remarks>
+        /// <param name="m">
+        /// The messenger to use.
         /// </param>
-        public void OnDownloadProgress(DownloadProgressInfo progress)
+        public void OnServiceConnected(Messenger m)
         {
-            this.averageSpeedTextView.Text = string.Format("{0} Kb/s", Helpers.GetSpeedString(progress.CurrentSpeed));
-            this.timeRemainingTextView.Text = string.Format("Time remaining: {0}", Helpers.GetTimeRemaining(progress.TimeRemaining));
-            this.progressBar.Max = (int)(progress.OverallTotal >> 8);
-            this.progressBar.Progress = (int)(progress.OverallProgress >> 8);
-            this.progressPercentTextView.Text = string.Format("{0}%", progress.OverallProgress * 100 / progress.OverallTotal);
-            this.progressFractionTextView.Text = Helpers.GetDownloadProgressString(progress.OverallProgress, progress.OverallTotal);
+            this.downloaderService = DownloaderServiceMarshaller.CreateProxy(m);
+            this.downloaderService.OnClientUpdated(this.downloaderServiceConnection.GetMessenger());
         }
 
         #endregion
 
+        #region Methods
+
         /// <summary>
-        /// Update the pause button.
+        /// Called when the activity is first created; we wouldn't create a 
+        /// layout in the case where we have the file and are moving to another
+        /// activity without downloading.
         /// </summary>
-        /// <param name="paused">
-        /// Is the download paused.
+        /// <param name="savedInstanceState">
+        /// The saved instance state.
         /// </param>
-        private void UpdatePauseButton(bool paused)
+        protected override void OnCreate(Bundle savedInstanceState)
         {
-            this.isPaused = paused;
-            int stringResourceId = paused ? Resource.String.text_button_resume : Resource.String.text_button_pause;
-            this.pauseButton.SetText(stringResourceId);
+            this.CreateCustomNotification();
+
+            base.OnCreate(savedInstanceState);
+
+            // Before we do anything, are the files we expect already here and 
+            // delivered (presumably by Market) 
+            // For free titles, this is probably worth doing. (so no Market 
+            // request is necessary)
+            var delivered = this.AreExpansionFilesDelivered();
+
+            if (delivered)
+            {
+                return;
+            }
+
+            if (!this.GetExpansionFiles())
+            {
+                this.InitializeDownloadUi();
+            }
+        }
+
+        /// <summary>
+        /// The on destroy.
+        /// </summary>
+        protected override void OnDestroy()
+        {
+            if (this.zipFileValidationHandler != null)
+            {
+                this.zipFileValidationHandler.ShouldCancel = true;
+            }
+
+            base.OnDestroy();
+        }
+
+        /// <summary>
+        /// Re-connect the stub to our service on resume.
+        /// </summary>
+        protected override void OnResume()
+        {
+            if (this.downloaderServiceConnection != null)
+            {
+                this.downloaderServiceConnection.Connect(this);
+            }
+
+            base.OnResume();
+        }
+
+        /// <summary>
+        /// Disconnect the stub from our service on stop.
+        /// </summary>
+        protected override void OnStop()
+        {
+            if (this.downloaderServiceConnection != null)
+            {
+                this.downloaderServiceConnection.Disconnect(this);
+            }
+
+            base.OnStop();
         }
 
         /// <summary>
@@ -159,85 +252,23 @@ namespace ExpansionDownloader.Sample
         /// </returns>
         private bool AreExpansionFilesDelivered()
         {
-            var db = DownloadsDB.GetDatabase(this);
+            var db = DownloadsDatabase.GetDatabase(this);
             var downloads = db.GetDownloads();
 
             return downloads.Any() && downloads.All(x => Helpers.DoesFileExist(this, x.FileName, x.TotalBytes, false));
         }
-        
+
         /// <summary>
-        /// Perfom a check to see if the expansion files are vanid zip files.
+        /// The create custom notification.
         /// </summary>
-        private void ValidateExpansionFiles()
-        {
-            // Pre execute
-            this.dashboardView.Visibility = ViewStates.Visible;
-            this.useCellDataView.Visibility = ViewStates.Gone;
-            this.statusTextView.SetText(Resource.String.text_verifying_download);
-            this.pauseButton.Click += delegate
-            {
-                if (this.zipFileValidationHandler != null)
-                {
-                    this.zipFileValidationHandler.ShouldCancel = true;
-                }
-            };
-            this.pauseButton.SetText(Resource.String.text_button_cancel_verify);
-
-            ThreadPool.QueueUserWorkItem(this.DoValidateZipFiles);
-        }
-
-        private void DoValidateZipFiles(object state)
-        {
-            var db = DownloadsDB.GetDatabase(this);
-            var downloads = db.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
-
-            var result = downloads.Any() && downloads.All(this.IsValidZipFile);
-
-            this.RunOnUiThread(delegate
-                                   {
-                                       pauseButton.Click += delegate { Finish(); };
-                                       dashboardView.Visibility = ViewStates.Visible;
-                                       useCellDataView.Visibility = ViewStates.Gone;
-
-                                       if (result)
-                                       {
-                                           statusTextView.SetText(Resource.String.text_validation_complete);
-                                           pauseButton.SetText(Android.Resource.String.Ok);
-                                       }
-                                       else
-                                       {
-                                           statusTextView.SetText(Resource.String.text_validation_failed);
-                                           pauseButton.SetText(Android.Resource.String.Cancel);
-                                       }
-                                   });
-        }
-
-        private bool IsValidZipFile(string filename)
-        {
-            this.zipFileValidationHandler = new ZipFileValidationHandler(filename)
-                                                {
-                                                    UpdateUi = this.OnUpdateValidationUi
-                                                };
-
-            return File.Exists(filename) && ZipFile.Validate(this.zipFileValidationHandler);
-        }
-
-        private void OnUpdateValidationUi(ZipFileValidationHandler handler)
-        {
-            var info = new DownloadProgressInfo(
-                handler.TotalBytes, handler.CurrentBytes, handler.TimeRemaining, handler.AverageSpeed);
-
-            this.RunOnUiThread(() => this.OnDownloadProgress(info));
-        }
-
-        private ZipFileValidationHandler zipFileValidationHandler;
-
-        public void CreateCustomNotification()
+        private void CreateCustomNotification()
         {
 #if NOTIFICATION_BUILDER
             CustomNotificationFactory.Notification = new V11CustomNotification();
-            CustomNotificationFactory.MaxBytesOverMobile = DownloadManager.GetMaxBytesOverMobile(ApplicationContext).LongValue();
-            CustomNotificationFactory.RecommendedMaxBytesOverMobile = DownloadManager.GetRecommendedMaxBytesOverMobile(ApplicationContext).LongValue();
+            CustomNotificationFactory.MaxBytesOverMobile =
+                DownloadManager.GetMaxBytesOverMobile(this.ApplicationContext).LongValue();
+            CustomNotificationFactory.RecommendedMaxBytesOverMobile =
+                DownloadManager.GetRecommendedMaxBytesOverMobile(this.ApplicationContext).LongValue();
 #else
             CustomNotificationFactory.Notification = new V3CustomNotification();
             CustomNotificationFactory.MaxBytesOverMobile = int.MaxValue;
@@ -246,68 +277,44 @@ namespace ExpansionDownloader.Sample
         }
 
         /// <summary>
-        /// If the download isn't present, we initialize the download UI. This ties
-        /// all of the controls into the remote service calls.
+        /// The do validate zip files.
         /// </summary>
-        private void initializeDownloadUI()
+        /// <param name="state">
+        /// The state.
+        /// </param>
+        private void DoValidateZipFiles(object state)
         {
-            this.InitializeControls();
-            this._downloaderServiceConnection = DownloaderClientMarshaller.CreateStub(this, typeof(SampleDownloaderService));
-        }
+            var db = DownloadsDatabase.GetDatabase(this);
+            var downloads = db.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
 
-        private void OnEventHandler(object sender, EventArgs args)
-        {
-            this.downloaderService.SetDownloadFlags(DownloaderServiceFlags.FlagsDownloadOverCellular);
-            this.downloaderService.RequestContinueDownload();
-            this.useCellDataView.Visibility = ViewStates.Gone;
-        }
+            var result = downloads.Any() && downloads.All(this.IsValidZipFile);
 
-        private void OnOpenWiFiSettingsButtonOnClick(object sender, EventArgs e)
-        {
-            this.StartActivity(new Intent(Settings.ActionWifiSettings));
-        }
+            this.RunOnUiThread(
+                delegate
+                    {
+                        this.pauseButton.Click += delegate { this.Finish(); };
+                        this.dashboardView.Visibility = ViewStates.Visible;
+                        this.useCellDataView.Visibility = ViewStates.Gone;
 
-        private void OnButtonOnClick(object sender, EventArgs e)
-        {
-            if (this.isPaused)
-            {
-                this.downloaderService.RequestContinueDownload();
-            }
-            else
-            {
-                this.downloaderService.RequestPauseDownload();
-            }
-
-            this.UpdatePauseButton(!this.isPaused);
+                        if (result)
+                        {
+                            this.statusTextView.SetText(Resource.String.text_validation_complete);
+                            this.pauseButton.SetText(Android.Resource.String.Ok);
+                        }
+                        else
+                        {
+                            this.statusTextView.SetText(Resource.String.text_validation_failed);
+                            this.pauseButton.SetText(Android.Resource.String.Cancel);
+                        }
+                    });
         }
 
         /// <summary>
-        /// Called when the activity is first created; we wouldn't create a 
-        /// layout in the case where we have the file and are moving to another
-        /// activity without downloading.
+        /// The get expansion files.
         /// </summary>
-        /// <param name="savedInstanceState">The saved instance state.</param>
-        protected override void OnCreate(Bundle savedInstanceState)
-        {
-            this.CreateCustomNotification();
-
-            base.OnCreate(savedInstanceState);
-
-            // Before we do anything, are the files we expect already here and 
-            // delivered (presumably by Market) 
-            // For free titles, this is probably worth doing. (so no Market 
-            // request is necessary)
-
-            var delivered = this.AreExpansionFilesDelivered();
-
-            if (delivered) return;
-
-            if (!this.GetExpansionFiles())
-            {
-                this.initializeDownloadUI();
-            }
-        }
-
+        /// <returns>
+        /// The get expansion files.
+        /// </returns>
         private bool GetExpansionFiles()
         {
             bool result = false;
@@ -315,7 +322,7 @@ namespace ExpansionDownloader.Sample
             try
             {
                 // Build the intent that launches this activity.
-                Intent launchIntent = Intent;
+                Intent launchIntent = this.Intent;
                 var intent = new Intent(this, typeof(SampleDownloaderActivity));
                 intent.SetFlags(ActivityFlags.NewTask | ActivityFlags.ClearTop);
                 intent.SetAction(launchIntent.Action);
@@ -342,7 +349,7 @@ namespace ExpansionDownloader.Sample
                 // fall through to starting the actual app.
                 if (startResult != DownloadServiceRequirement.NoDownloadRequired)
                 {
-                    this.initializeDownloadUI();
+                    this.InitializeDownloadUi();
                     result = true;
                 }
             }
@@ -356,39 +363,136 @@ namespace ExpansionDownloader.Sample
         }
 
         /// <summary>
-        /// Re-connect the stub to our service on resume.
+        /// If the download isn't present, we initialize the download UI. This ties
+        /// all of the controls into the remote service calls.
         /// </summary>
-        protected override void OnResume()
+        private void InitializeDownloadUi()
         {
-            if (this._downloaderServiceConnection != null)
-            {
-                this._downloaderServiceConnection.Connect(this);
-            }
-
-            base.OnResume();
+            this.InitializeControls();
+            this.downloaderServiceConnection = DownloaderClientMarshaller.CreateStub(
+                this, typeof(SampleDownloaderService));
         }
 
         /// <summary>
-        /// Disconnect the stub from our service on stop.
+        /// The is valid zip file.
         /// </summary>
-        protected override void OnStop()
+        /// <param name="filename">
+        /// The filename.
+        /// </param>
+        /// <returns>
+        /// The is valid zip file.
+        /// </returns>
+        private bool IsValidZipFile(string filename)
         {
-            if (this._downloaderServiceConnection != null)
+            this.zipFileValidationHandler = new ZipFileValidationHandler(filename)
+                {
+                   UpdateUi = this.OnUpdateValidationUi 
+                };
+
+            return File.Exists(filename) && ZipFile.Validate(this.zipFileValidationHandler);
+        }
+
+        /// <summary>
+        /// The on button on click.
+        /// </summary>
+        /// <param name="sender">
+        /// The sender.
+        /// </param>
+        /// <param name="e">
+        /// The e.
+        /// </param>
+        private void OnButtonOnClick(object sender, EventArgs e)
+        {
+            if (this.isPaused)
             {
-                this._downloaderServiceConnection.Disconnect(this);
+                this.downloaderService.RequestContinueDownload();
+            }
+            else
+            {
+                this.downloaderService.RequestPauseDownload();
             }
 
-            base.OnStop();
+            this.UpdatePauseButton(!this.isPaused);
         }
-        
-        protected override void OnDestroy()
-        {
-            if (this.zipFileValidationHandler != null)
-            {
-                this.zipFileValidationHandler.ShouldCancel= true;
-            }
 
-            base.OnDestroy();
+        /// <summary>
+        /// The on event handler.
+        /// </summary>
+        /// <param name="sender">
+        /// The sender.
+        /// </param>
+        /// <param name="args">
+        /// The args.
+        /// </param>
+        private void OnEventHandler(object sender, EventArgs args)
+        {
+            this.downloaderService.SetDownloadFlags(DownloaderServiceFlags.FlagsDownloadOverCellular);
+            this.downloaderService.RequestContinueDownload();
+            this.useCellDataView.Visibility = ViewStates.Gone;
         }
+
+        /// <summary>
+        /// The on open wi fi settings button on click.
+        /// </summary>
+        /// <param name="sender">
+        /// The sender.
+        /// </param>
+        /// <param name="e">
+        /// The e.
+        /// </param>
+        private void OnOpenWiFiSettingsButtonOnClick(object sender, EventArgs e)
+        {
+            this.StartActivity(new Intent(Settings.ActionWifiSettings));
+        }
+
+        /// <summary>
+        /// The on update validation ui.
+        /// </summary>
+        /// <param name="handler">
+        /// The handler.
+        /// </param>
+        private void OnUpdateValidationUi(ZipFileValidationHandler handler)
+        {
+            var info = new DownloadProgressInfo(
+                handler.TotalBytes, handler.CurrentBytes, handler.TimeRemaining, handler.AverageSpeed);
+
+            this.RunOnUiThread(() => this.OnDownloadProgress(info));
+        }
+
+        /// <summary>
+        /// Update the pause button.
+        /// </summary>
+        /// <param name="paused">
+        /// Is the download paused.
+        /// </param>
+        private void UpdatePauseButton(bool paused)
+        {
+            this.isPaused = paused;
+            int stringResourceId = paused ? Resource.String.text_button_resume : Resource.String.text_button_pause;
+            this.pauseButton.SetText(stringResourceId);
+        }
+
+        /// <summary>
+        /// Perfom a check to see if the expansion files are vanid zip files.
+        /// </summary>
+        private void ValidateExpansionFiles()
+        {
+            // Pre execute
+            this.dashboardView.Visibility = ViewStates.Visible;
+            this.useCellDataView.Visibility = ViewStates.Gone;
+            this.statusTextView.SetText(Resource.String.text_verifying_download);
+            this.pauseButton.Click += delegate
+                {
+                    if (this.zipFileValidationHandler != null)
+                    {
+                        this.zipFileValidationHandler.ShouldCancel = true;
+                    }
+                };
+            this.pauseButton.SetText(Resource.String.text_button_cancel_verify);
+
+            ThreadPool.QueueUserWorkItem(this.DoValidateZipFiles);
+        }
+
+        #endregion
     }
 }

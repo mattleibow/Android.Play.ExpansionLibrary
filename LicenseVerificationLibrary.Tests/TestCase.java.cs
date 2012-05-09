@@ -1,40 +1,40 @@
-using Android.Content;
-
 namespace LicenseVerificationLibrary.Tests
 {
+    using Android.Content;
+
     public abstract class TestCase
     {
-        private readonly Context _context;
+        private readonly Context context;
 
         protected TestCase(Context context)
         {
-            _context = context;
+            this.context = context;
         }
 
-        public Context Context
+        protected Context Context
         {
-            get { return _context; }
+            get { return this.context; }
         }
 
-        public void AssertTrue(bool result)
+        protected void AssertTrue(bool result)
         {
             if (!result)
                 throw new AssertionException();
         }
 
-        public void AssertFalse(bool result)
+        protected void AssertFalse(bool result)
         {
             if (result)
                 throw new AssertionException();
         }
 
-        public void AssertEquals(long expected, long actual)
+        protected void AssertEquals(long expected, long actual)
         {
             if (expected != actual)
                 throw new AssertionException("Expected: " + expected + " Actual: " + actual);
         }
 
-        public void AssertEquals(string expected, string actual)
+        protected void AssertEquals(string expected, string actual)
         {
             if (expected != actual)
                 throw new AssertionException("Expected: " + expected + " Actual: " + actual);

@@ -16,7 +16,7 @@ namespace ExpansionDownloader.impl
     /// <summary>
     /// The downloads database.
     /// </summary>
-    public class DownloadsDB
+    public class DownloadsDatabase
     {
         #region Constants and Fields
 
@@ -28,21 +28,20 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The database version.
         /// </summary>
-        private const int DatabaseVersion = 10;
+        private const int DatabaseVersion = 15;
 
         /// <summary>
         /// The projection.
         /// </summary>
-        private static readonly string[] DownloadColumnsProjection = 
-                                                                     {
-                                                                         DownloadColumns.FileName, DownloadColumns.Uri,
-                                                                         DownloadColumns.ETag, DownloadColumns.TotalBytes,
-                                                                         DownloadColumns.CurrentBytes,
-                                                                         DownloadColumns.LastModified,
-                                                                         DownloadColumns.Status, DownloadColumns.Control,
-                                                                         DownloadColumns.NumFailed,
-                                                                         DownloadColumns.RetryAfter,
-                                                                         DownloadColumns.RedirectCount,
+        private static readonly string[] DownloadColumnsProjection = {
+                                                                         DownloadColumns.FileName, DownloadColumns.Uri, 
+                                                                         DownloadColumns.ETag, DownloadColumns.TotalBytes, 
+                                                                         DownloadColumns.CurrentBytes, 
+                                                                         DownloadColumns.LastModified, 
+                                                                         DownloadColumns.Status, DownloadColumns.Control, 
+                                                                         DownloadColumns.NumFailed, 
+                                                                         DownloadColumns.RetryAfter, 
+                                                                         DownloadColumns.RedirectCount, 
                                                                          DownloadColumns.FileIndex
                                                                      };
 
@@ -59,12 +58,12 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The _instance.
         /// </summary>
-        private static DownloadsDB instance;
+        private static DownloadsDatabase instance;
 
         /// <summary>
-        /// The m get download by index.
+        /// the curent status of the database
         /// </summary>
-        private SQLiteStatement sqlGetDownloadByIndex;
+        private DownloadStatus downloadStatus;
 
         /// <summary>
         /// The m metadata row id.
@@ -72,32 +71,32 @@ namespace ExpansionDownloader.impl
         private long metadataRowId;
 
         /// <summary>
+        /// The m get download by index.
+        /// </summary>
+        private SQLiteStatement sqlGetDownloadByIndex;
+
+        /// <summary>
         /// The m update current bytes.
         /// </summary>
         private SQLiteStatement sqlUpdateCurrentBytes;
-
-        /// <summary>
-        /// the curent status of the database
-        /// </summary>
-        private DownloadStatus downloadStatus;
 
         #endregion
 
         #region Constructors and Destructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DownloadsDB"/> class.
+        /// Initializes a new instance of the <see cref="DownloadsDatabase"/> class.
         /// </summary>
         /// <param name="paramContext">
         /// The param context.
         /// </param>
-        private DownloadsDB(Context paramContext)
+        private DownloadsDatabase(Context paramContext)
         {
             this.metadataRowId = -1;
             this.downloadStatus = DownloadStatus.Unknown;
             this.VersionCode = -1;
 
-            this.openHelper = new DownloadsContentDBHelper(paramContext);
+            this.openHelper = new DatabaseHelper(paramContext);
             SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
 
             // Query for the version code, the row ID of the metadata (for future
@@ -196,11 +195,6 @@ namespace ExpansionDownloader.impl
         #region Public Properties
 
         /// <summary>
-        /// Gets Flags.
-        /// </summary>
-        public DownloaderServiceFlags Flags { get; private set; }
-        
-        /// <summary>
         /// Gets the status.
         /// </summary>
         public DownloadStatus DownloadStatus
@@ -209,7 +203,7 @@ namespace ExpansionDownloader.impl
             {
                 return this.downloadStatus;
             }
-            
+
             set
             {
                 if (this.DownloadStatus != value)
@@ -223,6 +217,11 @@ namespace ExpansionDownloader.impl
                 }
             }
         }
+
+        /// <summary>
+        /// Gets Flags.
+        /// </summary>
+        public DownloaderServiceFlags Flags { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether IsDownloadRequired.
@@ -322,11 +321,11 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// The instance of the database.
         /// </returns>
-        public static DownloadsDB GetDatabase(Context context)
+        public static DownloadsDatabase GetDatabase(Context context)
         {
             lock (Locker)
             {
-                return instance ?? (instance = new DownloadsDB(context));
+                return instance ?? (instance = new DownloadsDatabase(context));
             }
         }
 
@@ -529,22 +528,22 @@ namespace ExpansionDownloader.impl
         /// <param name="apkVersion">
         /// The apk version.
         /// </param>
-        /// <param name="downloadStatus">
+        /// <param name="status">
         /// The download status.
         /// </param>
         /// <returns>
         /// The update metadata.
         /// </returns>
-        public bool UpdateMetadata(int apkVersion, DownloadStatus downloadStatus)
+        public bool UpdateMetadata(int apkVersion, DownloadStatus status)
         {
             var cv = new ContentValues();
             cv.Put(MetadataColumns.ApkVersion, apkVersion);
-            cv.Put(MetadataColumns.DownloadStatus, (int)downloadStatus);
+            cv.Put(MetadataColumns.DownloadStatus, (int)status);
 
             if (this.UpdateMetadata(cv))
             {
                 this.VersionCode = apkVersion;
-                this.DownloadStatus = downloadStatus;
+                this.DownloadStatus = status;
                 return true;
             }
 
@@ -589,8 +588,8 @@ namespace ExpansionDownloader.impl
         private DownloadInfo GetDownloadInfo(ICursor cur)
         {
             var di = new DownloadInfo(
-                (ApkExpansionPolicy.ExpansionFileType)cur.GetInt((int)ColumnIndexes.Index),
-                cur.GetString((int)ColumnIndexes.Filename),
+                (ApkExpansionPolicy.ExpansionFileType)cur.GetInt((int)ColumnIndexes.Index), 
+                cur.GetString((int)ColumnIndexes.Filename), 
                 this.GetType().Namespace);
             SetDownloadInfo(di, cur);
             return di;
@@ -655,7 +654,7 @@ namespace ExpansionDownloader.impl
                 SQLiteDatabase sqldb = this.openHelper.WritableDatabase;
                 if (id != -1)
                 {
-                    if (1 != sqldb.Update(typeof(DownloadColumns).Name, cv, DownloadColumns._Id + " = " + id, null))
+                    if (1 != sqldb.Update(typeof(DownloadColumns).Name, cv, DownloadColumns.Id + " = " + id, null))
                     {
                         return false;
                     }
@@ -749,6 +748,11 @@ namespace ExpansionDownloader.impl
             public static string FileName = "FN";
 
             /// <summary>
+            /// The _ id.
+            /// </summary>
+            public static string Id = "DownloadColumns._id";
+
+            /// <summary>
             /// The last modified.
             /// </summary>
             public static string LastModified = "LASTMOD";
@@ -768,7 +772,6 @@ namespace ExpansionDownloader.impl
             /// </summary>
             public static string RetryAfter = "RETRYAFTER";
 
-
             /// <summary>
             /// The status.
             /// </summary>
@@ -785,29 +788,17 @@ namespace ExpansionDownloader.impl
             public static string Uri = "URI";
 
             /// <summary>
-            /// The _ id.
-            /// </summary>
-            public static string _Id = "DownloadColumns._id";
-
-            /// <summary>
             /// The schema.
             /// </summary>
             public static string[][] Schema = new[]
-                                                  {
-                                                      new[] {BaseColumns.Id, "INTEGER PRIMARY KEY"},
-                                                      new[] {FileIndex, "INTEGER UNIQUE"},
-                                                      new[] {Uri, "TEXT"}, 
-                                                      new[] {FileName, "TEXT UNIQUE"},
-                                                      new[] {ETag, "TEXT"},
-                                                      new[] {TotalBytes, "INTEGER"}, 
-                                                      new[] {CurrentBytes, "INTEGER"},
-                                                      new[] {LastModified, "INTEGER"},
-                                                      new[] {Status, "INTEGER"}, 
-                                                      new[] {Control, "INTEGER"},
-                                                      new[] {NumFailed, "INTEGER"},
-                                                      new[] {RetryAfter, "INTEGER"}, 
-                                                      new[] {RedirectCount, "INTEGER"}
-                                                  };
+                {
+                    new[] { BaseColumns.Id, "INTEGER PRIMARY KEY" }, new[] { FileIndex, "INTEGER UNIQUE" }, 
+                    new[] { Uri, "TEXT" }, new[] { FileName, "TEXT UNIQUE" }, new[] { ETag, "TEXT" }, 
+                    new[] { TotalBytes, "INTEGER" }, new[] { CurrentBytes, "INTEGER" }, new[] { LastModified, "INTEGER" }, 
+                    new[] { Status, "INTEGER" }, new[] { Control, "INTEGER" }, new[] { NumFailed, "INTEGER" }, 
+                    new[] { RetryAfter, "INTEGER" }, new[] { RedirectCount, "INTEGER" }
+                };
+
             #endregion
         }
 
@@ -836,18 +827,16 @@ namespace ExpansionDownloader.impl
             /// <summary>
             /// The _ id.
             /// </summary>
-            public static string _Id = "MetadataColumns._id";
+            public static string Id = "MetadataColumns._id";
 
             /// <summary>
             /// The schema.
             /// </summary>
             public static string[][] Schema = new[]
-                                                  {
-                                                      new[] {BaseColumns.Id, "INTEGER PRIMARY KEY"},
-                                                      new[] {ApkVersion, "INTEGER"},
-                                                      new[] {DownloadStatus, "INTEGER"},
-                                                      new[] {Flags, "INTEGER"}
-                                                  };
+                {
+                    new[] { BaseColumns.Id, "INTEGER PRIMARY KEY" }, new[] { ApkVersion, "INTEGER" }, 
+                    new[] { DownloadStatus, "INTEGER" }, new[] { Flags, "INTEGER" }
+                };
 
             #endregion
         }
@@ -855,7 +844,7 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The downloads content db helper.
         /// </summary>
-        private class DownloadsContentDBHelper : SQLiteOpenHelper
+        public class DatabaseHelper : SQLiteOpenHelper
         {
             #region Constants and Fields
 
@@ -869,12 +858,12 @@ namespace ExpansionDownloader.impl
             #region Constructors and Destructors
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="DownloadsContentDBHelper"/> class.
+            /// Initializes a new instance of the <see cref="DatabaseHelper"/> class.
             /// </summary>
             /// <param name="paramContext">
             /// The param context.
             /// </param>
-            public DownloadsContentDBHelper(Context paramContext)
+            public DatabaseHelper(Context paramContext)
                 : base(paramContext, DatabaseName, null, DatabaseVersion)
             {
             }
@@ -946,7 +935,9 @@ namespace ExpansionDownloader.impl
             private static string CreateTableQuery(Type table)
             {
                 var tableName = table.Name;
-                var columns = (string[][]) table.GetField("Schema").GetValue(null);
+                var columns = (string[][])table.GetField("Schema").GetValue(null);
+
+                Debug.WriteLine("Columns: " + columns.Length);
 
                 var localStringBuilder = new StringBuilder();
                 localStringBuilder.Append("CREATE TABLE ");

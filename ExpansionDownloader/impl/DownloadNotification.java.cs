@@ -1,55 +1,238 @@
-using Android;
-using Android.App;
-using Android.Content;
-using Android.OS;
-using Android.Runtime;
-using Java.Lang;
-
 namespace ExpansionDownloader.impl
 {
+    using Android;
+    using Android.App;
+    using Android.Content;
+    using Android.OS;
+    using Android.Runtime;
+
     using ExpansionDownloader.Client;
 
+    /// <summary>
+    /// The download notification.
+    /// </summary>
     public class DownloadNotification : IDownloaderClient
     {
-        private static string LOGTAG = "DownloadNotification";
-        private static readonly int NOTIFICATION_ID = LOGTAG.GetHashCode();
-        private readonly Context mContext;
-        private readonly string mLabel;
-        private readonly Notification mNotification;
-        private readonly NotificationManager mNotificationManager;
-        private IDownloaderClient mClientProxy;
+        #region Constants and Fields
 
-        private Notification mCurrentNotification;
-        private string mCurrentText;
-        private string mCurrentTitle;
-        private DownloadProgressInfo mProgressInfo;
-        private DownloaderClientState mState;
+        /// <summary>
+        /// The notification id.
+        /// </summary>
+        private static readonly int NotificationId = typeof(DownloadNotification).GetHashCode();
 
+        /// <summary>
+        /// The m context.
+        /// </summary>
+        private readonly Context context;
+
+        /// <summary>
+        /// The m label.
+        /// </summary>
+        private readonly string label;
+
+        /// <summary>
+        /// The m notification.
+        /// </summary>
+        private readonly Notification notification;
+
+        /// <summary>
+        /// The m notification manager.
+        /// </summary>
+        private readonly NotificationManager notificationManager;
+
+        /// <summary>
+        /// The m client proxy.
+        /// </summary>
+        private IDownloaderClient clientProxy;
+
+        /// <summary>
+        /// The m current notification.
+        /// </summary>
+        private Notification currentNotification;
+
+        /// <summary>
+        /// The m current text.
+        /// </summary>
+        private string currentText;
+
+        /// <summary>
+        /// The m current title.
+        /// </summary>
+        private string currentTitle;
+
+        /// <summary>
+        /// The m progress info.
+        /// </summary>
+        private DownloadProgressInfo progressInfo;
+
+        /// <summary>
+        /// The m state.
+        /// </summary>
+        private DownloaderClientState clientState;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DownloadNotification"/> class.
+        /// </summary>
+        /// <param name="ctx">
+        /// The ctx.
+        /// </param>
+        /// <param name="applicationLabel">
+        /// The application label.
+        /// </param>
         internal DownloadNotification(Context ctx, string applicationLabel)
         {
-            mState = DownloaderClientState.Unknown;
-            mContext = ctx;
-            mLabel = applicationLabel;
-            mNotificationManager = mContext.GetSystemService(Context.NotificationService).JavaCast<NotificationManager>();
-            mNotification = new Notification();
-            mCurrentNotification = mNotification;
+            this.clientState = DownloaderClientState.Unknown;
+            this.context = ctx;
+            this.label = applicationLabel;
+            this.notificationManager =
+                this.context.GetSystemService(Context.NotificationService).JavaCast<NotificationManager>();
+            this.notification = new Notification();
+            this.currentNotification = this.notification;
         }
 
-        #region IDownloaderClient Members
+        #endregion
 
+        #region Interfaces
+
+        /// <summary>
+        /// The custom notification.
+        /// </summary>
+        public interface ICustomNotification
+        {
+            #region Public Properties
+
+            /// <summary>
+            /// Sets CurrentBytes.
+            /// </summary>
+            long CurrentBytes { set; }
+
+            /// <summary>
+            /// Sets Icon.
+            /// </summary>
+            int Icon { set; }
+
+            /// <summary>
+            /// Sets PausedText.
+            /// </summary>
+            string PausedText { set; }
+
+            /// <summary>
+            /// Sets PendingIntent.
+            /// </summary>
+            PendingIntent PendingIntent { set; }
+
+            /// <summary>
+            /// Sets Ticker.
+            /// </summary>
+            string Ticker { set; }
+
+            /// <summary>
+            /// Sets TimeRemaining.
+            /// </summary>
+            long TimeRemaining { set; }
+
+            /// <summary>
+            /// Sets Title.
+            /// </summary>
+            string Title { set; }
+
+            /// <summary>
+            /// Sets TotalBytes.
+            /// </summary>
+            long TotalBytes { set; }
+
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// Constructor
+            /// </summary>
+            /// <param name="context">
+            /// The context to use to obtain access to the Notification Service
+            /// </param>
+            /// <returns>
+            /// </returns>
+            Notification UpdateNotification(Context context);
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Gets or sets PendingIntent.
+        /// </summary>
+        public PendingIntent PendingIntent { get; set; }
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// The on download progress.
+        /// </summary>
+        /// <param name="progress">
+        /// The progress.
+        /// </param>
+        public void OnDownloadProgress(DownloadProgressInfo progress)
+        {
+            this.progressInfo = progress;
+            if (null != this.clientProxy)
+            {
+                this.clientProxy.OnDownloadProgress(progress);
+            }
+
+            if (progress.OverallTotal <= 0)
+            {
+                // we just show the text
+                this.notification.TickerText = new Java.Lang.String(this.currentTitle);
+                this.notification.Icon = Resource.Drawable.StatSysDownload;
+                this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
+                this.currentNotification = this.notification;
+            }
+            else
+            {
+                CustomNotificationFactory.Notification.CurrentBytes = progress.OverallProgress;
+                CustomNotificationFactory.Notification.TotalBytes = progress.OverallTotal;
+                CustomNotificationFactory.Notification.Icon = Resource.Drawable.StatSysDownload;
+                CustomNotificationFactory.Notification.PendingIntent = this.PendingIntent;
+                CustomNotificationFactory.Notification.Ticker = this.label + ": " + this.currentText;
+                CustomNotificationFactory.Notification.Title = this.label;
+                CustomNotificationFactory.Notification.TimeRemaining = progress.TimeRemaining;
+                this.currentNotification = CustomNotificationFactory.Notification.UpdateNotification(this.context);
+            }
+
+            this.notificationManager.Notify(NotificationId, this.currentNotification);
+        }
+
+        /// <summary>
+        /// The on download state changed.
+        /// </summary>
+        /// <param name="newState">
+        /// The new state.
+        /// </param>
         public void OnDownloadStateChanged(DownloaderClientState newState)
         {
-            if (null != mClientProxy)
+            if (null != this.clientProxy)
             {
-                mClientProxy.OnDownloadStateChanged(newState);
+                this.clientProxy.OnDownloadStateChanged(newState);
             }
-            if (newState != mState)
+
+            if (newState != this.clientState)
             {
-                mState = newState;
+                this.clientState = newState;
                 if (newState == DownloaderClientState.Idle || null == this.PendingIntent)
                 {
                     return;
                 }
+
                 string stringDownload;
                 int iconResource;
                 bool ongoingEvent;
@@ -93,66 +276,45 @@ namespace ExpansionDownloader.impl
                         ongoingEvent = true;
                         break;
                 }
-                mCurrentText = stringDownload;
-                mCurrentTitle = mLabel;
-                mCurrentNotification.TickerText = new String(mLabel + ": " + mCurrentText);
-                mCurrentNotification.Icon = iconResource;
-                mCurrentNotification.SetLatestEventInfo(mContext, mCurrentTitle, mCurrentText, this.PendingIntent);
+
+                this.currentText = stringDownload;
+                this.currentTitle = this.label;
+                this.currentNotification.TickerText = new Java.Lang.String(this.label + ": " + this.currentText);
+                this.currentNotification.Icon = iconResource;
+                this.currentNotification.SetLatestEventInfo(
+                    this.context, this.currentTitle, this.currentText, this.PendingIntent);
                 if (ongoingEvent)
                 {
-                    mCurrentNotification.Flags |= NotificationFlags.OngoingEvent;
+                    this.currentNotification.Flags |= NotificationFlags.OngoingEvent;
                 }
                 else
                 {
-                    mCurrentNotification.Flags &= ~NotificationFlags.OngoingEvent;
-                    mCurrentNotification.Flags |= NotificationFlags.AutoCancel;
+                    this.currentNotification.Flags &= ~NotificationFlags.OngoingEvent;
+                    this.currentNotification.Flags |= NotificationFlags.AutoCancel;
                 }
-                mNotificationManager.Notify(NOTIFICATION_ID, mCurrentNotification);
+
+                this.notificationManager.Notify(NotificationId, this.currentNotification);
             }
         }
 
-        public void OnDownloadProgress(DownloadProgressInfo progress)
-        {
-            mProgressInfo = progress;
-            if (null != mClientProxy)
-            {
-                mClientProxy.OnDownloadProgress(progress);
-            }
-            if (progress.OverallTotal <= 0)
-            {
-                // we just show the text
-                mNotification.TickerText = new String(mCurrentTitle);
-                mNotification.Icon = Resource.Drawable.StatSysDownload;
-                mNotification.SetLatestEventInfo(mContext, mLabel, mCurrentText, this.PendingIntent);
-                mCurrentNotification = mNotification;
-            }
-            else
-            {
-                CustomNotificationFactory.Notification.CurrentBytes=(progress.OverallProgress);
-                CustomNotificationFactory.Notification.TotalBytes=(progress.OverallTotal);
-                CustomNotificationFactory.Notification.Icon=(Resource.Drawable.StatSysDownload);
-                CustomNotificationFactory.Notification.PendingIntent=(this.PendingIntent);
-                CustomNotificationFactory.Notification.Ticker=(mLabel + ": " + mCurrentText);
-                CustomNotificationFactory.Notification.Title=(mLabel);
-                CustomNotificationFactory.Notification.TimeRemaining=(progress.TimeRemaining);
-                mCurrentNotification = CustomNotificationFactory.Notification.UpdateNotification(mContext);
-            }
-            mNotificationManager.Notify(NOTIFICATION_ID, mCurrentNotification);
-        }
-
+        /// <summary>
+        /// The on service connected.
+        /// </summary>
+        /// <param name="m">
+        /// The m.
+        /// </param>
         public void OnServiceConnected(Messenger m)
         {
         }
 
-        #endregion
-
-        public PendingIntent PendingIntent { get; set; }
-
-        public void resendState()
+        /// <summary>
+        /// The resend state.
+        /// </summary>
+        public void ResendState()
         {
-            if (null != mClientProxy)
+            if (null != this.clientProxy)
             {
-                mClientProxy.OnDownloadStateChanged(mState);
+                this.clientProxy.OnDownloadStateChanged(this.clientState);
             }
         }
 
@@ -160,47 +322,21 @@ namespace ExpansionDownloader.impl
         /// Called in response to OnClientUpdated. Creates a new proxy and 
         /// notifies it of the current state.
         /// </summary>
-        /// <param name="msg">the client Messenger to notify</param>
-        public void setMessenger(Messenger msg)
+        /// <param name="msg">
+        /// the client Messenger to notify
+        /// </param>
+        public void SetMessenger(Messenger msg)
         {
-            mClientProxy = DownloaderClientMarshaller.CreateProxy(msg);
-            if (null != mProgressInfo)
+            this.clientProxy = DownloaderClientMarshaller.CreateProxy(msg);
+            if (null != this.progressInfo)
             {
-                mClientProxy.OnDownloadProgress(mProgressInfo);
+                this.clientProxy.OnDownloadProgress(this.progressInfo);
             }
-            if (mState != DownloaderClientState.Unknown)
+
+            if (this.clientState != DownloaderClientState.Unknown)
             {
-                mClientProxy.OnDownloadStateChanged(mState);
+                this.clientProxy.OnDownloadStateChanged(this.clientState);
             }
-        }
-
-        #region Nested type: ICustomNotification
-
-        public interface ICustomNotification
-        {
-            string Title { set; }
-
-            string Ticker { set; }
-
-            PendingIntent PendingIntent { set; }
-
-            string PausedText { set; }
-
-            long TotalBytes { set; }
-
-            long CurrentBytes { set; }
-
-            int Icon { set; }
-
-            long TimeRemaining { set; }
-
-
-            /// <summary>
-            /// Constructor
-            /// </summary>
-            /// <param name="context">The context to use to obtain access to the Notification Service</param>
-            /// <returns></returns>
-            Notification UpdateNotification(Context context);
         }
 
         #endregion

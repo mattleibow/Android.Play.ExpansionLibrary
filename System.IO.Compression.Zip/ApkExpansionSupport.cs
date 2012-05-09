@@ -22,31 +22,6 @@ namespace System.IO.Compression.Zip
         #region Public Methods and Operators
 
         /// <summary>
-        /// Gets a <see cref="ExpansionZipFile"/> that contains a list of all 
-        /// the files in the combined main and patch obb packages.
-        /// </summary>
-        /// <param name="ctx">
-        /// The context.
-        /// </param>
-        /// <param name="mainVersion">
-        /// The main obb version.
-        /// </param>
-        /// <param name="patchVersion">
-        /// The patch obb version.
-        /// </param>
-        /// <returns>
-        /// The apk expansion zip file.
-        /// </returns>
-        public static ExpansionZipFile GetApkExpansionZipFile(Context ctx, int mainVersion, int patchVersion)
-        {
-            return new ExpansionZipFile(GetApkExpansionFiles(ctx, mainVersion, patchVersion));
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
         /// The get apk expansion files.
         /// </summary>
         /// <param name="ctx">
@@ -91,6 +66,27 @@ namespace System.IO.Compression.Zip
             }
 
             return ret.ToArray();
+        }
+
+        /// <summary>
+        /// Gets a <see cref="ExpansionZipFile"/> that contains a list of all 
+        /// the files in the combined main and patch obb packages.
+        /// </summary>
+        /// <param name="ctx">
+        /// The context.
+        /// </param>
+        /// <param name="mainVersion">
+        /// The main obb version.
+        /// </param>
+        /// <param name="patchVersion">
+        /// The patch obb version.
+        /// </param>
+        /// <returns>
+        /// The apk expansion zip file.
+        /// </returns>
+        public static ExpansionZipFile GetApkExpansionZipFile(Context ctx, int mainVersion, int patchVersion)
+        {
+            return new ExpansionZipFile(GetApkExpansionFiles(ctx, mainVersion, patchVersion));
         }
 
         #endregion

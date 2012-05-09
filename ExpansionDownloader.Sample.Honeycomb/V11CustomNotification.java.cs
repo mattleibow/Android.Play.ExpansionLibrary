@@ -1,8 +1,9 @@
-namespace ExpansionDownloader.impl
+namespace ExpansionDownloader.Sample
 {
-    using Android;
     using Android.App;
     using Android.Content;
+
+    using ExpansionDownloader.impl;
 
     /// <summary>
     /// The custom notification for API levels 11+.
@@ -102,7 +103,7 @@ namespace ExpansionDownloader.impl
                 builder.SetContentInfo(string.Format("{0}s left", Helpers.GetTimeRemaining(this.TimeRemaining)));
             }
 
-            builder.SetSmallIcon(this.Icon != 0 ? this.Icon : Resource.Drawable.StatSysDownload);
+            builder.SetSmallIcon(this.Icon != 0 ? this.Icon : Android.Resource.Drawable.StatSysDownload);
             builder.SetOngoing(true);
             builder.SetTicker(this.Ticker);
             builder.SetContentIntent(this.PendingIntent);

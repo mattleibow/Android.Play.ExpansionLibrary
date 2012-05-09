@@ -1,16 +1,16 @@
 namespace ExpansionDownloader.impl
 {
-    public class DownloaderSeviceActions
+    /// <summary>
+    /// The downloader sevice actions.
+    /// </summary>
+    public static class DownloaderSeviceActions
     {
-        /// <summary>
-        /// The intent that gets sent when the service must wake up for a retry.
-        /// </summary>
-        public const string ActionRetry = "android.intent.action.DOWNLOAD_WAKEUP";
+        #region Constants and Fields
 
         /// <summary>
-        /// The intent that gets sent when clicking a successful download
+        /// The intent that gets sent when deleting the notification of a completed download
         /// </summary>
-        public const string ActionOpen = "android.intent.action.DOWNLOAD_OPEN";
+        public const string ActionHide = "android.intent.action.DOWNLOAD_HIDE";
 
         /// <summary>
         /// The intent that gets sent when clicking an incomplete/failed download
@@ -18,13 +18,18 @@ namespace ExpansionDownloader.impl
         public const string ActionList = "android.intent.action.DOWNLOAD_LIST";
 
         /// <summary>
-        /// The intent that gets sent when deleting the notification of a completed download
+        /// The intent that gets sent when clicking a successful download
         /// </summary>
-        public const string ActionHide = "android.intent.action.DOWNLOAD_HIDE";
+        public const string ActionOpen = "android.intent.action.DOWNLOAD_OPEN";
 
-       /// <summary>
+        /// <summary>
+        /// The intent that gets sent when the service must wake up for a retry.
+        /// </summary>
+        public const string ActionRetry = "android.intent.action.DOWNLOAD_WAKEUP";
+
+        /// <summary>
         /// Broadcast intent action sent by the download manager when a download completes.
-       /// </summary>
+        /// </summary>
         public const string DownloadComplete = "lvldownloader.intent.action.DOWNLOAD_COMPLETE";
 
         /// <summary>
@@ -36,5 +41,7 @@ namespace ExpansionDownloader.impl
         /// The downloads changed.
         /// </summary>
         public const string DownloadsChanged = "downloadsChanged";
+
+        #endregion
     }
 }

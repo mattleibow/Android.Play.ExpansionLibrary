@@ -1,17 +1,18 @@
-using System.Linq;
-using Android.Content;
-using Java.Lang;
-
 namespace LicenseVerificationLibrary.Tests
 {
+    using System.Linq;
+    
+    using Android.Content;
+
     public class AesObfuscatorTest : TestCase
     {
-        private static readonly byte[] SALT = new byte[] {104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33};
+        private static readonly byte[] Salt = new byte[]
+            { 104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33 };
 
         private const string Package = "package";
         private const string Device = "device";
 
-        private IObfuscator _obfuscator;
+        private IObfuscator obfuscator;
 
         public AesObfuscatorTest(Context context)
             : base(context)
@@ -20,33 +21,33 @@ namespace LicenseVerificationLibrary.Tests
 
         public override void SetUp()
         {
-            _obfuscator = new AesObfuscator(SALT, Package, Device);
+            this.obfuscator = new AesObfuscator(Salt, Package, Device);
         }
 
         public override void RunTests()
         {
-            TestObfuscateUnobfuscate();
-            TestObfuscateSame();
-            TestUnobfuscateAvoidBadPaddingException();
-            TestUnobfuscateDifferentDevice();
-            TestUnobfuscateDifferentKey();
-            TestUnobfuscateDifferentPackage();
-            TestUnobfuscateDifferentSalt();
-            TestUnobfuscateInvalid();
+            this.TestObfuscateUnobfuscate();
+            this.TestObfuscateSame();
+            this.TestUnobfuscateAvoidBadPaddingException();
+            this.TestUnobfuscateDifferentDevice();
+            this.TestUnobfuscateDifferentKey();
+            this.TestUnobfuscateDifferentPackage();
+            this.TestUnobfuscateDifferentSalt();
+            this.TestUnobfuscateInvalid();
         }
 
-        public void TestObfuscateUnobfuscate()
+        private void TestObfuscateUnobfuscate()
         {
-            TestInvertible(null);
-            TestInvertible("");
-            TestInvertible("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*-=/\\|~`,.;:()[]{}<>\u00F6");
+            this.TestInvertible(null);
+            this.TestInvertible(string.Empty);
+            this.TestInvertible("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*-=/\\|~`,.;:()[]{}<>\u00F6");
         }
 
-        public void TestUnobfuscateInvalid()
+        private void TestUnobfuscateInvalid()
         {
             try
             {
-                _obfuscator.Unobfuscate("invalid", "testKey");
+                this.obfuscator.Unobfuscate("invalid", "testKey");
                 Fail("Should have thrown ValidationException");
             }
             catch (ValidationException)
@@ -54,10 +55,10 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestUnobfuscateDifferentSalt()
+        private void TestUnobfuscateDifferentSalt()
         {
-            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
-            IObfuscator differentSalt = new AesObfuscator(new byte[] {1}, Package, Device);
+            string obfuscated = this.obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentSalt = new AesObfuscator(new byte[] { 1 }, Package, Device);
             try
             {
                 differentSalt.Unobfuscate(obfuscated, "testKey");
@@ -68,16 +69,16 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestUnobfuscateAvoidBadPaddingException()
+        private void TestUnobfuscateAvoidBadPaddingException()
         {
             // Length should be equal to the cipher block size, to make sure that all padding lengths
             // are accounted for.
             for (int length = 0; length < 255; length++)
             {
                 char[] data = Enumerable.Repeat('0', length).ToArray();
-                string input = String.ValueOf(data);
-                string obfuscated = _obfuscator.Obfuscate(input, "testKey");
-                IObfuscator differentSalt = new AesObfuscator(new byte[] {1}, Package, Device);
+                string input = Java.Lang.String.ValueOf(data);
+                string obfuscated = this.obfuscator.Obfuscate(input, "testKey");
+                IObfuscator differentSalt = new AesObfuscator(new byte[] { 1 }, Package, Device);
                 try
                 {
                     differentSalt.Unobfuscate(obfuscated, "testKey");
@@ -89,10 +90,10 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestUnobfuscateDifferentDevice()
+        private void TestUnobfuscateDifferentDevice()
         {
-            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
-            IObfuscator differentDevice = new AesObfuscator(SALT, Package, "device2");
+            string obfuscated = this.obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentDevice = new AesObfuscator(Salt, Package, "device2");
             try
             {
                 differentDevice.Unobfuscate(obfuscated, "testKey");
@@ -103,10 +104,10 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestUnobfuscateDifferentPackage()
+        private void TestUnobfuscateDifferentPackage()
         {
-            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
-            IObfuscator differentPackage = new AesObfuscator(SALT, "package2", Device);
+            string obfuscated = this.obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentPackage = new AesObfuscator(Salt, "package2", Device);
             try
             {
                 differentPackage.Unobfuscate(obfuscated, "testKey");
@@ -117,10 +118,10 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestUnobfuscateDifferentKey()
+        private void TestUnobfuscateDifferentKey()
         {
-            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
-            IObfuscator differentPackage = new AesObfuscator(SALT, "package2", Device);
+            string obfuscated = this.obfuscator.Obfuscate("test", "testKey");
+            IObfuscator differentPackage = new AesObfuscator(Salt, "package2", Device);
             try
             {
                 differentPackage.Unobfuscate(obfuscated, "notMyKey");
@@ -131,19 +132,19 @@ namespace LicenseVerificationLibrary.Tests
             }
         }
 
-        public void TestObfuscateSame()
+        private void TestObfuscateSame()
         {
-            string obfuscated = _obfuscator.Obfuscate("test", "testKey");
-            AssertEquals(obfuscated, _obfuscator.Obfuscate("test", "testKey"));
+            string obfuscated = this.obfuscator.Obfuscate("test", "testKey");
+            AssertEquals(obfuscated, this.obfuscator.Obfuscate("test", "testKey"));
 
-            IObfuscator same = new AesObfuscator(SALT, Package, Device);
+            IObfuscator same = new AesObfuscator(Salt, Package, Device);
             AssertEquals(obfuscated, same.Obfuscate("test", "testKey"));
             AssertEquals("test", same.Unobfuscate(obfuscated, "testKey"));
         }
 
         private void TestInvertible(string original)
         {
-            AssertEquals(original, _obfuscator.Unobfuscate(_obfuscator.Obfuscate(original, original + "Key"), original + "Key"));
+            AssertEquals(original, this.obfuscator.Unobfuscate(this.obfuscator.Obfuscate(original, original + "Key"), original + "Key"));
         }
     }
 }

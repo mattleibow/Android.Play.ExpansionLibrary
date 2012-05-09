@@ -1,8 +1,11 @@
 namespace ExpansionDownloader.Sample
 {
     using Android.App;
+
+#if NOTIFICATION_BUILDER
     using Android.Net;
     using Android.Telephony;
+#endif
 
     using ExpansionDownloader.impl;
 

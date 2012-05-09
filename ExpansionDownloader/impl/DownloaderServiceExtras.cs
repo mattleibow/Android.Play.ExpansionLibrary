@@ -1,7 +1,12 @@
 namespace ExpansionDownloader.impl
 {
-    public class DownloaderServiceExtras
+    /// <summary>
+    /// The downloader service extras.
+    /// </summary>
+    public static class DownloaderServiceExtras
     {
+        #region Constants and Fields
+
         /// <summary>
         /// The extra file name.
         /// </summary>
@@ -28,5 +33,7 @@ namespace ExpansionDownloader.impl
         /// The extra pending intent.
         /// </summary>
         public const string PendingIntent = "EPI";
+
+        #endregion
     }
 }

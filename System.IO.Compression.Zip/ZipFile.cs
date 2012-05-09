@@ -84,14 +84,14 @@ namespace System.IO.Compression.Zip
         #region Public Properties
 
         /// <summary>
-        /// Gets filename of the zip file.
-        /// </summary>
-        public string FileName { get; private set; }
-
-        /// <summary>
         /// Gets the number of entries in the zip file.
         /// </summary>
         public int EntryCount { get; private set; }
+
+        /// <summary>
+        /// Gets filename of the zip file.
+        /// </summary>
+        public string FileName { get; private set; }
 
         #endregion
 
@@ -122,6 +122,104 @@ namespace System.IO.Compression.Zip
                           (dateTime.Day << 16) | // days
                           (dateTime.Month << 21) | // months
                           ((dateTime.Year - 1980) << 25)); // years
+        }
+
+        /// <summary>
+        /// Ensures that the zip file is valid.
+        /// </summary>
+        /// <param name="validationHandler">
+        /// The class to hold the object for progress reporting
+        /// </param>
+        /// <returns>
+        /// True if the zip is valid, otherwise False.
+        /// </returns>
+        public static bool Validate(ZipFileValidationHandler validationHandler)
+        {
+            var buf = new byte[1024 * 256];
+            try
+            {
+                var zip = new ZipFile(validationHandler.Filename);
+                var entries = zip.GetAllEntries();
+
+                // First calculate the total compressed length
+                var totalCompressedLength = entries.Sum(entry => entry.CompressedSize);
+                float averageVerifySpeed = 0;
+                var totalBytesRemaining = totalCompressedLength;
+                validationHandler.TotalBytes = totalCompressedLength;
+
+                // Then calculate a CRC for every file in the Zip file,
+                // comparing it to what is stored in the Zip directory
+                foreach (ZipFileEntry entry in entries)
+                {
+                    if (entry.Crc32 != -1)
+                    {
+                        var startTime = DateTime.UtcNow;
+
+                        var crc = new Crc32();
+
+                        var offset = entry.FileOffset;
+                        var length = (int)entry.CompressedSize;
+
+                        var raf = zip.zipFileStream;
+                        raf.Seek(offset, SeekOrigin.Begin);
+
+                        while (length > 0)
+                        {
+                            var seek = length > buf.Length ? buf.Length : length;
+                            raf.Read(buf, 0, seek);
+                            crc.Update(buf, 0, seek);
+                            length -= seek;
+
+                            var currentTime = DateTime.UtcNow;
+                            var timePassed = (float)(currentTime - startTime).TotalMilliseconds;
+                            if (timePassed > 0)
+                            {
+                                var currentSpeedSample = seek / timePassed;
+                                if (averageVerifySpeed <= 0)
+                                {
+                                    averageVerifySpeed = (SmoothingFactor * currentSpeedSample)
+                                                         + ((1 - SmoothingFactor) * averageVerifySpeed);
+                                }
+                                else
+                                {
+                                    averageVerifySpeed = currentSpeedSample;
+                                }
+
+                                totalBytesRemaining -= seek;
+                                var timeRemaining = (long)(totalBytesRemaining / averageVerifySpeed);
+
+                                validationHandler.AverageSpeed = averageVerifySpeed;
+                                validationHandler.CurrentBytes = totalCompressedLength - totalBytesRemaining;
+                                validationHandler.TimeRemaining = timeRemaining;
+
+                                validationHandler.UpdateUi(validationHandler);
+                            }
+
+                            startTime = currentTime;
+                            if (validationHandler.ShouldCancel)
+                            {
+                                return true;
+                            }
+                        }
+
+                        if (crc.Value != entry.Crc32)
+                        {
+                            Debug.WriteLine("CRC does not match for entry: " + entry.FilenameInZip);
+                            Debug.WriteLine("In file: " + entry.ZipFileName);
+
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine(e.ToString());
+                Console.Write(e.StackTrace);
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -347,11 +445,11 @@ namespace System.IO.Compression.Zip
         private static DateTime DosTimeToDateTime(uint dosDateTime)
         {
             return new DateTime(
-                (int)(dosDateTime >> 25) + 1980,
-                (int)(dosDateTime >> 21) & 15,
-                (int)(dosDateTime >> 16) & 31,
-                (int)(dosDateTime >> 11) & 31,
-                (int)(dosDateTime >> 5) & 63,
+                (int)(dosDateTime >> 25) + 1980, 
+                (int)(dosDateTime >> 21) & 15, 
+                (int)(dosDateTime >> 16) & 31, 
+                (int)(dosDateTime >> 11) & 31, 
+                (int)(dosDateTime >> 5) & 63, 
                 (int)(dosDateTime & 31) * 2);
         }
 
@@ -387,16 +485,16 @@ namespace System.IO.Compression.Zip
 
             var zfe = new ZipFileEntry
                 {
-                    Method = (Compression)method,
-                    FilenameInZip = encoder.GetString(this.centralDirImage, pointer + 46, filenameSize),
-                    FileOffset = this.GetFileOffset(headerOffset),
-                    FileSize = fileSize,
-                    CompressedSize = comprSize,
-                    HeaderOffset = headerOffset,
-                    HeaderSize = (uint)headerSize,
-                    Crc32 = crc32,
-                    ModifyTime = DosTimeToDateTime(modifyTime),
-                    Comment = comment ?? string.Empty,
+                    Method = (Compression)method, 
+                    FilenameInZip = encoder.GetString(this.centralDirImage, pointer + 46, filenameSize), 
+                    FileOffset = this.GetFileOffset(headerOffset), 
+                    FileSize = fileSize, 
+                    CompressedSize = comprSize, 
+                    HeaderOffset = headerOffset, 
+                    HeaderSize = (uint)headerSize, 
+                    Crc32 = crc32, 
+                    ModifyTime = DosTimeToDateTime(modifyTime), 
+                    Comment = comment ?? string.Empty, 
                     ZipFileName = this.FileName
                 };
             pointer += headerSize;
@@ -506,102 +604,5 @@ namespace System.IO.Compression.Zip
         }
 
         #endregion
-
-        /// <summary>
-        /// Ensures that the zip file is valid.
-        /// </summary>
-        /// <param name="validationHandler">
-        /// The class to hold the object for progress reporting
-        /// </param>
-        /// <returns>
-        /// True if the zip is valid, otherwise False.
-        /// </returns>
-        public static bool Validate(ZipFileValidationHandler validationHandler)
-        {
-            var buf = new byte[1024 * 256];
-            try
-            {
-                var zip = new ZipFile(validationHandler.Filename);
-                var entries = zip.GetAllEntries();
-
-                // First calculate the total compressed length
-                var totalCompressedLength = entries.Sum(entry => entry.CompressedSize);
-                float averageVerifySpeed = 0;
-                var totalBytesRemaining = totalCompressedLength;
-                validationHandler.TotalBytes = totalCompressedLength;
-
-                // Then calculate a CRC for every file in the Zip file,
-                // comparing it to what is stored in the Zip directory
-                foreach (ZipFileEntry entry in entries)
-                {
-                    if (entry.Crc32 != -1)
-                    {
-                        var startTime = DateTime.UtcNow;
-
-                        var crc = new Crc32();
-
-                        var offset = entry.FileOffset;
-                        var length = (int)entry.CompressedSize;
-
-                        var raf = zip.zipFileStream;
-                            raf.Seek(offset, SeekOrigin.Begin);
-
-                            while (length > 0)
-                            {
-                                var seek = length > buf.Length ? buf.Length : length;
-                                raf.Read(buf, 0, seek);
-                                crc.Update(buf, 0, seek);
-                                length -= seek;
-
-                                var currentTime = DateTime.UtcNow;
-                                var timePassed = (float)(currentTime - startTime).TotalMilliseconds;
-                                if (timePassed > 0)
-                                {
-                                    var currentSpeedSample = seek / timePassed;
-                                    if (averageVerifySpeed <= 0)
-                                    {
-                                        averageVerifySpeed = (SmoothingFactor * currentSpeedSample) + ((1 - SmoothingFactor) * averageVerifySpeed);
-                                    }
-                                    else
-                                    {
-                                        averageVerifySpeed = currentSpeedSample;
-                                    }
-
-                                    totalBytesRemaining -= seek;
-                                    var timeRemaining = (long)(totalBytesRemaining / averageVerifySpeed);
-
-                                    validationHandler.AverageSpeed = averageVerifySpeed;
-                                    validationHandler.CurrentBytes = totalCompressedLength - totalBytesRemaining;
-                                    validationHandler.TimeRemaining = timeRemaining;
-
-                                    validationHandler.UpdateUi(validationHandler);
-                                }
-
-                                startTime = currentTime;
-                                if (validationHandler.ShouldCancel)
-                                {
-                                    return true;
-                                }
-                            }
-
-                        if (crc.Value != entry.Crc32)
-                        {
-                            Debug.WriteLine("CRC does not match for entry: " + entry.FilenameInZip);
-                            Debug.WriteLine("In file: " + entry.ZipFileName);
-
-                            return false;
-                        }
-                    }
-                }
-            }
-            catch (IOException e)
-            {
-                Console.WriteLine(e.ToString());
-                Console.Write(e.StackTrace);
-                return false;
-            }
-
-            return true;
-        }
     }
 }

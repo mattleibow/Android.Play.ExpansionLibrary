@@ -1,37 +1,11 @@
 namespace ExpansionDownloader.impl
 {
     /// <summary>
-    /// Extension methods to help filter the <see cref="DownloadStatus" /> values.
+    /// Extension methods to help filter the <see cref="DownloadStatus"/> values.
     /// </summary>
     public static class DownloadStatusExtensions
     {
-        /// <summary>
-        /// Returns whether the status is informational (i.e. 1xx).
-        /// </summary>
-        /// <param name="status">
-        /// The status.
-        /// </param>
-        /// <returns>
-        /// The is status informational.
-        /// </returns>
-        public static bool IsInformational(this DownloadStatus status)
-        {
-            return status >= DownloadStatus.InformationalMinimum && status <= DownloadStatus.InformationalMaximum;
-        }
-
-        /// <summary>
-        /// Returns whether the status is a success (i.e. 2xx).
-        /// </summary>
-        /// <param name="status">
-        /// The status.
-        /// </param>
-        /// <returns>
-        /// The is status success.
-        /// </returns>
-        public static bool IsSuccess(this DownloadStatus status)
-        {
-            return status >= DownloadStatus.SuccessMinimum && status <= DownloadStatus.SuccessMaximum;
-        }
+        #region Public Methods and Operators
 
         /// <summary>
         /// Returns whether the status is a client error (i.e. 4xx).
@@ -77,6 +51,20 @@ namespace ExpansionDownloader.impl
         }
 
         /// <summary>
+        /// Returns whether the status is informational (i.e. 1xx).
+        /// </summary>
+        /// <param name="status">
+        /// The status.
+        /// </param>
+        /// <returns>
+        /// The is status informational.
+        /// </returns>
+        public static bool IsInformational(this DownloadStatus status)
+        {
+            return status >= DownloadStatus.InformationalMinimum && status <= DownloadStatus.InformationalMaximum;
+        }
+
+        /// <summary>
         /// Returns whether the status is a redirect (i.e. 3xx).
         /// </summary>
         /// <param name="status">
@@ -103,5 +91,21 @@ namespace ExpansionDownloader.impl
         {
             return status >= DownloadStatus.ServerErrorMinimum && status <= DownloadStatus.ServerErrorMaximum;
         }
+
+        /// <summary>
+        /// Returns whether the status is a success (i.e. 2xx).
+        /// </summary>
+        /// <param name="status">
+        /// The status.
+        /// </param>
+        /// <returns>
+        /// The is status success.
+        /// </returns>
+        public static bool IsSuccess(this DownloadStatus status)
+        {
+            return status >= DownloadStatus.SuccessMinimum && status <= DownloadStatus.SuccessMaximum;
+        }
+
+        #endregion
     }
 }

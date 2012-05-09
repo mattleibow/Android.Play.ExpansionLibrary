@@ -8,7 +8,7 @@ namespace ExpansionDownloader
         #region Constructors and Destructors
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DownloadProgressInfo"/>
+        /// Initializes a new instance of the <see cref="DownloadProgressInfo"/> 
         /// class from a string that represents the info.
         /// </summary>
         /// <param name="parcel">
@@ -24,8 +24,7 @@ namespace ExpansionDownloader
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DownloadProgressInfo"/> 
-        /// class.
+        /// Initializes a new instance of the <see cref="DownloadProgressInfo"/> class. 
         /// </summary>
         /// <param name="overallTotal">
         /// The overall total.
@@ -39,11 +38,7 @@ namespace ExpansionDownloader
         /// <param name="currentSpeed">
         /// The current speed.
         /// </param>
-        public DownloadProgressInfo(
-            long overallTotal, 
-            long overallProgress, 
-            long timeRemaining, 
-            float currentSpeed)
+        public DownloadProgressInfo(long overallTotal, long overallProgress, long timeRemaining, float currentSpeed)
         {
             this.OverallTotal = overallTotal;
             this.OverallProgress = overallProgress;
@@ -88,11 +83,7 @@ namespace ExpansionDownloader
         public override string ToString()
         {
             return string.Join(
-                "|", 
-                this.OverallTotal, 
-                this.OverallProgress, 
-                this.TimeRemaining, 
-                this.CurrentSpeed.ToString("0.00"));
+                "|", this.OverallTotal, this.OverallProgress, this.TimeRemaining, this.CurrentSpeed.ToString("0.00"));
         }
 
         #endregion

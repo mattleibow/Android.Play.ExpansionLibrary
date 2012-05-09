@@ -1,31 +1,28 @@
-using Android.Content;
-
 namespace LicenseVerificationLibrary.Tests
 {
+    using Android.Content;
+
     public class StrictPolicyTest : TestCase
     {
-        /**
-     * Verify that initial response is to deny access.
-     */
-
         public StrictPolicyTest(Context context)
             : base(context)
         {
         }
 
-        public void testInitialResponse()
+        /// <summary>
+        /// Verify that initial response is to deny access.
+        /// </summary>
+        private void TestInitialResponse()
         {
             var p = new StrictPolicy();
             bool result = p.AllowAccess();
             AssertFalse(result);
         }
 
-        /**
-     * Verify that after receiving a LICENSED response, the policy grants
-     * access.
-     */
-
-        public void testLicensedResonse()
+        /// <summary>
+        /// Verify that after receiving a LICENSED response, the policy grants access.
+        /// </summary>
+        private void TestLicensedResonse()
         {
             var p = new StrictPolicy();
             p.ProcessServerResponse(PolicyServerResponse.Licensed, null);
@@ -33,12 +30,10 @@ namespace LicenseVerificationLibrary.Tests
             AssertTrue(result);
         }
 
-        /**
-     * Verify that after receiving a NOT_LICENSED response, the policy denies
-     * access.
-     */
-
-        public void testNotLicensedResponse()
+        /// <summary>
+        /// Verify that after receiving a NOT_LICENSED response, the policy denies access.
+        /// </summary>
+        private void TestNotLicensedResponse()
         {
             var p = new StrictPolicy();
             p.ProcessServerResponse(PolicyServerResponse.NotLicensed, null);
@@ -46,12 +41,10 @@ namespace LicenseVerificationLibrary.Tests
             AssertFalse(result);
         }
 
-        /**
-     * Verify that after receiving a RETRY response, the policy denies
-     * access.
-     */
-
-        public void testRetryResponse()
+        /// <summary>
+        /// Verify that after receiving a RETRY response, the policy denies access.
+        /// </summary>
+        private void TestRetryResponse()
         {
             var p = new StrictPolicy();
             p.ProcessServerResponse(PolicyServerResponse.Retry, null);
@@ -61,10 +54,10 @@ namespace LicenseVerificationLibrary.Tests
 
         public override void RunTests()
         {
-            testInitialResponse();
-            testLicensedResonse();
-            testNotLicensedResponse();
-            testRetryResponse();
+            this.TestInitialResponse();
+            this.TestLicensedResonse();
+            this.TestNotLicensedResponse();
+            this.TestRetryResponse();
         }
     }
 }

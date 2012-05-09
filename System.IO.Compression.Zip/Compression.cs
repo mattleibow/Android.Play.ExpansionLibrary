@@ -8,7 +8,7 @@ namespace System.IO.Compression.Zip
         /// <summary>
         /// Uncompressed storage
         /// </summary> 
-        Store = 0,
+        Store = 0, 
 
         /// <summary>
         /// Deflate compression method

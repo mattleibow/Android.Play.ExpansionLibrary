@@ -39,10 +39,13 @@ namespace System.IO.Compression.Zip
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ExpansionZipFile"/> class. 
         /// Initializes a new instance of the <see cref="ExpansionZipFile"/> 
         /// class from a collection of zip file paths.
         /// </summary>
-        /// <param name="zipPaths">Collection of zip file paths</param>
+        /// <param name="zipPaths">
+        /// Collection of zip file paths
+        /// </param>
         public ExpansionZipFile(IEnumerable<string> zipPaths)
             : this()
         {
@@ -52,29 +55,16 @@ namespace System.IO.Compression.Zip
             }
         }
 
-        /// <summary>
-        /// Add all the entries from an existing <see cref="ExpansionZipFile"/>
-        /// </summary>
-        /// <param name="merge">The ExpansionZipFile to use.</param>
-        public void MergeZipFile(ExpansionZipFile merge)
-        {
-            foreach (var entry in merge.files)
-            {
-                if (this.files.ContainsKey(entry.Key))
-                {
-                    this.files[entry.Key] = entry.Value;
-                }
-                else
-                {
-                    this.files.Add(entry.Key, entry.Value);
-                }
-            }
-        }
+        #endregion
+
+        #region Public Methods and Operators
 
         /// <summary>
         /// Add all the entries from an existing <see cref="ExpansionZipFile"/>
         /// </summary>
-        /// <param name="merge">The ExpansionZipFile to use.</param>
+        /// <param name="merge">
+        /// The ExpansionZipFile to use.
+        /// </param>
         public void AddZipFileEntries(IEnumerable<ZipFileEntry> merge)
         {
             foreach (var entry in merge.ToDictionary(x => x.FilenameInZip.ToUpper(), x => x))
@@ -89,25 +79,6 @@ namespace System.IO.Compression.Zip
                 }
             }
         }
-
-        /// <summary>
-        /// Add all the entries from a zip file on the system.
-        /// </summary>
-        /// <param name="path">Path to the zip file</param>
-        public void MergeZipFile(string path)
-        {
-            ZipFileEntry[] merge;
-            using (var zip = new ZipFile(path))
-            {
-                merge = zip.GetAllEntries();
-            }
-
-            this.AddZipFileEntries(merge);
-        }
-
-        #endregion
-
-        #region Public Methods and Operators
 
         /// <summary>
         /// The get all entries.
@@ -132,6 +103,44 @@ namespace System.IO.Compression.Zip
         public ZipFileEntry GetEntry(string path)
         {
             return this.files[path.ToUpper()];
+        }
+
+        /// <summary>
+        /// Add all the entries from an existing <see cref="ExpansionZipFile"/>
+        /// </summary>
+        /// <param name="merge">
+        /// The ExpansionZipFile to use.
+        /// </param>
+        public void MergeZipFile(ExpansionZipFile merge)
+        {
+            foreach (var entry in merge.files)
+            {
+                if (this.files.ContainsKey(entry.Key))
+                {
+                    this.files[entry.Key] = entry.Value;
+                }
+                else
+                {
+                    this.files.Add(entry.Key, entry.Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add all the entries from a zip file on the system.
+        /// </summary>
+        /// <param name="path">
+        /// Path to the zip file
+        /// </param>
+        public void MergeZipFile(string path)
+        {
+            ZipFileEntry[] merge;
+            using (var zip = new ZipFile(path))
+            {
+                merge = zip.GetAllEntries();
+            }
+
+            this.AddZipFileEntries(merge);
         }
 
         #endregion

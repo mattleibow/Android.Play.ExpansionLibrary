@@ -1,68 +1,152 @@
-using Android.Util;
-using Java.Lang;
-using Java.Security;
-using System;
-
 namespace LicenseVerificationLibrary
 {
+    using System;
+
+    using Java.Lang;
+    using Java.Security;
+
     /// <summary>
     /// Contains data related to a licensing request and methods to verify and process the response.
     /// </summary>
     internal class LicenseValidator
     {
-        private const string Tag = "LicenseValidator";
+        #region Constants and Fields
+
+        /// <summary>
+        /// The signature algorithm.
+        /// </summary>
         private const string SignatureAlgorithm = "SHA1withRSA";
 
-        private readonly ILicenseCheckerCallback _licenseCheckerCallback;
-        private readonly IDeviceLimiter _deviceLimiter;
-        private readonly int _numberUsedOnce;
-        private readonly string _packageName;
-        private readonly IPolicy _policy;
-        private readonly string _versionCode;
+        /// <summary>
+        /// The device limiter.
+        /// </summary>
+        private readonly IDeviceLimiter deviceLimiter;
 
-        internal LicenseValidator(IPolicy policy, IDeviceLimiter deviceLimiter, ILicenseCheckerCallback callback, 
-                                  int nonce, string packageName, string versionCode)
+        /// <summary>
+        /// The license checker callback.
+        /// </summary>
+        private readonly ILicenseCheckerCallback licenseCheckerCallback;
+
+        /// <summary>
+        /// The number used once.
+        /// </summary>
+        private readonly int numberUsedOnce;
+
+        /// <summary>
+        /// The package name.
+        /// </summary>
+        private readonly string packageName;
+
+        /// <summary>
+        /// The policy.
+        /// </summary>
+        private readonly IPolicy policy;
+
+        /// <summary>
+        /// The version code.
+        /// </summary>
+        private readonly string versionCode;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LicenseValidator"/> class.
+        /// </summary>
+        /// <param name="policy">
+        /// The policy.
+        /// </param>
+        /// <param name="deviceLimiter">
+        /// The device limiter.
+        /// </param>
+        /// <param name="callback">
+        /// The callback.
+        /// </param>
+        /// <param name="nonce">
+        /// The nonce.
+        /// </param>
+        /// <param name="packageName">
+        /// The package name.
+        /// </param>
+        /// <param name="versionCode">
+        /// The version code.
+        /// </param>
+        internal LicenseValidator(
+            IPolicy policy, 
+            IDeviceLimiter deviceLimiter, 
+            ILicenseCheckerCallback callback, 
+            int nonce, 
+            string packageName, 
+            string versionCode)
         {
-            _policy = policy;
-            _deviceLimiter = deviceLimiter;
-            _licenseCheckerCallback = callback;
-            _numberUsedOnce = nonce;
-            _packageName = packageName;
-            _versionCode = versionCode;
+            this.policy = policy;
+            this.deviceLimiter = deviceLimiter;
+            this.licenseCheckerCallback = callback;
+            this.numberUsedOnce = nonce;
+            this.packageName = packageName;
+            this.versionCode = versionCode;
         }
 
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// The get callback.
+        /// </summary>
+        /// <returns>
+        /// </returns>
         public ILicenseCheckerCallback GetCallback()
         {
-            return _licenseCheckerCallback;
+            return this.licenseCheckerCallback;
         }
 
+        /// <summary>
+        /// The get number used once.
+        /// </summary>
+        /// <returns>
+        /// The get number used once.
+        /// </returns>
         public int GetNumberUsedOnce()
         {
-            return _numberUsedOnce;
+            return this.numberUsedOnce;
         }
 
+        /// <summary>
+        /// The get package name.
+        /// </summary>
+        /// <returns>
+        /// The get package name.
+        /// </returns>
         public string GetPackageName()
         {
-            return _packageName;
+            return this.packageName;
         }
 
         /// <summary>
         /// Verifies the response from server and calls appropriate callback method.
         /// </summary>
-        /// <param name="publicKey">public key associated with the developer account</param>
-        /// <param name="responseCode">server response code</param>
-        /// <param name="signedData">signed data from server</param>
-        /// <param name="signature">server signature</param>
+        /// <param name="publicKey">
+        /// public key associated with the developer account
+        /// </param>
+        /// <param name="responseCode">
+        /// server response code
+        /// </param>
+        /// <param name="signedData">
+        /// signed data from server
+        /// </param>
+        /// <param name="signature">
+        /// server signature
+        /// </param>
         public void Verify(IPublicKey publicKey, ServerResponseCode responseCode, string signedData, string signature)
         {
-            System.Diagnostics.Debug.WriteLine(Tag + ".Verify");
-
             string userId = null;
+
             // Skip signature check for unsuccessful requests
             ResponseData data = null;
-            if (responseCode == ServerResponseCode.Licensed ||
-                responseCode == ServerResponseCode.NotLicensed ||
-                responseCode == ServerResponseCode.LicensedOldKey)
+            if (responseCode == ServerResponseCode.Licensed || responseCode == ServerResponseCode.NotLicensed
+                || responseCode == ServerResponseCode.LicensedOldKey)
             {
                 // Verify signature.
                 try
@@ -73,8 +157,8 @@ namespace LicenseVerificationLibrary
 
                     if (!sig.Verify(Convert.FromBase64String(signature)))
                     {
-                        System.Diagnostics.Debug.WriteLine(Tag + " : " + "Signature verification failed.");
-                        HandleInvalidResponse();
+                        System.Diagnostics.Debug.WriteLine("Signature verification failed.");
+                        this.HandleInvalidResponse();
                         return;
                     }
                 }
@@ -85,7 +169,7 @@ namespace LicenseVerificationLibrary
                 }
                 catch (InvalidKeyException)
                 {
-                    HandleApplicationError(CallbackErrorCode.InvalidPublicKey);
+                    this.HandleApplicationError(CallbackErrorCode.InvalidPublicKey);
                     return;
                 }
                 catch (SignatureException e)
@@ -94,8 +178,8 @@ namespace LicenseVerificationLibrary
                 }
                 catch (FormatException)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Could not Base64-decode signature.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Could not Base64-decode signature.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
@@ -106,36 +190,36 @@ namespace LicenseVerificationLibrary
                 }
                 catch (IllegalArgumentException)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Could not parse response.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Could not parse response.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
                 if (data.ResponseCode != responseCode)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Response codes don't match.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Response codes don't match.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
-                if (data.NumberUsedOnce != _numberUsedOnce)
+                if (data.NumberUsedOnce != this.numberUsedOnce)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "NumberUsedOnce doesn't match.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("NumberUsedOnce doesn't match.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
-                if (data.PackageName != (_packageName))
+                if (data.PackageName != this.packageName)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Package name doesn't match.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Package name doesn't match.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
-                if (data.VersionCode != (_versionCode))
+                if (data.VersionCode != this.versionCode)
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Version codes don't match.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Version codes don't match.");
+                    this.HandleInvalidResponse();
                     return;
                 }
 
@@ -143,8 +227,8 @@ namespace LicenseVerificationLibrary
                 userId = data.UserId;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "User identifier is empty.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("User identifier is empty.");
+                    this.HandleInvalidResponse();
                     return;
                 }
             }
@@ -153,70 +237,91 @@ namespace LicenseVerificationLibrary
             {
                 case ServerResponseCode.Licensed:
                 case ServerResponseCode.LicensedOldKey:
-                    PolicyServerResponse limiterResponse = _deviceLimiter.IsDeviceAllowed(userId);
-                    HandleResponse(limiterResponse, data);
+                    PolicyServerResponse limiterResponse = this.deviceLimiter.IsDeviceAllowed(userId);
+                    this.HandleResponse(limiterResponse, data);
                     break;
                 case ServerResponseCode.NotLicensed:
-                    HandleResponse(PolicyServerResponse.NotLicensed, data);
+                    this.HandleResponse(PolicyServerResponse.NotLicensed, data);
                     break;
                 case ServerResponseCode.ErrorContactingServer:
-                    Log.Warn(Tag, "Error contacting licensing server.");
-                    HandleResponse(PolicyServerResponse.Retry, data);
+                    System.Diagnostics.Debug.WriteLine("Error contacting licensing server.");
+                    this.HandleResponse(PolicyServerResponse.Retry, data);
                     break;
                 case ServerResponseCode.ServerFailure:
-                    Log.Warn(Tag, "An error has occurred on the licensing server.");
-                    HandleResponse(PolicyServerResponse.Retry, data);
+                    System.Diagnostics.Debug.WriteLine("An error has occurred on the licensing server.");
+                    this.HandleResponse(PolicyServerResponse.Retry, data);
                     break;
                 case ServerResponseCode.OverQuota:
-                    Log.Warn(Tag, "Licensing server is refusing to talk to this device, over quota.");
-                    HandleResponse(PolicyServerResponse.Retry, data);
+                    System.Diagnostics.Debug.WriteLine(
+                        "Licensing server is refusing to talk to this device, over quota.");
+                    this.HandleResponse(PolicyServerResponse.Retry, data);
                     break;
                 case ServerResponseCode.InvalidPackageName:
-                    HandleApplicationError(CallbackErrorCode.InvalidPackageName);
+                    this.HandleApplicationError(CallbackErrorCode.InvalidPackageName);
                     break;
                 case ServerResponseCode.NonMatchingUid:
-                    HandleApplicationError(CallbackErrorCode.ErrorNonMatchingUid);
+                    this.HandleApplicationError(CallbackErrorCode.ErrorNonMatchingUid);
                     break;
                 case ServerResponseCode.NotMarketManaged:
-                    HandleApplicationError(CallbackErrorCode.NotMarketManaged);
+                    this.HandleApplicationError(CallbackErrorCode.NotMarketManaged);
                     break;
                 default:
-                    System.Diagnostics.Debug.WriteLine(Tag + " : " + "Unknown response code for license check.");
-                    HandleInvalidResponse();
+                    System.Diagnostics.Debug.WriteLine("Unknown response code for license check.");
+                    this.HandleInvalidResponse();
                     break;
             }
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// The handle application error.
+        /// </summary>
+        /// <param name="code">
+        /// The code.
+        /// </param>
+        private void HandleApplicationError(CallbackErrorCode code)
+        {
+            this.licenseCheckerCallback.ApplicationError(code);
+        }
+
+        /// <summary>
+        /// The handle invalid response.
+        /// </summary>
+        private void HandleInvalidResponse()
+        {
+            this.licenseCheckerCallback.DontAllow(PolicyServerResponse.NotLicensed);
         }
 
         /// <summary>
         /// Confers with policy and calls appropriate callback method.
         /// </summary>
+        /// <param name="response">
+        /// The response.
+        /// </param>
+        /// <param name="rawData">
+        /// The raw Data.
+        /// </param>
         private void HandleResponse(PolicyServerResponse response, ResponseData rawData)
         {
-            System.Diagnostics.Debug.WriteLine(Tag + " : " + "LicenseValidator.handleResponse-"+response);
             // Update policy data and increment retry counter (if needed)
-            _policy.ProcessServerResponse(response, rawData);
+            this.policy.ProcessServerResponse(response, rawData);
 
             // Given everything we know, including cached data, ask the policy if we
             // should grant
             // access.
-            if (_policy.AllowAccess())
+            if (this.policy.AllowAccess())
             {
-                _licenseCheckerCallback.Allow(response);
+                this.licenseCheckerCallback.Allow(response);
             }
             else
             {
-                _licenseCheckerCallback.DontAllow(response);
+                this.licenseCheckerCallback.DontAllow(response);
             }
         }
 
-        private void HandleApplicationError(CallbackErrorCode code)
-        {
-            _licenseCheckerCallback.ApplicationError(code);
-        }
-
-        private void HandleInvalidResponse()
-        {
-            _licenseCheckerCallback.DontAllow(PolicyServerResponse.NotLicensed);
-        }
+        #endregion
     }
 }

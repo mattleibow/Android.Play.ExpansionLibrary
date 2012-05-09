@@ -8,6 +8,8 @@ namespace ExpansionDownloader.impl
     using Android.OS;
     using Android.Runtime;
 
+    using ExpansionDownloader.Client;
+
     using Java.Lang;
     using Java.Net;
 
@@ -48,7 +50,7 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The downloads database.
         /// </summary>
-        private readonly DownloadsDB downloadsDb;
+        private readonly DownloadsDatabase downloadsDatabase;
 
         #endregion
 
@@ -72,7 +74,7 @@ namespace ExpansionDownloader.impl
             this.downloadInfo = info;
             this.downloaderService = service;
             this.downloadNotification = notification;
-            this.downloadsDb = DownloadsDB.GetDatabase(service);
+            this.downloadsDatabase = DownloadsDatabase.GetDatabase(service);
         }
 
         #endregion
@@ -396,7 +398,7 @@ namespace ExpansionDownloader.impl
                 }
                 catch (IOException ex)
                 {
-                    if (!Helpers.IsExternalMediaMounted())
+                    if (!Helpers.IsExternalMediaMounted)
                     {
                         throw new StopRequestException(
                             DownloadStatus.DeviceNotFoundError, 
@@ -424,7 +426,7 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private void CheckConnectivity()
         {
-            var availabilityState = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDb);
+            var availabilityState = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase);
 
             switch (availabilityState)
             {
@@ -534,7 +536,7 @@ namespace ExpansionDownloader.impl
         /// </returns>
         private DownloadStatus GetFinalStatusForHttpError(State state)
         {
-            if (this.downloaderService.GetNetworkAvailabilityState(this.downloadsDb) != NetworkConstants.Ok)
+            if (this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase) != NetworkConstants.Ok)
             {
                 return DownloadStatus.WaitingForNetwork;
             }
@@ -571,7 +573,7 @@ namespace ExpansionDownloader.impl
             // {
             // downloadInfo.TotalBytes = innerState.BytesSoFar;
             // }
-            this.downloadsDb.UpdateDownload(this.downloadInfo);
+            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
 
             bool lengthMismatched = innerState.HeaderContentLength != null
                                     && innerState.BytesSoFar != int.Parse(innerState.HeaderContentLength);
@@ -695,7 +697,8 @@ namespace ExpansionDownloader.impl
         /// </summary>
         private void LogNetworkState()
         {
-            var network = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDb) == NetworkConstants.Ok
+            var network = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase)
+                          == NetworkConstants.Ok
                               ? "Up"
                               : "Down";
             Debug.WriteLine("Network is {0}.", network);
@@ -840,7 +843,7 @@ namespace ExpansionDownloader.impl
             {
                 this.LogNetworkState();
                 this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                this.downloadsDb.UpdateDownload(this.downloadInfo);
+                this.downloadsDatabase.UpdateDownload(this.downloadInfo);
 
                 string message;
                 DownloadStatus finalStatus;
@@ -953,7 +956,7 @@ namespace ExpansionDownloader.impl
             {
                 // we store progress updates to the database here
                 this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                this.downloadsDb.UpdateDownloadCurrentBytes(this.downloadInfo);
+                this.downloadsDatabase.UpdateDownloadCurrentBytes(this.downloadInfo);
 
                 innerState.BytesNotified = innerState.BytesSoFar;
                 innerState.TimeLastNotification = now;
@@ -1114,7 +1117,7 @@ namespace ExpansionDownloader.impl
         private void UpdateDatabaseFromHeaders(InnerState innerState)
         {
             this.downloadInfo.ETag = innerState.HeaderETag;
-            this.downloadsDb.UpdateDownload(this.downloadInfo);
+            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
         }
 
         /// <summary>
@@ -1155,7 +1158,7 @@ namespace ExpansionDownloader.impl
                 this.downloadInfo.FailedCount++;
             }
 
-            this.downloadsDb.UpdateDownload(this.downloadInfo);
+            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
         }
 
         #endregion

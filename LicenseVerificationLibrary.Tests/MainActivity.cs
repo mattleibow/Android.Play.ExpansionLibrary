@@ -37,7 +37,8 @@ namespace LicenseVerificationLibrary.Tests
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqSEPO6frjPZ/qdSTT80dCBjsHZouZGadBRwlg9g34ueC6j4F348dy0Xgo4NdKX39pSX1RNl0kGaxX6sg04bp4qx6RfwVyD1CPSEYdWldkuAQ9aNaQZ/yq6V+lmrqaKfJJuh1olqtsK8VVnvJ48Q+VwkIaT5CXhqeRAyZRXMEmEGPTNybSYVf5P90CxdSRwpae/w3S9rzuXOnfUhLKc9WmovRLQ8GzXYzhbNBzbWrK0NE+iXdxDGOZPDQPiLEaU2KliaWOBGO+2Cx5MSXZ3Xlm7e0Yo3F4x8BpMDQHs+3RSYTEaMvQk/t4sfMbA4xCzAP57cl6Ae6SbWU46mk+lqDeQIDAQAB";
 
         // Generate your own 20 random bytes, and put them here.
-        private static readonly byte[] SALT = new byte[] {46, 65, 30, 128, 103, 57, 74, 64, 51, 88, 95, 45, 77, 117, 36, 113, 11, 32, 64, 89};
+        private static readonly byte[] Salt = new byte[]
+            { 46, 65, 30, 128, 103, 57, 74, 64, 51, 88, 95, 45, 77, 117, 36, 113, 11, 32, 64, 89 };
 
         private Button mCheckLicenseButton;
 
@@ -56,14 +57,14 @@ namespace LicenseVerificationLibrary.Tests
             mStatusText = FindViewById<TextView>(Resource.Id.status_text);
             mCheckLicenseButton = FindViewById<Button>(Resource.Id.check_license_button);
             mCheckLicenseButton.Click += delegate {
-                doCheck();
+                this.DoCheck();
             };
 
             var runTests = FindViewById<Button>(Resource.Id.RunTests);
             runTests.Click += delegate {
                 new ServerManagedPolicyTest(this).Execute();
                 new StrictPolicyTest(this).Execute();
-                new APKExpansionPolicyTest(this).Execute();
+                new ApkExpansionPolicyTest(this).Execute();
                 new ObfuscatedPreferencesTest(this).Execute();
                 new AesObfuscatorTest(this).Execute();
             };
@@ -78,19 +79,19 @@ namespace LicenseVerificationLibrary.Tests
             // Construct the LicenseChecker with a policy.
             mChecker = new LicenseChecker(this,
                                           new ServerManagedPolicy(this, 
-                                                                  new AesObfuscator(SALT, PackageName, deviceId)),
+                                                                  new AesObfuscator(Salt, PackageName, deviceId)),
                                           BASE64_PUBLIC_KEY);
-            doCheck();
+            this.DoCheck();
         }
 
-        protected Dialog onCreateDialog(int id)
+        protected override Dialog OnCreateDialog(int id)
         {
             bool bRetry = id == 1;
             EventHandler<DialogClickEventArgs> eventHandler = delegate
                                                                   {
                                                                       if (bRetry)
                                                                       {
-                                                                          doCheck();
+                                                                          this.DoCheck();
                                                                       }
                                                                       else
                                                                       {
@@ -108,7 +109,7 @@ namespace LicenseVerificationLibrary.Tests
                 .Create();
         }
 
-        private void doCheck()
+        private void DoCheck()
         {
             mCheckLicenseButton.Enabled = false;
             SetProgressBarIndeterminateVisibility(true);
@@ -116,7 +117,7 @@ namespace LicenseVerificationLibrary.Tests
             mChecker.CheckAccess(mLicenseCheckerCallback);
         }
 
-        private void displayResult(string result)
+        private void DisplayResult(string result)
         {
             mHandler.Post(new Runnable(delegate
                                            {
@@ -127,7 +128,7 @@ namespace LicenseVerificationLibrary.Tests
                               ));
         }
 
-        private void displayDialog(bool showRetry)
+        private void DisplayDialog(bool showRetry)
         {
             mHandler.Post(new Runnable(delegate
                                            {
@@ -147,34 +148,34 @@ namespace LicenseVerificationLibrary.Tests
 
         private class MyLicenseCheckerCallback : ILicenseCheckerCallback
         {
-            private readonly MainActivity _mainActivity;
+            private readonly MainActivity mainActivity;
 
-            public MyLicenseCheckerCallback(MainActivity mainActivity)
+            public MyLicenseCheckerCallback(MainActivity activity)
             {
-                _mainActivity = mainActivity;
+                this.mainActivity = activity;
             }
 
             #region LicenseCheckerCallback Members
 
             public void Allow(PolicyServerResponse policyReason)
             {
-                if (_mainActivity.IsFinishing)
+                if (this.mainActivity.IsFinishing)
                 {
                     // Don't update UI if Activity is finishing.
                     return;
                 }
                 // Should allow user access.
-                _mainActivity.displayResult(_mainActivity.GetString(Resource.String.allow));
+                this.mainActivity.DisplayResult(this.mainActivity.GetString(Resource.String.allow));
             }
 
             public void DontAllow(PolicyServerResponse policyReason)
             {
-                if (_mainActivity.IsFinishing)
+                if (this.mainActivity.IsFinishing)
                 {
                     // Don't update UI if Activity is finishing.
                     return;
                 }
-                _mainActivity.displayResult(_mainActivity.GetString(Resource.String.dont_allow));
+                this.mainActivity.DisplayResult(this.mainActivity.GetString(Resource.String.dont_allow));
                 // Should not allow access. In most cases, the app should assume
                 // the user has access unless it encounters this. If it does,
                 // the app should inform the user of their unlicensed ways
@@ -184,12 +185,12 @@ namespace LicenseVerificationLibrary.Tests
                 // If the reason for the lack of license is that the service is
                 // unavailable or there is another problem, we display a
                 // retry button on the dialog and a different message.
-                _mainActivity.displayDialog(policyReason == PolicyServerResponse.Retry);
+                this.mainActivity.DisplayDialog(policyReason == PolicyServerResponse.Retry);
             }
 
             public void ApplicationError(CallbackErrorCode errorCode)
             {
-                if (_mainActivity.IsFinishing)
+                if (this.mainActivity.IsFinishing)
                 {
                     // Don't update UI if Activity is finishing.
                     return;
@@ -197,8 +198,8 @@ namespace LicenseVerificationLibrary.Tests
                 // This is a polite way of saying the developer made a mistake
                 // while setting up or calling the license checker library.
                 // Please examine the error code and fix the erroResource.
-                string result = string.Format(_mainActivity.GetString(Resource.String.application_error), errorCode);
-                _mainActivity.displayResult(result);
+                string result = string.Format(this.mainActivity.GetString(Resource.String.application_error), errorCode);
+                this.mainActivity.DisplayResult(result);
             }
 
             #endregion

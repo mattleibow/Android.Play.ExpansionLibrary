@@ -1,10 +1,5 @@
 ﻿namespace System.IO.Compression.Zip.Tests
 {
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Threading;
-    using System.Linq;
-
     using Android.App;
     using Android.OS;
     using Android.Widget;

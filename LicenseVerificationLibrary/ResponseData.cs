@@ -1,27 +1,66 @@
-using System;
-
 namespace LicenseVerificationLibrary
 {
+    using System;
+
     /// <summary>
-    ///   ResponseData from licensing server.
+    /// ResponseData from licensing server.
     /// </summary>
     public class ResponseData
     {
         // Response-specific data.
-        public string Extra { get; private set; }
-        public int NumberUsedOnce { get; private set; }
-        public string PackageName { get; private set; }
-        public ServerResponseCode ResponseCode { get; private set; }
-        public long TimeStamp { get; private set; }
-        public string UserId { get; private set; }
-        public string VersionCode { get; private set; }
+        #region Public Properties
 
         /// <summary>
-        ///   Parses response string into ResponseData.
+        /// Gets Extra.
         /// </summary>
-        /// <param name = "responseData">response data string</param>
-        /// <returns>ResponseData object</returns>
-        /// <exception cref = "ArgumentException">upon parsing error</exception>
+        public string Extra { get; private set; }
+
+        /// <summary>
+        /// Gets NumberUsedOnce.
+        /// </summary>
+        public int NumberUsedOnce { get; private set; }
+
+        /// <summary>
+        /// Gets PackageName.
+        /// </summary>
+        public string PackageName { get; private set; }
+
+        /// <summary>
+        /// Gets ResponseCode.
+        /// </summary>
+        public ServerResponseCode ResponseCode { get; private set; }
+
+        /// <summary>
+        /// Gets TimeStamp.
+        /// </summary>
+        public long TimeStamp { get; private set; }
+
+        /// <summary>
+        /// Gets UserId.
+        /// </summary>
+        public string UserId { get; private set; }
+
+        /// <summary>
+        /// Gets VersionCode.
+        /// </summary>
+        public string VersionCode { get; private set; }
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// Parses response string into ResponseData.
+        /// </summary>
+        /// <param name="responseData">
+        /// response data string
+        /// </param>
+        /// <returns>
+        /// ResponseData object
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// upon parsing error
+        /// </exception>
         public static ResponseData Parse(string responseData)
         {
             // Must parse out main response data and response-specific data.
@@ -31,9 +70,7 @@ namespace LicenseVerificationLibrary
             if (index != -1)
             {
                 mainData = responseData.Substring(0, index);
-                extraData = index < responseData.Length
-                                ? responseData.Substring(index + 1)
-                                : string.Empty;
+                extraData = index < responseData.Length ? responseData.Substring(index + 1) : string.Empty;
             }
 
             string[] fields = mainData.Split('|');
@@ -43,31 +80,37 @@ namespace LicenseVerificationLibrary
             }
 
             var data = new ResponseData
-                           {
-                               Extra = extraData,
-                               ResponseCode = (ServerResponseCode) Enum.Parse(typeof (ServerResponseCode), fields[0]),
-                               NumberUsedOnce = int.Parse(fields[1]),
-                               PackageName = fields[2],
-                               VersionCode = fields[3],
-                               // Application-specific user identifier.
-                               UserId = fields[4],
-                               TimeStamp = long.Parse(fields[5])
-                           };
+                {
+                    Extra = extraData, 
+                    ResponseCode = (ServerResponseCode)Enum.Parse(typeof(ServerResponseCode), fields[0]), 
+                    NumberUsedOnce = int.Parse(fields[1]), 
+                    PackageName = fields[2], 
+                    VersionCode = fields[3], 
+                    // Application-specific user identifier.
+                    UserId = fields[4], 
+                    TimeStamp = long.Parse(fields[5])
+                };
 
             return data;
         }
 
+        /// <summary>
+        /// The to string.
+        /// </summary>
+        /// <returns>
+        /// The to string.
+        /// </returns>
         public override string ToString()
         {
-            return string.Join("|", new object[]
-                                        {
-                                            (int) ResponseCode,
-                                            NumberUsedOnce,
-                                            PackageName,
-                                            VersionCode,
-                                            UserId,
-                                            TimeStamp
-                                        });
+            return string.Join(
+                "|", 
+                new object[]
+                    {
+                        (int)this.ResponseCode, this.NumberUsedOnce, this.PackageName, this.VersionCode, this.UserId, 
+                        this.TimeStamp
+                    });
         }
+
+        #endregion
     }
 }

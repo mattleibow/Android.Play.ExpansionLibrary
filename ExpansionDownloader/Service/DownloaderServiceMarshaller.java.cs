@@ -16,8 +16,10 @@ namespace ExpansionDownloader.Service
     /// object that you can then use to issue commands to the
     /// <see cref="DownloaderService"/> (such as to pause and resume downloads).
     /// </remarks>
-    public class DownloaderServiceMarshaller
+    public static class DownloaderServiceMarshaller
     {
+        #region Public Methods and Operators
+
         /// <summary>
         /// Returns a proxy that will marshall calls to IDownloaderService methods
         /// </summary>
@@ -49,80 +51,35 @@ namespace ExpansionDownloader.Service
             return new DownloaderServiceConnection(itf);
         }
 
-        #region Nested type: Proxy
+        #endregion
 
-        private class Proxy : IDownloaderService
+        /// <summary>
+        /// The downloader service connection.
+        /// </summary>
+        private class DownloaderServiceConnection : IDownloaderServiceConnection
         {
+            #region Constants and Fields
+
+            /// <summary>
+            /// The downloader service.
+            /// </summary>
+            private readonly IDownloaderService downloaderService;
+
+            /// <summary>
+            /// The messenger.
+            /// </summary>
             private readonly Messenger messenger;
-
-            public Proxy(Messenger msg)
-            {
-                this.messenger = msg;
-            }
-
-            #region IDownloaderService Members
-
-            public void RequestAbortDownload()
-            {
-                this.Send(DownloaderServiceMessages.RequestAbortDownload, new Bundle());
-            }
-
-            public void RequestPauseDownload()
-            {
-                this.Send(DownloaderServiceMessages.RequestPauseDownload, new Bundle());
-            }
-
-            public void SetDownloadFlags(DownloaderServiceFlags flags)
-            {
-                var p = new Bundle();
-                p.PutInt(DownloaderServiceParameters.Flags, (int)flags);
-                this.Send(DownloaderServiceMessages.SetDownloadFlags, p);
-            }
-
-            public void RequestContinueDownload()
-            {
-                this.Send(DownloaderServiceMessages.RequestContinueDownload, new Bundle());
-            }
-
-            public void RequestDownloadStatus()
-            {
-                this.Send(DownloaderServiceMessages.RequestDownloadState, new Bundle());
-            }
-
-            public void OnClientUpdated(Messenger clientMessenger)
-            {
-                var bundle = new Bundle(1);
-                bundle.PutParcelable(DownloaderServiceParameters.Messenger, clientMessenger);
-                this.Send(DownloaderServiceMessages.RequestClientUpdate, bundle);
-            }
 
             #endregion
 
-            private void Send(DownloaderServiceMessages method, Bundle p)
-            {
-                Message m = Message.Obtain(null, (int)method);
-                m.Data = p;
-                try
-                {
-                    this.messenger.Send(m);
-                }
-                catch (RemoteException e)
-                {
-                    e.PrintStackTrace();
-                }
-            }
-        }
+            #region Constructors and Destructors
 
-        #endregion
-
-        #region Nested type: DownloaderServiceConnection
-
-        private class DownloaderServiceConnection : IDownloaderServiceConnection
-        {
-            private readonly IDownloaderService downloaderService;
-
-            private readonly Messenger messenger;
-
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DownloaderServiceConnection"/> class.
+            /// </summary>
+            /// <param name="downloaderService">
+            /// The downloader service.
+            /// </param>
             public DownloaderServiceConnection(IDownloaderService downloaderService)
             {
                 var handler = new Handler(this.SendMessage);
@@ -130,6 +87,51 @@ namespace ExpansionDownloader.Service
                 this.downloaderService = downloaderService;
             }
 
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// The connect.
+            /// </summary>
+            /// <param name="context">
+            /// The context.
+            /// </param>
+            public void Connect(Context context)
+            {
+            }
+
+            /// <summary>
+            /// The disconnect.
+            /// </summary>
+            /// <param name="context">
+            /// The context.
+            /// </param>
+            public void Disconnect(Context context)
+            {
+            }
+
+            /// <summary>
+            /// Returns a messenger.
+            /// </summary>
+            /// <returns>
+            /// The messenger
+            /// </returns>
+            public Messenger GetMessenger()
+            {
+                return this.messenger;
+            }
+
+            #endregion
+
+            #region Methods
+
+            /// <summary>
+            /// The send message.
+            /// </summary>
+            /// <param name="message">
+            /// The message.
+            /// </param>
             private void SendMessage(Message message)
             {
                 switch ((DownloaderServiceMessages)message.What)
@@ -157,24 +159,126 @@ namespace ExpansionDownloader.Service
                 }
             }
 
-            #region IDownloaderServiceConnection Members
+            #endregion
+        }
 
-            public Messenger GetMessenger()
+        /// <summary>
+        /// The proxy.
+        /// </summary>
+        private class Proxy : IDownloaderService
+        {
+            #region Constants and Fields
+
+            /// <summary>
+            /// The messenger.
+            /// </summary>
+            private readonly Messenger messenger;
+
+            #endregion
+
+            #region Constructors and Destructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Proxy"/> class.
+            /// </summary>
+            /// <param name="msg">
+            /// The msg.
+            /// </param>
+            public Proxy(Messenger msg)
             {
-                return this.messenger;
+                this.messenger = msg;
             }
 
-            public void Connect(Context context)
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// The on client updated.
+            /// </summary>
+            /// <param name="clientMessenger">
+            /// The client messenger.
+            /// </param>
+            public void OnClientUpdated(Messenger clientMessenger)
             {
+                var bundle = new Bundle(1);
+                bundle.PutParcelable(DownloaderServiceParameters.Messenger, clientMessenger);
+                this.Send(DownloaderServiceMessages.RequestClientUpdate, bundle);
             }
 
-            public void Disconnect(Context context)
+            /// <summary>
+            /// The request abort download.
+            /// </summary>
+            public void RequestAbortDownload()
             {
+                this.Send(DownloaderServiceMessages.RequestAbortDownload, new Bundle());
+            }
+
+            /// <summary>
+            /// The request continue download.
+            /// </summary>
+            public void RequestContinueDownload()
+            {
+                this.Send(DownloaderServiceMessages.RequestContinueDownload, new Bundle());
+            }
+
+            /// <summary>
+            /// The request download status.
+            /// </summary>
+            public void RequestDownloadStatus()
+            {
+                this.Send(DownloaderServiceMessages.RequestDownloadState, new Bundle());
+            }
+
+            /// <summary>
+            /// The request pause download.
+            /// </summary>
+            public void RequestPauseDownload()
+            {
+                this.Send(DownloaderServiceMessages.RequestPauseDownload, new Bundle());
+            }
+
+            /// <summary>
+            /// The set download flags.
+            /// </summary>
+            /// <param name="flags">
+            /// The flags.
+            /// </param>
+            public void SetDownloadFlags(DownloaderServiceFlags flags)
+            {
+                var p = new Bundle();
+                p.PutInt(DownloaderServiceParameters.Flags, (int)flags);
+                this.Send(DownloaderServiceMessages.SetDownloadFlags, p);
+            }
+
+            #endregion
+
+            #region Methods
+
+            /// <summary>
+            /// The send.
+            /// </summary>
+            /// <param name="method">
+            /// The method.
+            /// </param>
+            /// <param name="p">
+            /// The p.
+            /// </param>
+            private void Send(DownloaderServiceMessages method, Bundle p)
+            {
+                Message m = Message.Obtain(null, (int)method);
+                m.Data = p;
+                try
+                {
+                    this.messenger.Send(m);
+                }
+                catch (RemoteException e)
+                {
+                    e.PrintStackTrace();
+                }
             }
 
             #endregion
         }
-
-        #endregion
     }
 }

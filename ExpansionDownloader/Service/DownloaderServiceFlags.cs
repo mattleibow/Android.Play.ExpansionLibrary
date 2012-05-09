@@ -2,6 +2,8 @@ namespace ExpansionDownloader.Service
 {
     using System;
 
+    using ExpansionDownloader.Client;
+
     /// <summary>
     /// Flags for a download
     /// </summary>

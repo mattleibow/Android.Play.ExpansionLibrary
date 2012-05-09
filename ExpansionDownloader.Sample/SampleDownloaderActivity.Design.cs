@@ -88,7 +88,6 @@ namespace ExpansionDownloader.Sample
             this.openWiFiSettingsButton = this.FindViewById<Button>(Resource.Id.wifiSettingsButton);
             this.resumeOnCellDataButton = this.FindViewById<Button>(Resource.Id.resumeOverCellular);
 
-
             this.pauseButton.Click += OnButtonOnClick;
             this.openWiFiSettingsButton.Click += OnOpenWiFiSettingsButtonOnClick;
             this.resumeOnCellDataButton.Click += OnEventHandler;

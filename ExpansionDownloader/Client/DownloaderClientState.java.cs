@@ -1,46 +1,102 @@
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Client
 {
+    /// <summary>
+    /// The downloader client state.
+    /// </summary>
     public enum DownloaderClientState
     {
-        Unknown = -1,
+        /// <summary>
+        /// The unknown.
+        /// </summary>
+        Unknown = -1, 
 
-        Idle = 1,
-        FetchingUrl = 2,
-        Connecting = 3,
-        Downloading = 4,
-        Completed = 5,
+        /// <summary>
+        /// The idle.
+        /// </summary>
+        Idle = 1, 
 
-        PausedNetworkUnavailable = 6,
-        PausedByRequest = 7,
+        /// <summary>
+        /// The fetching url.
+        /// </summary>
+        FetchingUrl = 2, 
+
+        /// <summary>
+        /// The connecting.
+        /// </summary>
+        Connecting = 3, 
+
+        /// <summary>
+        /// The downloading.
+        /// </summary>
+        Downloading = 4, 
+
+        /// <summary>
+        /// The completed.
+        /// </summary>
+        Completed = 5, 
+
+        /// <summary>
+        /// The paused network unavailable.
+        /// </summary>
+        PausedNetworkUnavailable = 6, 
+
+        /// <summary>
+        /// The paused by request.
+        /// </summary>
+        PausedByRequest = 7, 
 
         /// <summary>
         /// Implies that Wi-Fi is unavailable and cellular permission will 
         /// restart the service (Wi-Fi manager is returning that Wi-Fi is not 
         /// enabled).
         /// </summary>
-        PausedWifiDisabledNeedCellularPermission = 8,
+        PausedWifiDisabledNeedCellularPermission = 8, 
 
         /// <summary>
         /// Implies that Wi-Fi is unavailable and cellular permission will 
         /// restart the service (Wi-Fi is enabled but not available).
         /// </summary>
-        PausedNeedCellularPermission = 9,
+        PausedNeedCellularPermission = 9, 
 
-        PausedRoaming = 10,
+        /// <summary>
+        /// The paused roaming.
+        /// </summary>
+        PausedRoaming = 10, 
 
         /// <summary>
         /// We were on a network that redirected us to another website
         /// that delivered us the wrong file.
         /// </summary>
-        PausedNetworkSetupFailure = 11,
+        PausedNetworkSetupFailure = 11, 
 
-        PausedSdCardUnavailable = 12,
+        /// <summary>
+        /// The paused sd card unavailable.
+        /// </summary>
+        PausedSdCardUnavailable = 12, 
 
-        FailedUnlicensed = 13,
-        FailedFetchingUrl = 14,
-        FailedSdCardFull = 15,
-        FailedCanceled = 16,
+        /// <summary>
+        /// The failed unlicensed.
+        /// </summary>
+        FailedUnlicensed = 13, 
 
+        /// <summary>
+        /// The failed fetching url.
+        /// </summary>
+        FailedFetchingUrl = 14, 
+
+        /// <summary>
+        /// The failed sd card full.
+        /// </summary>
+        FailedSdCardFull = 15, 
+
+        /// <summary>
+        /// The failed canceled.
+        /// </summary>
+        FailedCanceled = 16, 
+
+        /// <summary>
+        /// The failed.
+        /// </summary>
         Failed = 17
     }
 }

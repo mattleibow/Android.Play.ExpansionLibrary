@@ -77,7 +77,6 @@
     <Compile Include="Service\DownloaderServiceMessages.java.cs" />
     <Compile Include="Service\DownloaderServiceParameters.java.cs" />
     <Compile Include="Service\IDownloaderService.java.cs" />
-    <Compile Include="SystemFacade.java.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LicenseVerificationLibrary\LicenseVerificationLibrary.csproj">

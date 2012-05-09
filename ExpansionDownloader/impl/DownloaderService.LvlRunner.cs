@@ -6,6 +6,8 @@ namespace ExpansionDownloader.impl
     using Android.Content.PM;
     using Android.Provider;
 
+    using ExpansionDownloader.Client;
+
     using LicenseVerificationLibrary;
 
     using Exception = System.Exception;
@@ -15,10 +17,12 @@ namespace ExpansionDownloader.impl
     /// </summary>
     public abstract partial class DownloaderService
     {
+        #region Methods
+
         /// <summary>
         /// Returns true if the LVL check is required.
         /// </summary>
-        /// <param name="db">
+        /// <param name="database">
         /// a downloads DB synchronized with the latest state
         /// </param>
         /// <param name="pi">
@@ -27,11 +31,13 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// true if the filenames need to be returned
         /// </returns>
-        private static bool IsLvlCheckRequired(DownloadsDB db, PackageInfo pi)
+        private static bool IsLvlCheckRequired(DownloadsDatabase database, PackageInfo pi)
         {
             // we need to update the LVL check and get a successful status to proceed
-            return db.VersionCode != pi.VersionCode;
+            return database.VersionCode != pi.VersionCode;
         }
+
+        #endregion
 
         /// <summary>
         /// The lvl runnable.
@@ -62,7 +68,7 @@ namespace ExpansionDownloader.impl
             {
                 Debug.WriteLine("DownloaderService.LvlRunnable.ctor");
                 this.context = context;
-                this.context.mPendingIntent = intent;
+                this.context.pPendingIntent = intent;
             }
 
             #endregion
@@ -78,7 +84,8 @@ namespace ExpansionDownloader.impl
                 this.context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FetchingUrl);
                 string deviceId = Settings.Secure.GetString(this.context.ContentResolver, Settings.Secure.AndroidId);
 
-                var aep = new ApkExpansionPolicy(this.context, new AesObfuscator(this.context.Salt, this.context.PackageName, deviceId));
+                var aep = new ApkExpansionPolicy(
+                    this.context, new AesObfuscator(this.context.Salt, this.context.PackageName, deviceId));
 
                 // reset our policy back to the start of the world to force a re-check
                 aep.ResetPolicy();
@@ -99,14 +106,14 @@ namespace ExpansionDownloader.impl
                 #region Constants and Fields
 
                 /// <summary>
-                /// The policy.
-                /// </summary>
-                private readonly ApkExpansionPolicy policy;
-
-                /// <summary>
                 /// The lvl runnable.
                 /// </summary>
                 private readonly LvlRunnable lvlRunnable;
+
+                /// <summary>
+                /// The policy.
+                /// </summary>
+                private readonly ApkExpansionPolicy policy;
 
                 #endregion
 
@@ -162,7 +169,7 @@ namespace ExpansionDownloader.impl
                 {
                     try
                     {
-                        DownloadsDB db = DownloadsDB.GetDatabase(this.Context);
+                        DownloadsDatabase database = DownloadsDatabase.GetDatabase(this.Context);
 
                         int count = this.policy.GetExpansionUrlCount();
                         if (count == 0)
@@ -181,19 +188,19 @@ namespace ExpansionDownloader.impl
                                 var di = new DownloadInfo(type, currentFileName, this.Context.PackageName);
 
                                 long fileSize = this.policy.GetExpansionFileSize(type);
-                                if (this.Context.HandleFileUpdated(db, currentFileName, fileSize))
+                                if (this.Context.HandleFileUpdated(database, currentFileName, fileSize))
                                 {
                                     status = DownloadStatus.Unknown;
                                     di.ResetDownload();
                                     di.Uri = this.policy.GetExpansionUrl(type);
                                     di.TotalBytes = fileSize;
                                     di.Status = status;
-                                    db.UpdateDownload(di);
+                                    database.UpdateDownload(di);
                                 }
                                 else
                                 {
                                     // we need to read the download information from the database
-                                    DownloadInfo dbdi = db.GetDownloadInfo(di.FileName);
+                                    DownloadInfo dbdi = database.GetDownloadInfo(di.FileName);
                                     if (dbdi == null)
                                     {
                                         // the file exists already and is the correct size
@@ -203,13 +210,13 @@ namespace ExpansionDownloader.impl
                                         di.TotalBytes = fileSize;
                                         di.CurrentBytes = fileSize;
                                         di.Uri = this.policy.GetExpansionUrl(type);
-                                        db.UpdateDownload(di);
+                                        database.UpdateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
                                         dbdi.Uri = this.policy.GetExpansionUrl(type);
-                                        db.UpdateDownload(dbdi);
+                                        database.UpdateDownload(dbdi);
                                         status = DownloadStatus.Unknown;
                                     }
                                 }
@@ -221,20 +228,24 @@ namespace ExpansionDownloader.impl
                         try
                         {
                             PackageInfo pi = this.Context.PackageManager.GetPackageInfo(this.Context.PackageName, 0);
-                            db.UpdateMetadata(pi.VersionCode, status);
-                            var required = StartDownloadServiceIfRequired(this.Context, this.Context.mPendingIntent, this.Context.GetType());
+                            database.UpdateMetadata(pi.VersionCode, status);
+                            var required = StartDownloadServiceIfRequired(
+                                this.Context, this.Context.pPendingIntent, this.Context.GetType());
                             switch (required)
                             {
                                 case DownloadServiceRequirement.NoDownloadRequired:
-                                    this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
+                                    this.Context.downloadNotification.OnDownloadStateChanged(
+                                        DownloaderClientState.Completed);
                                     break;
 
                                 case DownloadServiceRequirement.LvlCheckRequired: // DANGER WILL ROBINSON!
                                     Debug.WriteLine("In LVL checking loop!");
-                                    this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FailedUnlicensed);
+                                    this.Context.downloadNotification.OnDownloadStateChanged(
+                                        DownloaderClientState.FailedUnlicensed);
                                     throw new Java.Lang.RuntimeException("Error with LVL checking and database integrity");
 
                                 case DownloadServiceRequirement.DownloadRequired:
+
                                     // do nothing: the download will notify the application when things are done
                                     break;
                             }
@@ -271,7 +282,8 @@ namespace ExpansionDownloader.impl
                 {
                     try
                     {
-                        this.Context.downloadNotification.OnDownloadStateChanged(DownloaderClientState.FailedFetchingUrl);
+                        this.Context.downloadNotification.OnDownloadStateChanged(
+                            DownloaderClientState.FailedFetchingUrl);
                     }
                     finally
                     {

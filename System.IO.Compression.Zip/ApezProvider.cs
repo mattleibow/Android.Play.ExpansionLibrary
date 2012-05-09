@@ -23,27 +23,87 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public abstract class ApezProvider : ContentProvider
     {
-        #region Fields
+        #region Constants and Fields
 
+        /// <summary>
+        /// The field name value map.
+        /// </summary>
+        private static readonly Dictionary<string, ApezProjection> FieldNameValueMap =
+            new Dictionary<string, ApezProjection>
+                {
+                    { ApezContentFields.File, ApezProjection.File }, 
+                    { ApezContentFields.FileName, ApezProjection.FileName }, 
+                    { ApezContentFields.ZipFile, ApezProjection.ZipFile }, 
+                    { ApezContentFields.Modification, ApezProjection.Modification }, 
+                    { ApezContentFields.Crc, ApezProjection.Crc }, 
+                    { ApezContentFields.CompressedLength, ApezProjection.CompressedLength }, 
+                    { ApezContentFields.UncompressedLength, ApezProjection.UncompressedLength }, 
+                    { ApezContentFields.CompressionType, ApezProjection.CompressionType }
+                };
+
+        /// <summary>
+        /// The apk extension file.
+        /// </summary>
         private ExpansionZipFile apkExtensionFile;
 
+        /// <summary>
+        /// The initialized.
+        /// </summary>
         private bool initialized;
-
-        private static readonly Dictionary<string, ApezProjection> fieldNameValueMap = new Dictionary<string, ApezProjection>
-            {
-                { ApezContentFields.File, ApezProjection.File },
-                { ApezContentFields.FileName, ApezProjection.FileName },
-                { ApezContentFields.ZipFile, ApezProjection.ZipFile },
-                { ApezContentFields.Modification, ApezProjection.Modification },
-                { ApezContentFields.Crc, ApezProjection.Crc },
-                { ApezContentFields.CompressedLength, ApezProjection.CompressedLength },
-                { ApezContentFields.UncompressedLength, ApezProjection.UncompressedLength },
-                { ApezContentFields.CompressionType, ApezProjection.CompressionType }
-            };
 
         #endregion
 
-        #region Public Properties
+        #region Enums
+
+        /// <summary>
+        /// The apez projection.
+        /// </summary>
+        private enum ApezProjection
+        {
+            /// <summary>
+            /// The file.
+            /// </summary>
+            File = 0, 
+
+            /// <summary>
+            /// The file name.
+            /// </summary>
+            FileName = 1, 
+
+            /// <summary>
+            /// The zip file.
+            /// </summary>
+            ZipFile = 2, 
+
+            /// <summary>
+            /// The modification.
+            /// </summary>
+            Modification = 3, 
+
+            /// <summary>
+            /// The crc.
+            /// </summary>
+            Crc = 4, 
+
+            /// <summary>
+            /// The compressed length.
+            /// </summary>
+            CompressedLength = 5, 
+
+            /// <summary>
+            /// The uncompressed length.
+            /// </summary>
+            UncompressedLength = 6, 
+
+            /// <summary>
+            /// The compression type.
+            /// </summary>
+            CompressionType = 7
+        }
+
+        #endregion
+
+        #region Properties
 
         /// <summary>
         /// Gets the Authority for this content provider.
@@ -58,32 +118,92 @@ namespace System.IO.Compression.Zip
 
         #region Public Methods and Operators
 
+        /// <summary>
+        /// The apply batch.
+        /// </summary>
+        /// <param name="operations">
+        /// The operations.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public override ContentProviderResult[] ApplyBatch(IList<ContentProviderOperation> operations)
         {
             this.InitIfNecessary();
             return base.ApplyBatch(operations);
         }
 
+        /// <summary>
+        /// The delete.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="selection">
+        /// The selection.
+        /// </param>
+        /// <param name="args">
+        /// The args.
+        /// </param>
+        /// <returns>
+        /// The delete.
+        /// </returns>
         public override int Delete(Uri uri, string selection, string[] args)
         {
             return 0;
         }
 
+        /// <summary>
+        /// The get type.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <returns>
+        /// The get type.
+        /// </returns>
         public override string GetType(Uri uri)
         {
             return "vnd.Android.cursor.item/asset";
         }
 
+        /// <summary>
+        /// The insert.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="values">
+        /// The values.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public override Uri Insert(Uri uri, ContentValues values)
         {
             return null;
         }
 
+        /// <summary>
+        /// The on create.
+        /// </summary>
+        /// <returns>
+        /// The on create.
+        /// </returns>
         public override bool OnCreate()
         {
             return true;
         }
 
+        /// <summary>
+        /// The open asset file.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="mode">
+        /// The mode.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public override AssetFileDescriptor OpenAssetFile(Uri uri, string mode)
         {
             this.InitIfNecessary();
@@ -114,6 +234,17 @@ namespace System.IO.Compression.Zip
             return null;
         }
 
+        /// <summary>
+        /// The open file.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="mode">
+        /// The mode.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public override ParcelFileDescriptor OpenFile(Uri uri, string mode)
         {
             this.InitIfNecessary();
@@ -126,6 +257,26 @@ namespace System.IO.Compression.Zip
             return null;
         }
 
+        /// <summary>
+        /// The query.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="projection">
+        /// The projection.
+        /// </param>
+        /// <param name="selection">
+        /// The selection.
+        /// </param>
+        /// <param name="selArgs">
+        /// The sel args.
+        /// </param>
+        /// <param name="sort">
+        /// The sort.
+        /// </param>
+        /// <returns>
+        /// </returns>
         public override ICursor Query(Uri uri, string[] projection, string selection, string[] selArgs, string sort)
         {
             this.InitIfNecessary();
@@ -136,6 +287,24 @@ namespace System.IO.Compression.Zip
             return MatrixCursor(projection, ApezProjections(ref projection), zipEntries);
         }
 
+        /// <summary>
+        /// The update.
+        /// </summary>
+        /// <param name="uri">
+        /// The uri.
+        /// </param>
+        /// <param name="values">
+        /// The values.
+        /// </param>
+        /// <param name="selection">
+        /// The selection.
+        /// </param>
+        /// <param name="selectionArgs">
+        /// The selection args.
+        /// </param>
+        /// <returns>
+        /// The update.
+        /// </returns>
         public override int Update(Uri uri, ContentValues values, string selection, string[] selectionArgs)
         {
             return 0;
@@ -145,6 +314,83 @@ namespace System.IO.Compression.Zip
 
         #region Methods
 
+        /// <summary>
+        /// The apez projections.
+        /// </summary>
+        /// <param name="projection">
+        /// The projection.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private static ApezProjection[] ApezProjections(ref string[] projection)
+        {
+            if (projection == null)
+            {
+                projection = FieldNameValueMap.Keys.ToArray();
+            }
+
+            return projection.Select(p => FieldNameValueMap[p]).ToArray();
+        }
+
+        /// <summary>
+        /// The matrix cursor.
+        /// </summary>
+        /// <param name="projection">
+        /// The projection.
+        /// </param>
+        /// <param name="intProjection">
+        /// The int projection.
+        /// </param>
+        /// <param name="entries">
+        /// The entries.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private static MatrixCursor MatrixCursor(
+            string[] projection, ApezProjection[] intProjection, ZipFileEntry[] entries)
+        {
+            var mc = new MatrixCursor(projection, entries.Length);
+            foreach (var zer in entries)
+            {
+                MatrixCursor.RowBuilder rb = mc.NewRow();
+                for (int i = 0; i < intProjection.Length; i++)
+                {
+                    switch (intProjection[i])
+                    {
+                        case ApezProjection.File:
+                            rb.Add(i);
+                            break;
+                        case ApezProjection.FileName:
+                            rb.Add(zer.FilenameInZip);
+                            break;
+                        case ApezProjection.ZipFile:
+                            rb.Add(zer.ZipFileName);
+                            break;
+                        case ApezProjection.Modification:
+                            rb.Add(ZipFile.DateTimeToDosTime(zer.ModifyTime));
+                            break;
+                        case ApezProjection.Crc:
+                            rb.Add(zer.Crc32);
+                            break;
+                        case ApezProjection.CompressedLength:
+                            rb.Add(zer.CompressedSize);
+                            break;
+                        case ApezProjection.UncompressedLength:
+                            rb.Add(zer.FileSize);
+                            break;
+                        case ApezProjection.CompressionType:
+                            rb.Add((int)zer.Method);
+                            break;
+                    }
+                }
+            }
+
+            return mc;
+        }
+
+        /// <summary>
+        /// The init if necessary.
+        /// </summary>
         private void InitIfNecessary()
         {
             if (!this.initialized)
@@ -195,81 +441,56 @@ namespace System.IO.Compression.Zip
             }
         }
 
-        private static ApezProjection[] ApezProjections(ref string[] projection)
-        {
-            if (projection == null)
-            {
-                projection = fieldNameValueMap.Keys.ToArray();
-            }
-
-            return projection.Select(p => fieldNameValueMap[p]).ToArray();
-        }
-
-        private static MatrixCursor MatrixCursor(string[] projection, ApezProjection[] intProjection, ZipFileEntry[] entries)
-        {
-            var mc = new MatrixCursor(projection, entries.Length);
-            foreach (var zer in entries)
-            {
-                MatrixCursor.RowBuilder rb = mc.NewRow();
-                for (int i = 0; i < intProjection.Length; i++)
-                {
-                    switch (intProjection[i])
-                    {
-                        case ApezProjection.File:
-                            rb.Add(i);
-                            break;
-                        case ApezProjection.FileName:
-                            rb.Add(zer.FilenameInZip);
-                            break;
-                        case ApezProjection.ZipFile:
-                            rb.Add(zer.ZipFileName);
-                            break;
-                        case ApezProjection.Modification:
-                            rb.Add(ZipFile.DateTimeToDosTime(zer.ModifyTime));
-                            break;
-                        case ApezProjection.Crc:
-                            rb.Add(zer.Crc32);
-                            break;
-                        case ApezProjection.CompressedLength:
-                            rb.Add(zer.CompressedSize);
-                            break;
-                        case ApezProjection.UncompressedLength:
-                            rb.Add(zer.FileSize);
-                            break;
-                        case ApezProjection.CompressionType:
-                            rb.Add((int)zer.Method);
-                            break;
-                    }
-                }
-            }
-
-            return mc;
-        }
-
         #endregion
 
-        private enum ApezProjection
-        {
-            File = 0,
-            FileName = 1,
-            ZipFile = 2,
-            Modification = 3,
-            Crc = 4,
-            CompressedLength = 5,
-            UncompressedLength = 6,
-            CompressionType = 7
-        }
-
+        /// <summary>
+        /// The apez content fields.
+        /// </summary>
         private static class ApezContentFields
         {
-            public const string File = BaseColumns.Id;
-            public const string FileName = "ZPFN";
-            public const string ZipFile = "ZFIL";
-            public const string Modification = "ZMOD";
-            public const string Crc = "ZCRC";
+            #region Constants and Fields
+
+            /// <summary>
+            /// The compressed length.
+            /// </summary>
             public const string CompressedLength = "ZCOL";
-            public const string UncompressedLength = "ZUNL";
+
+            /// <summary>
+            /// The compression type.
+            /// </summary>
             public const string CompressionType = "ZTYP";
+
+            /// <summary>
+            /// The crc.
+            /// </summary>
+            public const string Crc = "ZCRC";
+
+            /// <summary>
+            /// The file.
+            /// </summary>
+            public const string File = BaseColumns.Id;
+
+            /// <summary>
+            /// The file name.
+            /// </summary>
+            public const string FileName = "ZPFN";
+
+            /// <summary>
+            /// The modification.
+            /// </summary>
+            public const string Modification = "ZMOD";
+
+            /// <summary>
+            /// The uncompressed length.
+            /// </summary>
+            public const string UncompressedLength = "ZUNL";
+
+            /// <summary>
+            /// The zip file.
+            /// </summary>
+            public const string ZipFile = "ZFIL";
+
+            #endregion
         }
     }
 }

@@ -5,14 +5,33 @@ namespace ExpansionDownloader.impl
     /// </summary>
     public class DownloadStatusExtras
     {
-        public const string State = "ESS";
+        #region Constants and Fields
 
-        public const string TotalSize = "ETS";
-
+        /// <summary>
+        /// The current file size.
+        /// </summary>
         public const string CurrentFileSize = "CFS";
 
+        /// <summary>
+        /// The current progress.
+        /// </summary>
+        public const string CurrentProgress = "CFP";
+
+        /// <summary>
+        /// The state.
+        /// </summary>
+        public const string State = "ESS";
+
+        /// <summary>
+        /// The total progress.
+        /// </summary>
         public const string TotalProgress = "TFP";
 
-        public const string CurrentProgress = "CFP";
+        /// <summary>
+        /// The total size.
+        /// </summary>
+        public const string TotalSize = "ETS";
+
+        #endregion
     }
 }

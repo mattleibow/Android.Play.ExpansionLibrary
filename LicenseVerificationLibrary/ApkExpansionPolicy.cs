@@ -1,29 +1,32 @@
-using System;
-using System.Collections.Generic;
-using Android.Content;
-
 namespace LicenseVerificationLibrary
 {
+    using System;
+    using System.Collections.Generic;
+
+    using Android.Content;
+
     /// <summary>
-    /// Default policy. All policy decisions are based off of response data received
-    /// from the licensing service. Specifically, the licensing server sends the
-    /// following information: response validity period, error retry period, and
-    /// error retry count.
-    /// These values will vary based on the the way the application is configured in
-    /// the Android Market publishing console, such as whether the application is
-    /// marked as free or is within its refund period, as well as how often an
-    /// application is checking with the licensing service.
-    /// Developers who need more fine grained control over their application's
-    /// licensing policy should implement a custom Policy.
+    /// Default policy.
+    /// All policy decisions are based off of response data received from the 
+    /// licensing service.
     /// </summary>
+    /// <remarks>
+    /// Specifically, the licensing server sends the following information: 
+    /// <ul>
+    /// <li>response validity period,</li>
+    /// <li>error retry period, and</li>
+    /// <li>error retry count.</li>
+    /// </ul>
+    /// These values will vary based on the the way the application is
+    /// configured in the Android Play publishing console, such as whether the 
+    /// application is marked as free or is within its refund period, as well 
+    /// as how often an application is checking with the licensing service.
+    /// Developers who need more fine grained control over their application's
+    /// licensing policy should implement a custom <see cref="IPolicy"/>.
+    /// </remarks>
     public class ApkExpansionPolicy : IPolicy
     {
         #region Constants and Fields
-
-        /// <summary>
-        /// The string that contains the key for finding file urls.
-        /// </summary>
-        private const string FileUrl = "FILE_URL";
 
         /// <summary>
         /// The string that contains the key for finding file names.
@@ -34,6 +37,11 @@ namespace LicenseVerificationLibrary
         /// The string that contains the key for finding file sizes.
         /// </summary>
         private const string FileSize = "FILE_SIZE";
+
+        /// <summary>
+        /// The string that contains the key for finding file urls.
+        /// </summary>
+        private const string FileUrl = "FILE_URL";
 
         /// <summary>
         /// The expansion file names.
@@ -107,13 +115,39 @@ namespace LicenseVerificationLibrary
             // Import old values
             ISharedPreferences sp = context.GetSharedPreferences(ApkExpansionPreferences.File, FileCreationMode.Private);
             this.preferenceObfuscator = new PreferenceObfuscator(sp, obfuscator);
-            string response = this.preferenceObfuscator.GetValue(ApkExpansionPreferences.LastResponse, PolicyServerResponse.Retry.ToString());
+            string response = this.preferenceObfuscator.GetValue(
+                ApkExpansionPreferences.LastResponse, PolicyServerResponse.Retry.ToString());
             this.lastResponse = (PolicyServerResponse)Enum.Parse(typeof(PolicyServerResponse), response);
             this.validityTimestamp = this.preferenceObfuscator.GetValue(
                 ApkExpansionPreferences.ValidityTimestamp, ApkExpansionPreferences.DefaultValidityTimestamp);
-            this.retryUntil = this.preferenceObfuscator.GetValue(ApkExpansionPreferences.RetryUntil, ApkExpansionPreferences.DefaultRetryUntil);
-            this.maxRetries = this.preferenceObfuscator.GetValue(ApkExpansionPreferences.MaximumRetries, ApkExpansionPreferences.DefaultMaximumRetries);
-            this.retryCount = this.preferenceObfuscator.GetValue(ApkExpansionPreferences.RetryCount, ApkExpansionPreferences.DefaultRetryCount);
+            this.retryUntil = this.preferenceObfuscator.GetValue(
+                ApkExpansionPreferences.RetryUntil, ApkExpansionPreferences.DefaultRetryUntil);
+            this.maxRetries = this.preferenceObfuscator.GetValue(
+                ApkExpansionPreferences.MaximumRetries, ApkExpansionPreferences.DefaultMaximumRetries);
+            this.retryCount = this.preferenceObfuscator.GetValue(
+                ApkExpansionPreferences.RetryCount, ApkExpansionPreferences.DefaultRetryCount);
+        }
+
+        #endregion
+
+        #region Enums
+
+        /// <summary>
+        /// The design of the protocol supports n files. Currently the market can
+        /// only deliver two files. To accommodate this, we have these two constants,
+        /// but the order is the only relevant thing here.
+        /// </summary>
+        public enum ExpansionFileType
+        {
+            /// <summary>
+            /// The main file.
+            /// </summary>
+            MainFile = 0, 
+
+            /// <summary>
+            /// The patch file.
+            /// </summary>
+            PatchFile = 1
         }
 
         #endregion
@@ -253,7 +287,8 @@ namespace LicenseVerificationLibrary
                     return true;
                 }
             }
-            else if (this.lastResponse == PolicyServerResponse.Retry && ts < this.lastResponseTime + PolicyExtensions.MillisPerMinute)
+            else if (this.lastResponse == PolicyServerResponse.Retry
+                     && ts < this.lastResponseTime + PolicyExtensions.MillisPerMinute)
             {
                 // Only allow access if we are within the retry period or we 
                 // haven't used up our max retries.
@@ -378,7 +413,8 @@ namespace LicenseVerificationLibrary
                         if (l == 0)
                         {
                             // No response or not parseable, expire in one minute.
-                            System.Diagnostics.Debug.WriteLine("License validity timestamp (VT) missing, caching for a minute");
+                            System.Diagnostics.Debug.WriteLine(
+                                "License validity timestamp (VT) missing, caching for a minute");
                             l = PolicyExtensions.GetCurrentMilliseconds() + PolicyExtensions.MillisPerMinute;
                         }
 
@@ -389,7 +425,8 @@ namespace LicenseVerificationLibrary
                         if (l == 0)
                         {
                             // No response or not parseable, expire immediately.
-                            System.Diagnostics.Debug.WriteLine("License retry timestamp (GT) missing, grace period disabled");
+                            System.Diagnostics.Debug.WriteLine(
+                                "License retry timestamp (GT) missing, grace period disabled");
                         }
 
                         this.RetryUntil = l;
@@ -399,7 +436,8 @@ namespace LicenseVerificationLibrary
                         if (l == 0)
                         {
                             // No response or not parseable, immediately.
-                            System.Diagnostics.Debug.WriteLine("Licence retry count (GR) missing, grace period disabled");
+                            System.Diagnostics.Debug.WriteLine(
+                                "Licence retry count (GR) missing, grace period disabled");
                         }
 
                         this.MaxRetries = l;
@@ -411,12 +449,12 @@ namespace LicenseVerificationLibrary
                     }
                     else if (key.StartsWith(FileName))
                     {
-                        var index = int.Parse(key.Substring(FileName.Length))-1;
+                        var index = int.Parse(key.Substring(FileName.Length)) - 1;
                         this.SetExpansionFileName((ExpansionFileType)index, value);
                     }
                     else if (key.StartsWith(FileSize))
                     {
-                        var index = int.Parse(key.Substring(FileSize.Length))-1;
+                        var index = int.Parse(key.Substring(FileSize.Length)) - 1;
                         this.SetExpansionFileSize((ExpansionFileType)index, long.Parse(value));
                     }
                 }
@@ -438,7 +476,8 @@ namespace LicenseVerificationLibrary
         /// </summary>
         public void ResetPolicy()
         {
-            this.preferenceObfuscator.PutString(ApkExpansionPreferences.LastResponse, PolicyServerResponse.Retry.ToString());
+            this.preferenceObfuscator.PutString(
+                ApkExpansionPreferences.LastResponse, PolicyServerResponse.Retry.ToString());
 
             this.RetryUntil = ApkExpansionPreferences.DefaultRetryUntil;
             this.MaxRetries = ApkExpansionPreferences.DefaultMaximumRetries;
@@ -483,7 +522,7 @@ namespace LicenseVerificationLibrary
         /// the front-end.
         /// </summary>
         /// <param name="index">
-        ///            the index of the expansion URL. This value will be either
+        /// the index of the expansion URL. This value will be either
         ///            MainFile or PatchFile
         /// </param>
         /// <param name="url">
@@ -518,7 +557,7 @@ namespace LicenseVerificationLibrary
         /// <summary>
         /// The apk expansion preferences.
         /// </summary>
-        public class ApkExpansionPreferences
+        private static class ApkExpansionPreferences
         {
             #region Constants and Fields
 
@@ -573,24 +612,6 @@ namespace LicenseVerificationLibrary
             public const string ValidityTimestamp = "validityTimestamp";
 
             #endregion
-        }
-
-        /// <summary>
-        /// The design of the protocol supports n files. Currently the market can
-        /// only deliver two files. To accommodate this, we have these two constants,
-        /// but the order is the only relevant thing here.
-        /// </summary>
-        public enum ExpansionFileType
-        {
-            /// <summary>
-            /// The main file.
-            /// </summary>
-            MainFile = 0,
-
-            /// <summary>
-            /// The patch file.
-            /// </summary>
-            PatchFile = 1
         }
     }
 }

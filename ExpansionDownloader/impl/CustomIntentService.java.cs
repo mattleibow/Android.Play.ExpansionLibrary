@@ -16,14 +16,14 @@ namespace ExpansionDownloader.impl
         #region Constants and Fields
 
         /// <summary>
-        /// The m name.
-        /// </summary>
-        private readonly string name;
-
-        /// <summary>
         /// The wha t_ message.
         /// </summary>
         private const int WhatMessage = -10;
+
+        /// <summary>
+        /// The m name.
+        /// </summary>
+        private readonly string name;
 
         /// <summary>
         /// The m redelivery.
