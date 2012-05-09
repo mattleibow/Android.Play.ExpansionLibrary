@@ -1,10 +1,8 @@
 namespace System.IO.Compression.Zip
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Android.Util;
-    
-    using System.Collections.Generic;
     using System.Text;
 
     /// <summary>
@@ -13,6 +11,11 @@ namespace System.IO.Compression.Zip
     public class ZipFile : IDisposable
     {
         #region Constants and Fields
+
+        /// <summary>
+        /// todo 
+        /// </summary>
+        private const float SmoothingFactor = 0.005F;
 
         /// <summary>
         /// Default filename encoder
@@ -81,9 +84,14 @@ namespace System.IO.Compression.Zip
         #region Public Properties
 
         /// <summary>
-        /// Gets or sets FileName.
+        /// Gets filename of the zip file.
         /// </summary>
-        public string FileName { get; set; }
+        public string FileName { get; private set; }
+
+        /// <summary>
+        /// Gets the number of entries in the zip file.
+        /// </summary>
+        public int EntryCount { get; private set; }
 
         #endregion
 
@@ -160,7 +168,7 @@ namespace System.IO.Compression.Zip
             // Make sure the parent directory exist
             string path = Path.GetDirectoryName(filename);
 
-            if (!Directory.Exists(path))
+            if (!string.IsNullOrWhiteSpace(path) && !Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
             }
@@ -216,16 +224,8 @@ namespace System.IO.Compression.Zip
             }
 
             // Select input stream for inflating or just reading
-            Stream inStream;
-            if (zfe.Method == Compression.Store)
-            {
-                inStream = this.zipFileStream;
-            }
-            else if (zfe.Method == Compression.Deflate)
-            {
-                inStream = new DeflateStream(this.zipFileStream, CompressionMode.Decompress, true);
-            }
-            else
+            Stream inStream = this.GetZipStream(zfe);
+            if (inStream == null)
             {
                 return false;
             }
@@ -266,7 +266,8 @@ namespace System.IO.Compression.Zip
 
             var result = new List<ZipFileEntry>();
 
-            for (int pointer = 0; pointer < this.centralDirImage.Length; )
+            int pointer = 0;
+            while (pointer < this.centralDirImage.Length)
             {
                 uint signature = BitConverter.ToUInt32(this.centralDirImage, pointer);
                 if (signature != 0x02014b50)
@@ -340,6 +341,9 @@ namespace System.IO.Compression.Zip
         /// <param name="dosDateTime">
         /// The dos Date Time.
         /// </param>
+        /// <returns>
+        /// The .NET DateTime
+        /// </returns>
         private static DateTime DosTimeToDateTime(uint dosDateTime)
         {
             return new DateTime(
@@ -352,12 +356,13 @@ namespace System.IO.Compression.Zip
         }
 
         /// <summary>
-        /// The get entry.
+        /// Loads an entry from the zip file.
         /// </summary>
         /// <param name="pointer">
         /// The pointer.
         /// </param>
         /// <returns>
+        /// An entry at this location
         /// </returns>
         private ZipFileEntry GetEntry(ref int pointer)
         {
@@ -399,13 +404,13 @@ namespace System.IO.Compression.Zip
         }
 
         /// <summary>
-        /// The get file offset.
+        /// Returns the file offset based on the header's offset.
         /// </summary>
         /// <param name="headerOffset">
         /// The header offset.
         /// </param>
         /// <returns>
-        /// The get file offset.
+        /// The file offset.
         /// </returns>
         private uint GetFileOffset(uint headerOffset)
         {
@@ -417,7 +422,31 @@ namespace System.IO.Compression.Zip
             this.zipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
-            return (uint)(30 + filenameSize + extraSize + headerOffset);
+            var offset = 30 + filenameSize + extraSize + headerOffset;
+
+            return (uint)offset;
+        }
+
+        /// <summary>
+        /// Returns a stream for the specified zip file entry.
+        /// </summary>
+        /// <param name="zfe">
+        /// The zip file entry for which to fetch a stream.
+        /// </param>
+        /// <returns>
+        /// A stream for the specified zip file entry.
+        /// </returns>
+        private Stream GetZipStream(ZipFileEntry zfe)
+        {
+            switch (zfe.Method)
+            {
+                case Compression.Store:
+                    return this.zipFileStream;
+                case Compression.Deflate:
+                    return new DeflateStream(this.zipFileStream, CompressionMode.Decompress, true);
+                default:
+                    return null;
+            }
         }
 
         /// <summary>
@@ -445,7 +474,7 @@ namespace System.IO.Compression.Zip
                     {
                         this.zipFileStream.Seek(6, SeekOrigin.Current);
 
-                        ushort entries = br.ReadUInt16();
+                        this.EntryCount = br.ReadUInt16();
                         int centralSize = br.ReadInt32();
                         uint centralDirOffset = br.ReadUInt32();
                         ushort commentSize = br.ReadUInt16();
@@ -470,7 +499,7 @@ namespace System.IO.Compression.Zip
             }
             catch (Exception ex)
             {
-                Diagnostics.Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.Message);
             }
 
             return false;
@@ -478,6 +507,15 @@ namespace System.IO.Compression.Zip
 
         #endregion
 
+        /// <summary>
+        /// Ensures that the zip file is valid.
+        /// </summary>
+        /// <param name="validationHandler">
+        /// The class to hold the object for progress reporting
+        /// </param>
+        /// <returns>
+        /// True if the zip is valid, otherwise False.
+        /// </returns>
         public static bool Validate(ZipFileValidationHandler validationHandler)
         {
             var buf = new byte[1024 * 256];
@@ -505,8 +543,7 @@ namespace System.IO.Compression.Zip
                         var offset = entry.FileOffset;
                         var length = (int)entry.CompressedSize;
 
-                        using (var raf = new FileStream(validationHandler.Filename, FileMode.Open))
-                        {
+                        var raf = zip.zipFileStream;
                             raf.Seek(offset, SeekOrigin.Begin);
 
                             while (length > 0)
@@ -521,15 +558,15 @@ namespace System.IO.Compression.Zip
                                 if (timePassed > 0)
                                 {
                                     var currentSpeedSample = seek / timePassed;
-                                    if (averageVerifySpeed != 0)
+                                    if (averageVerifySpeed <= 0)
                                     {
-                                        const float smoothingFactor = 0.005F;
-                                        averageVerifySpeed = smoothingFactor * currentSpeedSample + (1 - smoothingFactor) * averageVerifySpeed;
+                                        averageVerifySpeed = (SmoothingFactor * currentSpeedSample) + ((1 - SmoothingFactor) * averageVerifySpeed);
                                     }
                                     else
                                     {
                                         averageVerifySpeed = currentSpeedSample;
                                     }
+
                                     totalBytesRemaining -= seek;
                                     var timeRemaining = (long)(totalBytesRemaining / averageVerifySpeed);
 
@@ -546,7 +583,6 @@ namespace System.IO.Compression.Zip
                                     return true;
                                 }
                             }
-                        }
 
                         if (crc.Value != entry.Crc32)
                         {

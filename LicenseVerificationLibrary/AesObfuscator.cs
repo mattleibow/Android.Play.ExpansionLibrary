@@ -63,7 +63,10 @@ namespace LicenseVerificationLibrary
             try
             {
                 // Header is appended as an integrity check
-                return Convert.ToBase64String(_encryptor.DoFinal(Encoding.UTF8.GetBytes(Header + key + original)));
+                var output = Encoding.UTF8.GetBytes(Header + key + original);
+                var doFinal = this._encryptor.DoFinal(output);
+                var base64String = Convert.ToBase64String(doFinal);
+                return base64String;
             }
             catch (UnsupportedEncodingException e)
             {
@@ -84,7 +87,10 @@ namespace LicenseVerificationLibrary
 
             try
             {
-                var result = Encoding.UTF8.GetString(_decryptor.DoFinal(Convert.FromBase64String(obfuscated)));
+                var fromBase64String = Convert.FromBase64String(obfuscated);
+                var doFinal = this._decryptor.DoFinal(fromBase64String);
+                var result = Encoding.UTF8.GetString(doFinal);
+
                 // Check for presence of header. This serves as an integrity check, 
                 // for cases where the block size is correct during decryption.
                 var headerAndKey = Header + key;
@@ -92,6 +98,7 @@ namespace LicenseVerificationLibrary
                 {
                     throw new ValidationException("Header not found (invalid data or key)" + ":" + obfuscated);
                 }
+
                 return result.Substring(headerAndKey.Length);
             }
             catch (FormatException e)

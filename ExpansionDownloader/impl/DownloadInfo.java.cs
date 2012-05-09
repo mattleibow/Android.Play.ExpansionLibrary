@@ -2,6 +2,8 @@ namespace ExpansionDownloader.impl
 {
     using System.Text;
 
+    using LicenseVerificationLibrary;
+
     /// <summary>
     /// The download info.
     /// </summary>
@@ -21,7 +23,7 @@ namespace ExpansionDownloader.impl
         /// <param name="package">
         /// The package.
         /// </param>
-        public DownloadInfo(int fileType, string fileName, string package)
+        public DownloadInfo(ApkExpansionPolicy.ExpansionFileType fileType, string fileName, string package)
         {
             this.Fuzz = Helpers.Random.Next(1001);
             this.FileName = fileName;
@@ -51,7 +53,7 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// Gets or sets ExpansionFileType.
         /// </summary>
-        public int ExpansionFileType { get; set; }
+        public ApkExpansionPolicy.ExpansionFileType ExpansionFileType { get; set; }
 
         /// <summary>
         /// Gets or sets FailedCount.
@@ -115,7 +117,7 @@ namespace ExpansionDownloader.impl
             this.CurrentBytes = 0;
             this.ETag = string.Empty;
             this.LastModified = 0;
-            this.Status = 0;
+            this.Status = DownloadStatus.Unknown;
             this.Control = 0;
             this.FailedCount = 0;
             this.RetryAfter = 0;

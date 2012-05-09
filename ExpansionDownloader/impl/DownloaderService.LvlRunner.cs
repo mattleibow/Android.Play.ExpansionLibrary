@@ -30,7 +30,7 @@ namespace ExpansionDownloader.impl
         private static bool IsLvlCheckRequired(DownloadsDB db, PackageInfo pi)
         {
             // we need to update the LVL check and get a successful status to proceed
-            return db.mVersionCode != pi.VersionCode;
+            return db.VersionCode != pi.VersionCode;
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace ExpansionDownloader.impl
                 {
                     try
                     {
-                        DownloadsDB db = DownloadsDB.getDB(this.Context);
+                        DownloadsDB db = DownloadsDB.GetDatabase(this.Context);
 
                         int count = this.policy.GetExpansionUrlCount();
                         if (count == 0)
@@ -173,17 +173,19 @@ namespace ExpansionDownloader.impl
                         DownloadStatus status = 0;
                         for (int index = 0; index < count; index++)
                         {
-                            string currentFileName = this.policy.GetExpansionFileName(index);
+                            var type = (ApkExpansionPolicy.ExpansionFileType)index;
+
+                            string currentFileName = this.policy.GetExpansionFileName(type);
                             if (currentFileName != null)
                             {
-                                var di = new DownloadInfo(index, currentFileName, this.Context.PackageName);
+                                var di = new DownloadInfo(type, currentFileName, this.Context.PackageName);
 
-                                long fileSize = this.policy.GetExpansionFileSize(index);
+                                long fileSize = this.policy.GetExpansionFileSize(type);
                                 if (this.Context.HandleFileUpdated(db, currentFileName, fileSize))
                                 {
                                     status = DownloadStatus.Unknown;
                                     di.ResetDownload();
-                                    di.Uri = this.policy.GetExpansionUrl(index);
+                                    di.Uri = this.policy.GetExpansionUrl(type);
                                     di.TotalBytes = fileSize;
                                     di.Status = status;
                                     db.UpdateDownload(di);
@@ -191,7 +193,7 @@ namespace ExpansionDownloader.impl
                                 else
                                 {
                                     // we need to read the download information from the database
-                                    DownloadInfo dbdi = db.getDownloadInfoByFileName(di.FileName);
+                                    DownloadInfo dbdi = db.GetDownloadInfo(di.FileName);
                                     if (dbdi == null)
                                     {
                                         // the file exists already and is the correct size
@@ -200,13 +202,13 @@ namespace ExpansionDownloader.impl
                                         di.Status = DownloadStatus.Success;
                                         di.TotalBytes = fileSize;
                                         di.CurrentBytes = fileSize;
-                                        di.Uri = this.policy.GetExpansionUrl(index);
+                                        di.Uri = this.policy.GetExpansionUrl(type);
                                         db.UpdateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
-                                        dbdi.Uri = this.policy.GetExpansionUrl(index);
+                                        dbdi.Uri = this.policy.GetExpansionUrl(type);
                                         db.UpdateDownload(dbdi);
                                         status = DownloadStatus.Unknown;
                                     }
@@ -219,7 +221,7 @@ namespace ExpansionDownloader.impl
                         try
                         {
                             PackageInfo pi = this.Context.PackageManager.GetPackageInfo(this.Context.PackageName, 0);
-                            db.updateMetadata(pi.VersionCode, status);
+                            db.UpdateMetadata(pi.VersionCode, status);
                             var required = StartDownloadServiceIfRequired(this.Context, this.Context.mPendingIntent, this.Context.GetType());
                             switch (required)
                             {

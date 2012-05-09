@@ -272,14 +272,9 @@ namespace LicenseVerificationLibrary
         /// <returns>
         /// The expansion file name.
         /// </returns>
-        public string GetExpansionFileName(int index)
+        public string GetExpansionFileName(ExpansionFileType index)
         {
-            if (index < this.expansionFileNames.Length)
-            {
-                return this.expansionFileNames[index];
-            }
-
-            return null;
+            return this.expansionFileNames[(int)index];
         }
 
         /// <summary>
@@ -291,14 +286,9 @@ namespace LicenseVerificationLibrary
         /// <returns>
         /// The expansion file size.
         /// </returns>
-        public long GetExpansionFileSize(int index)
+        public long GetExpansionFileSize(ExpansionFileType index)
         {
-            if (index < this.expansionFileSizes.Length)
-            {
-                return this.expansionFileSizes[index];
-            }
-
-            return -1;
+            return this.expansionFileSizes[(int)index];
         }
 
         /// <summary>
@@ -313,14 +303,9 @@ namespace LicenseVerificationLibrary
         /// <returns>
         /// The get expansion url.
         /// </returns>
-        public string GetExpansionUrl(int index)
+        public string GetExpansionUrl(ExpansionFileType index)
         {
-            if (index < this.expansionUrls.Length)
-            {
-                return this.expansionUrls[index];
-            }
-
-            return null;
+            return this.expansionUrls[(int)index];
         }
 
         /// <summary>
@@ -421,18 +406,18 @@ namespace LicenseVerificationLibrary
                     }
                     else if (key.StartsWith(FileUrl))
                     {
-                        var index = int.Parse(key.Substring(FileUrl.Length));
-                        this.SetExpansionUrl(index - 1, value);
+                        var index = int.Parse(key.Substring(FileUrl.Length)) - 1;
+                        this.SetExpansionUrl((ExpansionFileType)index, value);
                     }
                     else if (key.StartsWith(FileName))
                     {
-                        var index = int.Parse(key.Substring(FileName.Length));
-                        this.SetExpansionFileName(index - 1, value);
+                        var index = int.Parse(key.Substring(FileName.Length))-1;
+                        this.SetExpansionFileName((ExpansionFileType)index, value);
                     }
                     else if (key.StartsWith(FileSize))
                     {
-                        var index = int.Parse(key.Substring(FileSize.Length));
-                        this.SetExpansionFileSize(index - 1, long.Parse(value));
+                        var index = int.Parse(key.Substring(FileSize.Length))-1;
+                        this.SetExpansionFileSize((ExpansionFileType)index, long.Parse(value));
                     }
                 }
             }
@@ -472,9 +457,9 @@ namespace LicenseVerificationLibrary
         /// <param name="name">
         /// The name.
         /// </param>
-        public void SetExpansionFileName(int index, string name)
+        public void SetExpansionFileName(ExpansionFileType index, string name)
         {
-            this.expansionFileNames[index] = name;
+            this.expansionFileNames[(int)index] = name;
         }
 
         /// <summary>
@@ -486,9 +471,9 @@ namespace LicenseVerificationLibrary
         /// <param name="size">
         /// The size.
         /// </param>
-        public void SetExpansionFileSize(int index, long size)
+        public void SetExpansionFileSize(ExpansionFileType index, long size)
         {
-            this.expansionFileSizes[index] = size;
+            this.expansionFileSizes[(int)index] = size;
         }
 
         /// <summary>
@@ -504,9 +489,9 @@ namespace LicenseVerificationLibrary
         /// <param name="url">
         /// the URL to set
         /// </param>
-        public void SetExpansionUrl(int index, string url)
+        public void SetExpansionUrl(ExpansionFileType index, string url)
         {
-            this.expansionUrls[index] = url;
+            this.expansionUrls[(int)index] = url;
         }
 
         #endregion
@@ -595,21 +580,17 @@ namespace LicenseVerificationLibrary
         /// only deliver two files. To accommodate this, we have these two constants,
         /// but the order is the only relevant thing here.
         /// </summary>
-        public class ExpansionFileType
+        public enum ExpansionFileType
         {
-            #region Constants and Fields
-
             /// <summary>
             /// The main file.
             /// </summary>
-            public const long MainFile = 0;
+            MainFile = 0,
 
             /// <summary>
             /// The patch file.
             /// </summary>
-            public const long PatchFile = 1;
-
-            #endregion
+            PatchFile = 1
         }
     }
 }

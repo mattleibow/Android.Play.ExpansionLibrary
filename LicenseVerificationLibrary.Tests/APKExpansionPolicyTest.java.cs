@@ -47,18 +47,18 @@ namespace LicenseVerificationLibrary.Tests
             AssertEquals(22L, p.RetryUntil);
             AssertEquals(33L, p.MaxRetries);
             AssertEquals(2, p.GetExpansionUrlCount());
-            AssertEquals("main.3.com.example.android.market.licensing.obb", p.GetExpansionFileName(0));
-            AssertEquals(687801613L, p.GetExpansionFileSize(0));
+            AssertEquals("main.3.com.example.android.market.licensing.obb", p.GetExpansionFileName(ApkExpansionPolicy.ExpansionFileType.MainFile));
+            AssertEquals(687801613L, p.GetExpansionFileSize(ApkExpansionPolicy.ExpansionFileType.MainFile));
             AssertEquals(
                 URLDecoder.Decode(
                     "http://jmt17.google.com/vending_kila/download/AppDownload?packageName%3Dcom.example.android.market.licensing%26versionCode%3D3%26ft%3Do%26token%3DAOTCm0RwlzqFYylBNSCTLJApGH0cYtm9g8mGMdUhKLSLJW4v9VM8GLj4GVlGU5oyW6y3FsXrJiQqMunTGw9B"),
                 p.GetExpansionUrl(0));
-            AssertEquals("patch.3.com.example.android.market.licensing.obb", p.GetExpansionFileName(1));
-            AssertEquals(204233, p.GetExpansionFileSize(1));
+            AssertEquals("patch.3.com.example.android.market.licensing.obb", p.GetExpansionFileName(ApkExpansionPolicy.ExpansionFileType.PatchFile));
+            AssertEquals(204233, p.GetExpansionFileSize(ApkExpansionPolicy.ExpansionFileType.PatchFile));
             AssertEquals(
                 URLDecoder.Decode(
                     "http://jmt17.google.com/vending_kila/download/AppDownload?packageName%3Dcom.example.android.market.licensing%26versionCode%3D3%26ft%3Do%26token%3DAOTCm0RwlzqFYylBNSCTLJApGH0cYtm9g8mGMdUhKLSLJW4v9VM8GLsdSDjefsdfEKdVaseEsfaMeifTek9B"),
-                p.GetExpansionUrl(1));
+                p.GetExpansionUrl(ApkExpansionPolicy.ExpansionFileType.PatchFile));
         }
 
         /**

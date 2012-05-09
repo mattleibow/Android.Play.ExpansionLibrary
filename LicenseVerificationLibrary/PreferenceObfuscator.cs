@@ -57,10 +57,11 @@ namespace LicenseVerificationLibrary
                 {
                     result = _obfuscator.Unobfuscate(value, key);
                 }
-                catch (ValidationException)
+                catch (ValidationException ex)
                 {
                     // Unable to unobfuscate, data corrupt or tampered
                     Debug.WriteLine("Validation error while reading preference: " + key);
+                    Debug.WriteLine(ex.Message);
                 }
             }
 

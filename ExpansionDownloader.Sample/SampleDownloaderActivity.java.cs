@@ -1,12 +1,10 @@
-using System.IO;
-using System.IO.Compression.Zip;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace ExpansionDownloader.Sample
 {
     using System;
+    using System.IO;
+    using System.IO.Compression.Zip;
     using System.Linq;
+    using System.Threading;
 
     using Android.App;
     using Android.Content;
@@ -16,8 +14,8 @@ namespace ExpansionDownloader.Sample
     using Android.Views;
 
     using ExpansionDownloader.Client;
-    using ExpansionDownloader.Service;
     using ExpansionDownloader.impl;
+    using ExpansionDownloader.Service;
 
     [Activity(Label = "ExpansionDownloader.Sample", MainLauncher = true, Icon = "@drawable/icon")]
     public partial class SampleDownloaderActivity : Activity, IDownloaderClient
@@ -161,8 +159,10 @@ namespace ExpansionDownloader.Sample
         /// </returns>
         private bool AreExpansionFilesDelivered()
         {
-            // todo always check the latest files from the market.
-            return false; 
+            var db = DownloadsDB.GetDatabase(this);
+            var downloads = db.GetDownloads();
+
+            return downloads.Any() && downloads.All(x => Helpers.DoesFileExist(this, x.FileName, x.TotalBytes, false));
         }
         
         /// <summary>
@@ -183,12 +183,15 @@ namespace ExpansionDownloader.Sample
             };
             this.pauseButton.SetText(Resource.String.text_button_cancel_verify);
 
-            ThreadPool.QueueUserWorkItem(DoValidateZipFiles);
+            ThreadPool.QueueUserWorkItem(this.DoValidateZipFiles);
         }
 
         private void DoValidateZipFiles(object state)
         {
-            var result = ApkExpansionSupport.GetApkExpansionFiles(this, 4, 4).All(this.IsValidZipFile);
+            var db = DownloadsDB.GetDatabase(this);
+            var downloads = db.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
+
+            var result = downloads.Any() && downloads.All(this.IsValidZipFile);
 
             this.RunOnUiThread(delegate
                                    {
@@ -213,18 +216,16 @@ namespace ExpansionDownloader.Sample
         {
             this.zipFileValidationHandler = new ZipFileValidationHandler(filename)
                                                 {
-                                                    UpdateUi = OnUpdateValidationUi
+                                                    UpdateUi = this.OnUpdateValidationUi
                                                 };
 
-            return File.Exists(filename) && !ZipFile.Validate(this.zipFileValidationHandler);
+            return File.Exists(filename) && ZipFile.Validate(this.zipFileValidationHandler);
         }
 
         private void OnUpdateValidationUi(ZipFileValidationHandler handler)
         {
-            var info = new DownloadProgressInfo(handler.TotalBytes,
-                                                handler.CurrentBytes,
-                                                handler.TimeRemaining,
-                                                handler.AverageSpeed);
+            var info = new DownloadProgressInfo(
+                handler.TotalBytes, handler.CurrentBytes, handler.TimeRemaining, handler.AverageSpeed);
 
             this.RunOnUiThread(() => this.OnDownloadProgress(info));
         }
@@ -296,10 +297,14 @@ namespace ExpansionDownloader.Sample
             // delivered (presumably by Market) 
             // For free titles, this is probably worth doing. (so no Market 
             // request is necessary)
-            if (this.AreExpansionFilesDelivered() || !this.GetExpansionFiles())
+
+            var delivered = this.AreExpansionFilesDelivered();
+
+            if (delivered) return;
+
+            if (!this.GetExpansionFiles())
             {
                 this.initializeDownloadUI();
-                this.ValidateExpansionFiles();
             }
         }
 

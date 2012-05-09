@@ -17,6 +17,8 @@ namespace ExpansionDownloader.impl
 
     using Java.Util;
 
+    using LicenseVerificationLibrary;
+
     using Debug = System.Diagnostics.Debug;
 
     /// <summary>
@@ -236,6 +238,12 @@ namespace ExpansionDownloader.impl
 
             this._serviceDownloaderServiceConnection = DownloaderServiceMarshaller.CreateStub(this);
             this.serviceMessenger = this._serviceDownloaderServiceConnection.GetMessenger();
+
+            var database = DownloadsDB.GetDatabase(this);
+
+            this.Control = database.DownloadStatus == DownloadStatus.PausedByApp
+                               ? ControlAction.Paused
+                               : ControlAction.Run;
         }
 
         #endregion
@@ -252,11 +260,25 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public ControlAction Control { get; private set; }
 
+        private DownloadStatus status;
 
         /// <summary>
         /// Download state
         /// </summary>
-        public DownloadStatus Status { get; private set; }
+        public DownloadStatus Status
+        {
+            get
+            {
+                return this.status;
+            }
+            set
+            {
+                this.status = value;
+
+                var database = DownloadsDB.GetDatabase(this);
+                database.UpdateMetadata(this.mPackageInfo.VersionCode, this.status);
+            }
+        }
 
         /// <summary>
         /// Byte counts
@@ -374,22 +396,24 @@ namespace ExpansionDownloader.impl
 
             // the database automatically reads the metadata for version code
             // and download status when the instance is created
-            DownloadsDB db = DownloadsDB.getDB(context);
+            DownloadsDB database = DownloadsDB.GetDatabase(context);
 
             // we need to update the LVL check and get a successful status to proceed
-            if (IsLvlCheckRequired(db, pi))
+            if (IsLvlCheckRequired(database, pi))
             {
                 status = DownloadServiceRequirement.LvlCheckRequired;
             }
 
-            // we don't have to update LVL. do we still have a download to start?
-            if (db.mStatus == 0)
+            // we don't have to update LVL. Do we still have a download to start?
+            if (database.DownloadStatus == DownloadStatus.None)
             {
-                DownloadInfo[] infos = db.GetDownloads();
-                if (infos != null && infos.Any(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true)))
+                DownloadInfo[] infos = database.GetDownloads();
+                var existing = infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
+                
+                if (existing.Count() > 0)
                 {
                     status = DownloadServiceRequirement.DownloadRequired;
-                    db.updateStatus(DownloadStatus.Unknown);
+                    database.DownloadStatus = DownloadStatus.Unknown;
                 }
             }
             else
@@ -615,6 +639,8 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public void RequestContinueDownload()
         {
+            Debug.WriteLine("RequestContinueDownload");
+
             if (this.Control == ControlAction.Paused)
             {
                 this.Control = ControlAction.Run;
@@ -650,7 +676,7 @@ namespace ExpansionDownloader.impl
         /// </param>
         public void SetDownloadFlags(DownloaderServiceFlags flags)
         {
-            DownloadsDB.getDB(this).UpdateFlags(flags);
+            DownloadsDB.GetDatabase(this).UpdateFlags(flags);
         }
 
         #endregion
@@ -660,12 +686,12 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The get network availability state.
         /// </summary>
-        /// <param name="db">
-        /// The db.
+        /// <param name="database">
+        /// The database.
         /// </param>
         /// <returns>
         /// </returns>
-        internal NetworkConstants GetNetworkAvailabilityState(DownloadsDB db)
+        internal NetworkConstants GetNetworkAvailabilityState(DownloadsDB database)
         {
             if (!this.networkState.HasFlag(NetworkState.Connected))
             {
@@ -682,7 +708,7 @@ namespace ExpansionDownloader.impl
                 return NetworkConstants.CannotUseRoaming;
             }
 
-            if (!db.mFlags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
+            if (!database.Flags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
             {
                 return NetworkConstants.TypeDisallowedByRequestor;
             }
@@ -706,7 +732,7 @@ namespace ExpansionDownloader.impl
             {
                 // the database automatically reads the metadata for version code
                 // and download status when the instance is created
-                DownloadsDB db = DownloadsDB.getDB(this);
+                DownloadsDB database = DownloadsDB.GetDatabase(this);
                 var pendingIntent = (PendingIntent)intent.GetParcelableExtra(DownloaderServiceExtras.PendingIntent);
 
                 if (null != pendingIntent)
@@ -725,14 +751,14 @@ namespace ExpansionDownloader.impl
                 }
 
                 // when the LVL check completes, a successful response will update the service
-                if (IsLvlCheckRequired(db, this.mPackageInfo))
+                if (IsLvlCheckRequired(database, this.mPackageInfo))
                 {
                     this.UpdateLvl(this);
                     return;
                 }
 
                 // get each download
-                DownloadInfo[] infos = db.GetDownloads();
+                DownloadInfo[] infos = database.GetDownloads();
                 this.BytesSoFar = 0;
                 this.TotalLength = 0;
                 this.mFileCount = infos.Length;
@@ -743,7 +769,7 @@ namespace ExpansionDownloader.impl
                     if (info.Status == DownloadStatus.Success
                         && !Helpers.DoesFileExist(this, info.FileName, info.TotalBytes, true))
                     {
-                        info.Status = 0;
+                        info.Status = DownloadStatus.None;
                         info.CurrentBytes = 0;
                     }
 
@@ -764,7 +790,8 @@ namespace ExpansionDownloader.impl
                 }
 
                 // loop through all downloads and fetch them
-                for (int index = 0; index < infos.Length; index++)
+                var types = Enum.GetValues(typeof(ApkExpansionPolicy.ExpansionFileType)).Length;
+                for (int index = 0; index < types; index++)
                 {
                     DownloadInfo info = infos[index];
                     Debug.WriteLine("Starting download of " + info.FileName);
@@ -780,7 +807,7 @@ namespace ExpansionDownloader.impl
                         this.CancelAlarms();
                     }
 
-                    db.updateFromDb(info);
+                    database.UpdateFromDatabase(info);
                     bool setWakeWatchdog = false;
                     DownloaderClientState notifyStatus;
                     switch (info.Status)
@@ -792,13 +819,13 @@ namespace ExpansionDownloader.impl
                             return;
                         case DownloadStatus.Success:
                             this.BytesSoFar += info.CurrentBytes - startingCount;
-                            db.updateMetadata(this.mPackageInfo.VersionCode, 0);
 
                             if (index < infos.Length - 1)
                             {
                                 continue;
                             }
 
+                            database.UpdateMetadata(this.mPackageInfo.VersionCode, DownloadStatus.None);
                             this.downloadNotification.OnDownloadStateChanged(DownloaderClientState.Completed);
                             return;
                         case DownloadStatus.FileDeliveredIncorrectly:
@@ -806,7 +833,7 @@ namespace ExpansionDownloader.impl
                             // we may be on a network that is returning us a web page on redirect
                             notifyStatus = DownloaderClientState.PausedNetworkSetupFailure;
                             info.CurrentBytes = 0;
-                            db.UpdateDownload(info);
+                            database.UpdateDownload(info);
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.PausedByApp:
@@ -878,15 +905,9 @@ namespace ExpansionDownloader.impl
         /// </returns>
         protected override bool ShouldStop()
         {
-            // the database automatically reads the metadata for version code and download
-            // status when the instance is created
-            DownloadsDB db = DownloadsDB.getDB(this);
-            if (db.mStatus == 0)
-            {
-                return true;
-            }
-
-            return false;
+            // the database automatically reads the metadata for version code 
+            // and download status when the instance is created
+            return DownloadsDB.GetDatabase(this).DownloadStatus == DownloadStatus.None;
         }
 
         /// <summary>
@@ -915,8 +936,8 @@ namespace ExpansionDownloader.impl
         /// have the same name, we download it if it hasn't already been delivered by
         /// Market.
         /// </summary>
-        /// <param name="db">
-        /// The db.
+        /// <param name="database">
+        /// The database.
         /// </param>
         /// <param name="filename">
         /// the name of the new file
@@ -927,9 +948,9 @@ namespace ExpansionDownloader.impl
         /// <returns>
         /// The handle file updated.
         /// </returns>
-        private bool HandleFileUpdated(DownloadsDB db, string filename, long fileSize)
+        private bool HandleFileUpdated(DownloadsDB database, string filename, long fileSize)
         {
-            DownloadInfo di = db.getDownloadInfoByFileName(filename);
+            DownloadInfo di = database.GetDownloadInfo(filename);
 
             if (di != null && di.FileName != null)
             {
@@ -1059,8 +1080,8 @@ namespace ExpansionDownloader.impl
                     }
                     else if (this.networkState.HasFlag(NetworkState.IsCellular))
                     {
-                        DownloadsDB db = DownloadsDB.getDB(this);
-                        DownloaderServiceFlags flags = db.getFlags();
+                        DownloadsDB database = DownloadsDB.GetDatabase(this);
+                        DownloaderServiceFlags flags = database.Flags;
                         if (!flags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
                         {
                             this.Status = DownloadStatus.QueuedForWifi;

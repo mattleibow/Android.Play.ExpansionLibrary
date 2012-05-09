@@ -46,7 +46,7 @@ namespace ExpansionDownloader.impl
         private readonly DownloaderService downloaderService;
 
         /// <summary>
-        /// The downloads db.
+        /// The downloads database.
         /// </summary>
         private readonly DownloadsDB downloadsDb;
 
@@ -72,7 +72,7 @@ namespace ExpansionDownloader.impl
             this.downloadInfo = info;
             this.downloaderService = service;
             this.downloadNotification = notification;
-            this.downloadsDb = DownloadsDB.getDB(service);
+            this.downloadsDb = DownloadsDB.GetDatabase(service);
         }
 
         #endregion
@@ -448,10 +448,9 @@ namespace ExpansionDownloader.impl
         {
             if (this.downloaderService.Control == ControlAction.Paused)
             {
-                DownloadStatus status = this.downloaderService.Status;
-                if (status == DownloadStatus.PausedByApp)
+                if (this.downloaderService.Status == DownloadStatus.PausedByApp)
                 {
-                    throw new StopRequestException(status, "download paused");
+                    throw new StopRequestException(this.downloaderService.Status, "download paused");
                 }
             }
         }
@@ -954,7 +953,7 @@ namespace ExpansionDownloader.impl
             {
                 // we store progress updates to the database here
                 this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                this.downloadsDb.updateDownloadCurrentBytes(this.downloadInfo);
+                this.downloadsDb.UpdateDownloadCurrentBytes(this.downloadInfo);
 
                 innerState.BytesNotified = innerState.BytesSoFar;
                 innerState.TimeLastNotification = now;

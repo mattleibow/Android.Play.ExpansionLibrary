@@ -155,7 +155,7 @@ namespace ExpansionDownloader
 
         public static string GetSpeedString(float bytesPerMillisecond)
         {
-            return string.Format("{0:00}", bytesPerMillisecond*1000/1024);
+            return string.Format("{0:0.0}", bytesPerMillisecond*1000/1024);
         }
 
         public static string GetTimeRemaining(long durationInMilliseconds)
@@ -208,6 +208,7 @@ namespace ExpansionDownloader
                 {
                     return true;
                 }
+
                 if (deleteFileOnMismatch)
                 {
                     // delete the file - we won't be able to resume because we cannot
@@ -215,6 +216,7 @@ namespace ExpansionDownloader
                     fileForNewFile.Delete();
                 }
             }
+
             return false;
         }
 

@@ -241,6 +241,11 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// The current status has not been set
         /// </summary>
-        Unknown = -1
+        Unknown = -1,
+
+        /// <summary>
+        /// The current status has not been set
+        /// </summary>
+        None = 0
     }
 }

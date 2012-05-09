@@ -1,154 +1,629 @@
-using System;
-using System.Reflection;
-using Android.Content;
-using Android.Database;
-using Android.Database.Sqlite;
-using Android.Provider;
-using Android.Util;
-using Exception = Java.Lang.Exception;
-
 namespace ExpansionDownloader.impl
 {
+    using System;
+    using System.Diagnostics;
+    using System.Text;
+
+    using Android.Content;
+    using Android.Database;
+    using Android.Database.Sqlite;
+    using Android.Provider;
+
     using ExpansionDownloader.Service;
 
+    using LicenseVerificationLibrary;
+
+    /// <summary>
+    /// The downloads database.
+    /// </summary>
     public class DownloadsDB
     {
-        private static string DATABASE_NAME = "DownloadsDB";
-        private static int DATABASE_VERSION = 7;
-        private static DownloadsDB mDownloadsDB;
+        #region Constants and Fields
 
-        private static readonly object _locker = new object();
+        /// <summary>
+        /// The database name.
+        /// </summary>
+        private const string DatabaseName = "DownloadsDatabase";
 
-        private static readonly string[] DC_PROJECTION = {
-                                                             DownloadColumns.FILENAME,
-                                                             DownloadColumns.URI,
-                                                             DownloadColumns.ETAG,
-                                                             DownloadColumns.TOTALBYTES, 
-                                                             DownloadColumns.CURRENTBYTES,
-                                                             DownloadColumns.LASTMOD,
-                                                             DownloadColumns.STATUS,
-                                                             DownloadColumns.CONTROL,
-                                                             DownloadColumns.NUM_FAILED,
-                                                             DownloadColumns.RETRY_AFTER, 
-                                                             DownloadColumns.REDIRECT_COUNT,
-                                                             DownloadColumns.INDEX
-                                                         };
+        /// <summary>
+        /// The database version.
+        /// </summary>
+        private const int DatabaseVersion = 10;
 
-        private static int FILENAME_IDX;
-        private static int URI_IDX = 1;
-        private static int ETAG_IDX = 2;
-        private static int TOTALBYTES_IDX = 3;
-        private static int CURRENTBYTES_IDX = 4;
-        private static int LASTMOD_IDX = 5;
-        private static int STATUS_IDX = 6;
-        private static int CONTROL_IDX = 7;
-        private static int NUM_FAILED_IDX = 8;
-        private static int RETRY_AFTER_IDX = 9;
-        private static int REDIRECT_COUNT_IDX = 10;
-        private static int INDEX_IDX = 11;
-        private readonly SQLiteOpenHelper mHelper;
-        public DownloaderServiceFlags mFlags;
-        private SQLiteStatement mGetDownloadByIndex;
-        private long mMetadataRowID = -1;
-        public DownloadStatus mStatus = DownloadStatus.Unknown;
-        private SQLiteStatement mUpdateCurrentBytes;
-        public int mVersionCode = -1;
+        /// <summary>
+        /// The projection.
+        /// </summary>
+        private static readonly string[] DownloadColumnsProjection = 
+                                                                     {
+                                                                         DownloadColumns.FileName, DownloadColumns.Uri,
+                                                                         DownloadColumns.ETag, DownloadColumns.TotalBytes,
+                                                                         DownloadColumns.CurrentBytes,
+                                                                         DownloadColumns.LastModified,
+                                                                         DownloadColumns.Status, DownloadColumns.Control,
+                                                                         DownloadColumns.NumFailed,
+                                                                         DownloadColumns.RetryAfter,
+                                                                         DownloadColumns.RedirectCount,
+                                                                         DownloadColumns.FileIndex
+                                                                     };
 
+        /// <summary>
+        /// The locker.
+        /// </summary>
+        private static readonly object Locker = new object();
+
+        /// <summary>
+        /// The m helper.
+        /// </summary>
+        private readonly SQLiteOpenHelper openHelper;
+
+        /// <summary>
+        /// The _instance.
+        /// </summary>
+        private static DownloadsDB instance;
+
+        /// <summary>
+        /// The m get download by index.
+        /// </summary>
+        private SQLiteStatement sqlGetDownloadByIndex;
+
+        /// <summary>
+        /// The m metadata row id.
+        /// </summary>
+        private long metadataRowId;
+
+        /// <summary>
+        /// The m update current bytes.
+        /// </summary>
+        private SQLiteStatement sqlUpdateCurrentBytes;
+
+        /// <summary>
+        /// the curent status of the database
+        /// </summary>
+        private DownloadStatus downloadStatus;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DownloadsDB"/> class.
+        /// </summary>
+        /// <param name="paramContext">
+        /// The param context.
+        /// </param>
         private DownloadsDB(Context paramContext)
         {
-            mHelper = new DownloadsContentDBHelper(paramContext);
-            SQLiteDatabase sqldb = mHelper.ReadableDatabase;
+            this.metadataRowId = -1;
+            this.downloadStatus = DownloadStatus.Unknown;
+            this.VersionCode = -1;
+
+            this.openHelper = new DownloadsContentDBHelper(paramContext);
+            SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
+
             // Query for the version code, the row ID of the metadata (for future
             // updating) the status and the flags
-            ICursor cur = sqldb.RawQuery("SELECT " +
-                                         MetadataColumns.APKVERSION + "," +
-                                         BaseColumns.Id + "," +
-                                         MetadataColumns.DOWNLOAD_STATUS + "," +
-                                         MetadataColumns.FLAGS +
-                                         " FROM "
-                                         + MetadataColumns.TABLE_NAME + " LIMIT 1", null);
-            if (null != cur && cur.MoveToFirst())
+            string query = string.Format(
+                "SELECT {0}, {1}, {2}, {3} FROM {4} LIMIT 1", 
+                MetadataColumns.ApkVersion, 
+                BaseColumns.Id, 
+                MetadataColumns.DownloadStatus, 
+                MetadataColumns.Flags, 
+                typeof(MetadataColumns).Name);
+            ICursor cur = sqldb.RawQuery(query, null);
+
+            if (cur != null && cur.MoveToFirst())
             {
-                mVersionCode = cur.GetInt(0);
-                mMetadataRowID = cur.GetLong(1);
-                mStatus = (DownloadStatus)cur.GetInt(2);
-                mFlags = (DownloaderServiceFlags)cur.GetInt(3);
+                this.VersionCode = cur.GetInt(0);
+                this.metadataRowId = cur.GetLong(1);
+                this.DownloadStatus = (DownloadStatus)cur.GetInt(2);
+                this.Flags = (DownloaderServiceFlags)cur.GetInt(3);
                 cur.Close();
             }
-            mDownloadsDB = this;
         }
 
-        public static DownloadsDB getDB(Context paramContext)
+        #endregion
+
+        #region Enums
+
+        /// <summary>
+        /// The column indexes.
+        /// </summary>
+        private enum ColumnIndexes
         {
-            lock (_locker)
+            /// <summary>
+            /// The filename.
+            /// </summary>
+            Filename = 0, 
+
+            /// <summary>
+            /// The uri.
+            /// </summary>
+            Uri = 1, 
+
+            /// <summary>
+            /// The e tag.
+            /// </summary>
+            ETag = 2, 
+
+            /// <summary>
+            /// The total bytes.
+            /// </summary>
+            TotalBytes = 3, 
+
+            /// <summary>
+            /// The current bytes.
+            /// </summary>
+            CurrentBytes = 4, 
+
+            /// <summary>
+            /// The last modified.
+            /// </summary>
+            LastModified = 5, 
+
+            /// <summary>
+            /// The status.
+            /// </summary>
+            Status = 6, 
+
+            /// <summary>
+            /// The control.
+            /// </summary>
+            Control = 7, 
+
+            /// <summary>
+            /// The num failed.
+            /// </summary>
+            NumFailed = 8, 
+
+            /// <summary>
+            /// The retry after.
+            /// </summary>
+            RetryAfter = 9, 
+
+            /// <summary>
+            /// The redirect count.
+            /// </summary>
+            RedirectCount = 10, 
+
+            /// <summary>
+            /// The index.
+            /// </summary>
+            Index = 11
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        /// <summary>
+        /// Gets Flags.
+        /// </summary>
+        public DownloaderServiceFlags Flags { get; private set; }
+        
+        /// <summary>
+        /// Gets the status.
+        /// </summary>
+        public DownloadStatus DownloadStatus
+        {
+            get
             {
-                if (null == mDownloadsDB)
+                return this.downloadStatus;
+            }
+            
+            set
+            {
+                if (this.DownloadStatus != value)
                 {
-                    return new DownloadsDB(paramContext);
+                    var cv = new ContentValues();
+                    cv.Put(MetadataColumns.DownloadStatus, (int)value);
+                    if (this.UpdateMetadata(cv))
+                    {
+                        this.downloadStatus = value;
+                    }
                 }
-                return mDownloadsDB;
             }
         }
 
-        private SQLiteStatement getDownloadByIndexStatement()
+        /// <summary>
+        /// Gets a value indicating whether IsDownloadRequired.
+        /// </summary>
+        public bool IsDownloadRequired
         {
-            if (null == mGetDownloadByIndex)
+            get
             {
-                mGetDownloadByIndex = mHelper.ReadableDatabase.CompileStatement(
-                    "SELECT " + BaseColumns.Id +
-                    " FROM " + DownloadColumns.TABLE_NAME +
-                    " WHERE " + DownloadColumns.INDEX + " = ?");
+                SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
+                string query = string.Format(
+                    "SELECT Count(*) FROM {0} WHERE {1} <> 0", typeof(DownloadColumns).Name, DownloadColumns.Status);
+                ICursor cur = sqldb.RawQuery(query, null);
+                if (cur != null)
+                {
+                    try
+                    {
+                        if (cur.MoveToFirst())
+                        {
+                            return cur.GetInt(0) == 0;
+                        }
+                    }
+                    finally
+                    {
+                        cur.Close();
+                    }
+                }
+
+                return true;
             }
-            return mGetDownloadByIndex;
         }
 
-        private SQLiteStatement getUpdateCurrentBytesStatement()
+        /// <summary>
+        /// Gets LastCheckedVersionCode.
+        /// </summary>
+        public int LastCheckedVersionCode
         {
-            if (null == mUpdateCurrentBytes)
+            get
             {
-                mUpdateCurrentBytes = mHelper.ReadableDatabase.CompileStatement(
-                    "UPDATE " + DownloadColumns.TABLE_NAME +
-                    " SET " + DownloadColumns.CURRENTBYTES + " = ?" +
-                    " WHERE " + DownloadColumns.INDEX + " = ?");
+                return this.VersionCode;
             }
-            return mUpdateCurrentBytes;
         }
 
-        public DownloadInfo getDownloadInfoByFileName(string fileName)
+        /// <summary>
+        /// Gets VersionCode.
+        /// </summary>
+        public int VersionCode { get; private set; }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets DownloadByIndexStatement.
+        /// </summary>
+        private SQLiteStatement DownloadByIndexStatement
         {
-            SQLiteDatabase sqldb = mHelper.ReadableDatabase;
+            get
+            {
+                string query = string.Format(
+                    "SELECT {0} FROM {1} WHERE {2} = ?", 
+                    BaseColumns.Id, 
+                    typeof(DownloadColumns).Name, 
+                    DownloadColumns.FileIndex);
+                return this.sqlGetDownloadByIndex
+                       ?? (this.sqlGetDownloadByIndex = this.openHelper.ReadableDatabase.CompileStatement(query));
+            }
+        }
+
+        /// <summary>
+        /// Gets UpdateCurrentBytesStatement.
+        /// </summary>
+        private SQLiteStatement UpdateCurrentBytesStatement
+        {
+            get
+            {
+                string query = string.Format(
+                    "UPDATE {0} SET {1} = ? WHERE {2} = ?", 
+                    typeof(DownloadColumns).Name, 
+                    DownloadColumns.CurrentBytes, 
+                    DownloadColumns.FileIndex);
+                return this.sqlUpdateCurrentBytes
+                       ?? (this.sqlUpdateCurrentBytes = this.openHelper.ReadableDatabase.CompileStatement(query));
+            }
+        }
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        /// <summary>
+        /// Returns a new database if there is none, or the existing database 
+        /// if there is an existing one already.
+        /// </summary>
+        /// <param name="context">
+        /// The context.
+        /// </param>
+        /// <returns>
+        /// The instance of the database.
+        /// </returns>
+        public static DownloadsDB GetDatabase(Context context)
+        {
+            lock (Locker)
+            {
+                return instance ?? (instance = new DownloadsDB(context));
+            }
+        }
+
+        /// <summary>
+        /// Close the current database.
+        /// </summary>
+        public void Close()
+        {
+            this.openHelper.Close();
+        }
+
+        /// <summary>
+        /// Returns the download information for the given filename.
+        /// </summary>
+        /// <param name="fileName">
+        /// The file name.
+        /// </param>
+        /// <returns>
+        /// The download information for the filename
+        /// </returns>
+        public DownloadInfo GetDownloadInfo(string fileName)
+        {
+            SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
             ICursor itemcur = null;
             try
             {
-                itemcur = sqldb.Query(DownloadColumns.TABLE_NAME, DC_PROJECTION,
-                                      DownloadColumns.FILENAME + " = ?",
-                                      new[]
-                                          {
-                                              fileName
-                                          }, null, null, null);
+                itemcur = sqldb.Query(
+                    typeof(DownloadColumns).Name, 
+                    DownloadColumnsProjection, 
+                    DownloadColumns.FileName + " = ?", 
+                    new[] { fileName }, 
+                    null, 
+                    null, 
+                    null);
                 if (null != itemcur && itemcur.MoveToFirst())
                 {
-                    return getDownloadInfoFromCursor(itemcur);
+                    return GetDownloadInfo(itemcur);
                 }
             }
             finally
             {
                 if (null != itemcur)
+                {
                     itemcur.Close();
+                }
             }
+
             return null;
         }
 
-        public long getIDForDownloadInfo(DownloadInfo di)
+        /// <summary>
+        /// The get downloads.
+        /// </summary>
+        /// <returns>
+        /// </returns>
+        public DownloadInfo[] GetDownloads()
         {
-            return getIDByIndex(di.ExpansionFileType);
+            SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
+            ICursor cur = null;
+            try
+            {
+                cur = sqldb.Query(typeof(DownloadColumns).Name, DownloadColumnsProjection, null, null, null, null, null);
+                if (null != cur && cur.MoveToFirst())
+                {
+                    var retInfos = new DownloadInfo[cur.Count];
+                    int idx = 0;
+                    do
+                    {
+                        DownloadInfo di = GetDownloadInfo(cur);
+                        retInfos[idx++] = di;
+                    }
+                    while (cur.MoveToNext());
+                    return retInfos;
+                }
+
+                return new DownloadInfo[0];
+            }
+            finally
+            {
+                if (null != cur)
+                {
+                    cur.Close();
+                }
+            }
         }
 
-        public long getIDByIndex(int index)
+        /// <summary>
+        /// This function will add a new file to the database if it does not exist.
+        /// </summary>
+        /// <param name="di">
+        /// DownloadInfo that we wish to store
+        /// </param>
+        /// <returns>
+        /// the row id of the record to be updated/inserted, or -1
+        /// </returns>
+        public bool UpdateDownload(DownloadInfo di)
         {
-            SQLiteStatement downloadByIndex = getDownloadByIndexStatement();
+            var cv = new ContentValues();
+
+            cv.Put(DownloadColumns.FileIndex, (int)di.ExpansionFileType);
+            cv.Put(DownloadColumns.FileName, di.FileName);
+            cv.Put(DownloadColumns.Uri, di.Uri);
+            cv.Put(DownloadColumns.ETag, di.ETag);
+            cv.Put(DownloadColumns.TotalBytes, di.TotalBytes);
+            cv.Put(DownloadColumns.CurrentBytes, di.CurrentBytes);
+            cv.Put(DownloadColumns.LastModified, di.LastModified);
+            cv.Put(DownloadColumns.Status, (int)di.Status);
+            cv.Put(DownloadColumns.Control, di.Control);
+            cv.Put(DownloadColumns.NumFailed, di.FailedCount);
+            cv.Put(DownloadColumns.RetryAfter, di.RetryAfter);
+            cv.Put(DownloadColumns.RedirectCount, di.RedirectCount);
+
+            return this.UpdateDownload(di, cv);
+        }
+
+        /// <summary>
+        /// The update download current bytes.
+        /// </summary>
+        /// <param name="di">
+        /// The di.
+        /// </param>
+        public void UpdateDownloadCurrentBytes(DownloadInfo di)
+        {
+            SQLiteStatement downloadCurrentBytes = this.UpdateCurrentBytesStatement;
+            downloadCurrentBytes.ClearBindings();
+            downloadCurrentBytes.BindLong(1, di.CurrentBytes);
+            downloadCurrentBytes.BindLong(2, (int)di.ExpansionFileType);
+            downloadCurrentBytes.Execute();
+        }
+
+        /// <summary>
+        /// The update flags.
+        /// </summary>
+        /// <param name="flags">
+        /// The flags.
+        /// </param>
+        /// <returns>
+        /// The update flags.
+        /// </returns>
+        public bool UpdateFlags(DownloaderServiceFlags flags)
+        {
+            if (this.Flags == flags)
+            {
+                return true;
+            }
+
+            var cv = new ContentValues();
+            cv.Put(MetadataColumns.Flags, (int)flags);
+            if (this.UpdateMetadata(cv))
+            {
+                this.Flags = flags;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The update from database.
+        /// </summary>
+        /// <param name="di">
+        /// The di.
+        /// </param>
+        /// <returns>
+        /// The update from database.
+        /// </returns>
+        public bool UpdateFromDatabase(DownloadInfo di)
+        {
+            SQLiteDatabase sqldb = this.openHelper.ReadableDatabase;
+            ICursor cur = sqldb.Query(
+                typeof(DownloadColumns).Name, 
+                DownloadColumnsProjection, 
+                DownloadColumns.FileName + "= ?", 
+                new[] { di.FileName }, 
+                null, 
+                null, 
+                null);
+            if (cur != null)
+            {
+                try
+                {
+                    if (cur.MoveToFirst())
+                    {
+                        SetDownloadInfo(di, cur);
+                        return true;
+                    }
+                }
+                finally
+                {
+                    cur.Close();
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// The update metadata.
+        /// </summary>
+        /// <param name="apkVersion">
+        /// The apk version.
+        /// </param>
+        /// <param name="downloadStatus">
+        /// The download status.
+        /// </param>
+        /// <returns>
+        /// The update metadata.
+        /// </returns>
+        public bool UpdateMetadata(int apkVersion, DownloadStatus downloadStatus)
+        {
+            var cv = new ContentValues();
+            cv.Put(MetadataColumns.ApkVersion, apkVersion);
+            cv.Put(MetadataColumns.DownloadStatus, (int)downloadStatus);
+
+            if (this.UpdateMetadata(cv))
+            {
+                this.VersionCode = apkVersion;
+                this.DownloadStatus = downloadStatus;
+                return true;
+            }
+
+            return false;
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// The set download info.
+        /// </summary>
+        /// <param name="di">
+        /// The di.
+        /// </param>
+        /// <param name="cur">
+        /// The cur.
+        /// </param>
+        private static void SetDownloadInfo(DownloadInfo di, ICursor cur)
+        {
+            di.Uri = cur.GetString((int)ColumnIndexes.Uri);
+            di.ETag = cur.GetString((int)ColumnIndexes.ETag);
+            di.TotalBytes = cur.GetLong((int)ColumnIndexes.TotalBytes);
+            di.CurrentBytes = cur.GetLong((int)ColumnIndexes.CurrentBytes);
+            di.LastModified = cur.GetLong((int)ColumnIndexes.LastModified);
+            di.Status = (DownloadStatus)cur.GetInt((int)ColumnIndexes.Status);
+            di.Control = cur.GetInt((int)ColumnIndexes.Control);
+            di.FailedCount = cur.GetInt((int)ColumnIndexes.NumFailed);
+            di.RetryAfter = cur.GetInt((int)ColumnIndexes.RetryAfter);
+            di.RedirectCount = cur.GetInt((int)ColumnIndexes.RedirectCount);
+        }
+
+        /// <summary>
+        /// The get download info.
+        /// </summary>
+        /// <param name="cur">
+        /// The cur.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private DownloadInfo GetDownloadInfo(ICursor cur)
+        {
+            var di = new DownloadInfo(
+                (ApkExpansionPolicy.ExpansionFileType)cur.GetInt((int)ColumnIndexes.Index),
+                cur.GetString((int)ColumnIndexes.Filename),
+                this.GetType().Namespace);
+            SetDownloadInfo(di, cur);
+            return di;
+        }
+
+        /// <summary>
+        /// The get id.
+        /// </summary>
+        /// <param name="di">
+        /// The di.
+        /// </param>
+        /// <returns>
+        /// The get id.
+        /// </returns>
+        private long GetId(DownloadInfo di)
+        {
+            return this.GetId(di.ExpansionFileType);
+        }
+
+        /// <summary>
+        /// The get id for a expansion file.
+        /// </summary>
+        /// <param name="index">
+        /// The index.
+        /// </param>
+        /// <returns>
+        /// The id.
+        /// </returns>
+        private long GetId(ApkExpansionPolicy.ExpansionFileType index)
+        {
+            SQLiteStatement downloadByIndex = this.DownloadByIndexStatement;
             downloadByIndex.ClearBindings();
-            downloadByIndex.BindLong(1, index);
+            downloadByIndex.BindLong(1, (int)index);
             try
             {
                 return downloadByIndex.SimpleQueryForLong();
@@ -159,416 +634,362 @@ namespace ExpansionDownloader.impl
             }
         }
 
-        public void updateDownloadCurrentBytes(DownloadInfo di)
+        /// <summary>
+        /// The update download.
+        /// </summary>
+        /// <param name="di">
+        /// The download info.
+        /// </param>
+        /// <param name="cv">
+        /// The values.
+        /// </param>
+        /// <returns>
+        /// True if the update was successful
+        /// </returns>
+        private bool UpdateDownload(DownloadInfo di, ContentValues cv)
         {
-            SQLiteStatement downloadCurrentBytes = getUpdateCurrentBytesStatement();
-            downloadCurrentBytes.ClearBindings();
-            downloadCurrentBytes.BindLong(1, di.CurrentBytes);
-            downloadCurrentBytes.BindLong(2, di.ExpansionFileType);
-            downloadCurrentBytes.Execute();
-        }
+            long id = di == null ? -1 : this.GetId(di);
 
-        public void close()
-        {
-            mHelper.Close();
-        }
-
-        /**
-     * This function will add a new file to the database if it does not exist.
-     * 
-     * @param di DownloadInfo that we wish to store
-     * @return the row id of the record to be updated/inserted, or -1
-     */
-
-        public bool UpdateDownload(DownloadInfo di)
-        {
-            var cv = new ContentValues();
-            cv.Put(DownloadColumns.INDEX, di.ExpansionFileType);
-            cv.Put(DownloadColumns.FILENAME, di.FileName);
-            cv.Put(DownloadColumns.URI, di.Uri);
-            cv.Put(DownloadColumns.ETAG, di.ETag);
-            cv.Put(DownloadColumns.TOTALBYTES, di.TotalBytes);
-            cv.Put(DownloadColumns.CURRENTBYTES, di.CurrentBytes);
-            cv.Put(DownloadColumns.LASTMOD, di.LastModified);
-            cv.Put(DownloadColumns.STATUS, (int)di.Status);
-            cv.Put(DownloadColumns.CONTROL, di.Control);
-            cv.Put(DownloadColumns.NUM_FAILED, di.FailedCount);
-            cv.Put(DownloadColumns.RETRY_AFTER, di.RetryAfter);
-            cv.Put(DownloadColumns.REDIRECT_COUNT, di.RedirectCount);
-            return this.UpdateDownload(di, cv);
-        }
-
-        public bool UpdateDownload(DownloadInfo di, ContentValues cv)
-        {
-            long id = di == null ? -1 : getIDForDownloadInfo(di);
             try
             {
-                SQLiteDatabase sqldb = mHelper.WritableDatabase;
+                SQLiteDatabase sqldb = this.openHelper.WritableDatabase;
                 if (id != -1)
                 {
-                    if (1 != sqldb.Update(DownloadColumns.TABLE_NAME, cv, DownloadColumns._ID + " = " + id, null))
+                    if (1 != sqldb.Update(typeof(DownloadColumns).Name, cv, DownloadColumns._Id + " = " + id, null))
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    return -1 != sqldb.Insert(DownloadColumns.TABLE_NAME, DownloadColumns.URI, cv);
+                    return -1 != sqldb.Insert(typeof(DownloadColumns).Name, DownloadColumns.Uri, cv);
                 }
             }
             catch (SQLiteException ex)
             {
                 ex.PrintStackTrace();
             }
-            return false;
-        }
-
-        public int getLastCheckedVersionCode()
-        {
-            return mVersionCode;
-        }
-
-        public bool isDownloadRequired()
-        {
-            SQLiteDatabase sqldb = mHelper.ReadableDatabase;
-            ICursor cur = sqldb.RawQuery("SELECT Count(*)" +
-                                         " FROM " + DownloadColumns.TABLE_NAME +
-                                         " WHERE " + DownloadColumns.STATUS + " <> 0", null);
-            try
-            {
-                if (null != cur && cur.MoveToFirst())
-                {
-                    return 0 == cur.GetInt(0);
-                }
-            }
-            finally
-            {
-                if (null != cur)
-                    cur.Close();
-            }
-            return true;
-        }
-
-        public DownloaderServiceFlags getFlags()
-        {
-            return mFlags;
-        }
-
-        public bool UpdateFlags(DownloaderServiceFlags flags)
-        {
-            if (mFlags == flags)
-            {
-                return true;
-            }
-            
-            var cv = new ContentValues();
-            cv.Put(MetadataColumns.FLAGS, (int) flags);
-            if (updateMetadata(cv))
-            {
-                mFlags = flags;
-                return true;
-            }
 
             return false;
         }
 
-        public bool updateStatus(DownloadStatus status)
+        /// <summary>
+        /// The update metadata.
+        /// </summary>
+        /// <param name="cv">
+        /// The values.
+        /// </param>
+        /// <returns>
+        /// True if the update was successful
+        /// </returns>
+        private bool UpdateMetadata(ContentValues cv)
         {
-            if (mStatus != status)
+            SQLiteDatabase sqldb = this.openHelper.WritableDatabase;
+            if (this.metadataRowId == -1)
             {
-                var cv = new ContentValues();
-                cv.Put(MetadataColumns.DOWNLOAD_STATUS, (int)status);
-                if (updateMetadata(cv))
+                long newId = sqldb.Insert(typeof(MetadataColumns).Name, MetadataColumns.ApkVersion, cv);
+                if (newId == -1)
                 {
-                    mStatus = status;
-                    return true;
+                    return false;
                 }
-                else
+
+                this.metadataRowId = newId;
+            }
+            else
+            {
+                var whereClause = string.Format("{0} = {1}", BaseColumns.Id, this.metadataRowId);
+                if (sqldb.Update(typeof(MetadataColumns).Name, cv, whereClause, null) == 0)
                 {
                     return false;
                 }
             }
-            else
-            {
-                return true;
-            }
-        }
 
-        public bool updateMetadata(ContentValues cv)
-        {
-            SQLiteDatabase sqldb = mHelper.WritableDatabase;
-            if (-1 == mMetadataRowID)
-            {
-                long newID = sqldb.Insert(MetadataColumns.TABLE_NAME, MetadataColumns.APKVERSION, cv);
-                if (-1 == newID) return false;
-                mMetadataRowID = newID;
-            }
-            else
-            {
-                if (0 == sqldb.Update(MetadataColumns.TABLE_NAME, cv, BaseColumns.Id + " = " + mMetadataRowID, null))
-                    return false;
-            }
             return true;
         }
 
-        public bool updateMetadata(int apkVersion, DownloadStatus downloadStatus)
-        {
-            var cv = new ContentValues();
-            cv.Put(MetadataColumns.APKVERSION, apkVersion);
-            cv.Put(MetadataColumns.DOWNLOAD_STATUS, (int)downloadStatus);
+        #endregion
 
-            if (this.updateMetadata(cv))
-            {
-                mVersionCode = apkVersion;
-                mStatus = downloadStatus;
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool updateFromDb(DownloadInfo di)
-        {
-            SQLiteDatabase sqldb = mHelper.ReadableDatabase;
-            ICursor cur = null;
-            try
-            {
-                cur = sqldb.Query(DownloadColumns.TABLE_NAME,
-                                  DC_PROJECTION,
-                                  DownloadColumns.FILENAME + "= ?",
-                                  new[]
-                                      {
-                                          di.FileName
-                                      }, null, null, null);
-                if (null != cur && cur.MoveToFirst())
-                {
-                    setDownloadInfoFromCursor(di, cur);
-                    return true;
-                }
-                return false;
-            }
-            finally
-            {
-                if (null != cur)
-                {
-                    cur.Close();
-                }
-            }
-        }
-
-        public void setDownloadInfoFromCursor(DownloadInfo di, ICursor cur)
-        {
-            di.Uri = cur.GetString(URI_IDX);
-            di.ETag = cur.GetString(ETAG_IDX);
-            di.TotalBytes = cur.GetLong(TOTALBYTES_IDX);
-            di.CurrentBytes = cur.GetLong(CURRENTBYTES_IDX);
-            di.LastModified = cur.GetLong(LASTMOD_IDX);
-            di.Status = (DownloadStatus)cur.GetInt(STATUS_IDX);
-            di.Control = cur.GetInt(CONTROL_IDX);
-            di.FailedCount = cur.GetInt(NUM_FAILED_IDX);
-            di.RetryAfter = cur.GetInt(RETRY_AFTER_IDX);
-            di.RedirectCount = cur.GetInt(REDIRECT_COUNT_IDX);
-        }
-
-        public DownloadInfo getDownloadInfoFromCursor(ICursor cur)
-        {
-            var di = new DownloadInfo(cur.GetInt(INDEX_IDX), cur.GetString(FILENAME_IDX), GetType().Namespace);
-            setDownloadInfoFromCursor(di, cur);
-            return di;
-        }
-
-        public DownloadInfo[] GetDownloads()
-        {
-            SQLiteDatabase sqldb = mHelper.ReadableDatabase;
-            ICursor cur = null;
-            try
-            {
-                cur = sqldb.Query(DownloadColumns.TABLE_NAME, DC_PROJECTION, null, null, null, null, null);
-                if (null != cur && cur.MoveToFirst())
-                {
-                    var retInfos = new DownloadInfo[cur.Count];
-                    int idx = 0;
-                    do
-                    {
-                        DownloadInfo di = getDownloadInfoFromCursor(cur);
-                        retInfos[idx++] = di;
-                    } while (cur.MoveToNext());
-                    return retInfos;
-                }
-                return null;
-            }
-            finally
-            {
-                if (null != cur)
-                {
-                    cur.Close();
-                }
-            }
-        }
-
-        #region Nested type: BaseTables
-
+        /// <summary>
+        /// The base tables.
+        /// </summary>
         public abstract class BaseTables
         {
         }
 
-        #endregion
-
-        #region Nested type: DownloadColumns
-
+        /// <summary>
+        /// The download columns.
+        /// </summary>
         public class DownloadColumns : BaseTables
         {
-            public static string INDEX = "FILEIDX";
-            public static string URI = "URI";
-            public static string FILENAME = "FN";
-            public static string ETAG = "ETAG";
+            #region Constants and Fields
 
-            public static string TOTALBYTES = "TOTALBYTES";
-            public static string CURRENTBYTES = "CURRENTBYTES";
-            public static string LASTMOD = "LASTMOD";
+            /// <summary>
+            /// The control.
+            /// </summary>
+            public static string Control = "CONTROL";
 
-            public static string STATUS = "STATUS";
-            public static string CONTROL = "CONTROL";
-            public static string NUM_FAILED = "FAILCOUNT";
-            public static string RETRY_AFTER = "RETRYAFTER";
-            public static string REDIRECT_COUNT = "REDIRECTCOUNT";
+            /// <summary>
+            /// The current bytes.
+            /// </summary>
+            public static string CurrentBytes = "CURRENTBYTES";
 
-            public static string[][] SCHEMA = new[]
+            /// <summary>
+            /// The e tag.
+            /// </summary>
+            public static string ETag = "ETAG";
+
+            /// <summary>
+            /// The file index.
+            /// </summary>
+            public static string FileIndex = "FILEIDX";
+
+            /// <summary>
+            /// The file name.
+            /// </summary>
+            public static string FileName = "FN";
+
+            /// <summary>
+            /// The last modified.
+            /// </summary>
+            public static string LastModified = "LASTMOD";
+
+            /// <summary>
+            /// The num failed.
+            /// </summary>
+            public static string NumFailed = "FAILCOUNT";
+
+            /// <summary>
+            /// The redirect count.
+            /// </summary>
+            public static string RedirectCount = "REDIRECTCOUNT";
+
+            /// <summary>
+            /// The retry after.
+            /// </summary>
+            public static string RetryAfter = "RETRYAFTER";
+
+
+            /// <summary>
+            /// The status.
+            /// </summary>
+            public static string Status = "STATUS";
+
+            /// <summary>
+            /// The total bytes.
+            /// </summary>
+            public static string TotalBytes = "TOTALBYTES";
+
+            /// <summary>
+            /// The uri.
+            /// </summary>
+            public static string Uri = "URI";
+
+            /// <summary>
+            /// The _ id.
+            /// </summary>
+            public static string _Id = "DownloadColumns._id";
+
+            /// <summary>
+            /// The schema.
+            /// </summary>
+            public static string[][] Schema = new[]
                                                   {
                                                       new[] {BaseColumns.Id, "INTEGER PRIMARY KEY"},
-                                                      new[] {INDEX, "INTEGER UNIQUE"},
-                                                      new[] {URI, "TEXT"},
-                                                      new[] {FILENAME, "TEXT UNIQUE"},
-                                                      new[] {ETAG, "TEXT"},
-                                                      new[] {TOTALBYTES, "INTEGER"},
-                                                      new[] {CURRENTBYTES, "INTEGER"},
-                                                      new[] {LASTMOD, "INTEGER"},
-                                                      new[] {STATUS, "INTEGER"},
-                                                      new[] {CONTROL, "INTEGER"},
-                                                      new[] {NUM_FAILED, "INTEGER"},
-                                                      new[] {RETRY_AFTER, "INTEGER"},
-                                                      new[] {REDIRECT_COUNT, "INTEGER"}
+                                                      new[] {FileIndex, "INTEGER UNIQUE"},
+                                                      new[] {Uri, "TEXT"}, 
+                                                      new[] {FileName, "TEXT UNIQUE"},
+                                                      new[] {ETag, "TEXT"},
+                                                      new[] {TotalBytes, "INTEGER"}, 
+                                                      new[] {CurrentBytes, "INTEGER"},
+                                                      new[] {LastModified, "INTEGER"},
+                                                      new[] {Status, "INTEGER"}, 
+                                                      new[] {Control, "INTEGER"},
+                                                      new[] {NumFailed, "INTEGER"},
+                                                      new[] {RetryAfter, "INTEGER"}, 
+                                                      new[] {RedirectCount, "INTEGER"}
                                                   };
-
-            public static string TABLE_NAME = "DownloadColumns";
-            public static string _ID = "DownloadColumns._id";
+            #endregion
         }
 
-        #endregion
-
-        #region Nested type: DownloadsContentDBHelper
-
-        protected class DownloadsContentDBHelper : SQLiteOpenHelper
-        {
-            public DownloadsContentDBHelper(Context paramContext)
-                : base(paramContext, DATABASE_NAME, null, DATABASE_VERSION)
-            {
-            }
-
-            private string createTableQueryFromArray(string paramString, string[][] paramArrayOfString)
-            {
-                var localStringBuilder = new System.Text.StringBuilder();
-                localStringBuilder.Append("CREATE TABLE ");
-                localStringBuilder.Append(paramString);
-                localStringBuilder.Append(" (");
-                int i = paramArrayOfString.Length;
-                for (int j = 0;; j++)
-                {
-                    if (j >= i)
-                    {
-                        localStringBuilder.Length = localStringBuilder.Length - 1;
-                        localStringBuilder.Append(");");
-                        return localStringBuilder.ToString();
-                    }
-                    string[] arrayOfString = paramArrayOfString[j];
-                    localStringBuilder.Append(' ');
-                    localStringBuilder.Append(arrayOfString[0]); 
-                    localStringBuilder.Append(' ');
-                    localStringBuilder.Append(arrayOfString[1]);
-                    localStringBuilder.Append(',');
-                }
-            }
-
-            private void dropTables(SQLiteDatabase paramSQLiteDatabase)
-            {
-                Type[] arrayOfClass = typeof (DownloadsDB).GetNestedTypes();
-                int i = arrayOfClass.Length;
-                int j = 0;
-                while (true)
-                {
-                    if (j >= i)
-                        return;
-                    Type localClass = arrayOfClass[j];
-                    if (typeof (BaseTables).IsAssignableFrom(localClass))
-                        try
-                        {
-                            j++;
-                            var str = (string) localClass.GetField("TABLE_NAME").GetValue(null);
-                            paramSQLiteDatabase.ExecSQL("DROP TABLE IF EXISTS " + str);
-                        }
-                        catch (Exception localException)
-                        {
-                            localException.PrintStackTrace();
-                        }
-                }
-            }
-
-            public override void OnCreate(SQLiteDatabase paramSQLiteDatabase)
-            {
-                Type[] arrayOfClass = typeof (DownloadsDB).GetNestedTypes();
-                int numClasses = arrayOfClass.Length;
-                for (int i = 0; i < numClasses; i++)
-                {
-                    Type localClass = arrayOfClass[i];
-                    if (typeof (BaseTables).IsAssignableFrom(localClass) && localClass != typeof (BaseTables))
-                    {
-                        try
-                        {
-                            FieldInfo localField1 = localClass.GetField("SCHEMA");
-                            FieldInfo localField2 = localClass.GetField("TABLE_NAME");
-                            var arrayOfString = (string[][]) localField1.GetValue(null);
-                            paramSQLiteDatabase.ExecSQL(createTableQueryFromArray((string) localField2.GetValue(null), arrayOfString));
-                        }
-                        catch (Exception localException)
-                        {
-                            while (true)
-                                localException.PrintStackTrace();
-                        }
-                    }
-                }
-            }
-
-            public override void OnUpgrade(SQLiteDatabase paramSQLiteDatabase, int paramInt1, int paramInt2)
-            {
-                Log.Warn(typeof (DownloadsContentDBHelper).Name,
-                         "Upgrading database from version " + paramInt1 + " to " + paramInt2 + ", which will destroy all old data");
-                dropTables(paramSQLiteDatabase);
-                OnCreate(paramSQLiteDatabase);
-            }
-        }
-
-        #endregion
-
-        #region Nested type: MetadataColumns
-
+        /// <summary>
+        /// The metadata columns.
+        /// </summary>
         public class MetadataColumns : BaseTables
         {
-            public static string APKVERSION = "APKVERSION";
-            public static string DOWNLOAD_STATUS = "DOWNLOADSTATUS";
-            public static string FLAGS = "DOWNLOADFLAGS";
+            #region Constants and Fields
 
-            public static string[][] SCHEMA = new[]
+            /// <summary>
+            /// The apk version.
+            /// </summary>
+            public static string ApkVersion = "APKVERSION";
+
+            /// <summary>
+            /// The download status.
+            /// </summary>
+            public static string DownloadStatus = "DOWNLOADSTATUS";
+
+            /// <summary>
+            /// The flags.
+            /// </summary>
+            public static string Flags = "DOWNLOADFLAGS";
+
+            /// <summary>
+            /// The _ id.
+            /// </summary>
+            public static string _Id = "MetadataColumns._id";
+
+            /// <summary>
+            /// The schema.
+            /// </summary>
+            public static string[][] Schema = new[]
                                                   {
                                                       new[] {BaseColumns.Id, "INTEGER PRIMARY KEY"},
-                                                      new[] {APKVERSION, "INTEGER"},
-                                                      new[] {DOWNLOAD_STATUS, "INTEGER"},
-                                                      new[] {FLAGS, "INTEGER"}
+                                                      new[] {ApkVersion, "INTEGER"},
+                                                      new[] {DownloadStatus, "INTEGER"},
+                                                      new[] {Flags, "INTEGER"}
                                                   };
 
-            public static string TABLE_NAME = "MetadataColumns";
-            public static string _ID = "MetadataColumns._id";
+            #endregion
         }
 
-        #endregion
+        /// <summary>
+        /// The downloads content db helper.
+        /// </summary>
+        private class DownloadsContentDBHelper : SQLiteOpenHelper
+        {
+            #region Constants and Fields
+
+            /// <summary>
+            /// The tables.
+            /// </summary>
+            private static readonly Type[] Tables = new[] { typeof(MetadataColumns), typeof(DownloadColumns) };
+
+            #endregion
+
+            #region Constructors and Destructors
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="DownloadsContentDBHelper"/> class.
+            /// </summary>
+            /// <param name="paramContext">
+            /// The param context.
+            /// </param>
+            public DownloadsContentDBHelper(Context paramContext)
+                : base(paramContext, DatabaseName, null, DatabaseVersion)
+            {
+            }
+
+            #endregion
+
+            #region Public Methods and Operators
+
+            /// <summary>
+            /// The on create.
+            /// </summary>
+            /// <param name="database">
+            /// The database.
+            /// </param>
+            public override void OnCreate(SQLiteDatabase database)
+            {
+                Debug.WriteLine("Creating downloads database...");
+
+                foreach (var table in Tables)
+                {
+                    Debug.WriteLine("Creating downloads table " + table.Name);
+                    try
+                    {
+                        database.ExecSQL(CreateTableQuery(table));
+                    }
+                    catch (Exception localException)
+                    {
+                        Debug.WriteLine(localException);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// The on upgrade.
+            /// </summary>
+            /// <param name="database">
+            /// The database.
+            /// </param>
+            /// <param name="oldVersion">
+            /// The old version.
+            /// </param>
+            /// <param name="newVersion">
+            /// The new version.
+            /// </param>
+            public override void OnUpgrade(SQLiteDatabase database, int oldVersion, int newVersion)
+            {
+                Debug.WriteLine(
+                    "Upgrading database from version {0} to {1}, which will destroy all old data", 
+                    oldVersion, 
+                    newVersion);
+
+                DropTables(database);
+                this.OnCreate(database);
+            }
+
+            #endregion
+
+            #region Methods
+
+            /// <summary>
+            /// The create table query.
+            /// </summary>
+            /// <param name="table">
+            /// The table.
+            /// </param>
+            /// <returns>
+            /// create table query.
+            /// </returns>
+            private static string CreateTableQuery(Type table)
+            {
+                var tableName = table.Name;
+                var columns = (string[][]) table.GetField("Schema").GetValue(null);
+
+                var localStringBuilder = new StringBuilder();
+                localStringBuilder.Append("CREATE TABLE ");
+                localStringBuilder.Append(tableName);
+                localStringBuilder.Append(" (");
+
+                foreach (var column in columns)
+                {
+                    localStringBuilder.Append(' ');
+                    localStringBuilder.Append(column[0]);
+                    localStringBuilder.Append(' ');
+                    localStringBuilder.Append(column[1]);
+                    localStringBuilder.Append(',');
+                }
+
+                localStringBuilder.Length = localStringBuilder.Length - 1;
+                localStringBuilder.Append(");");
+
+                return localStringBuilder.ToString();
+            }
+
+            /// <summary>
+            /// The drop tables.
+            /// </summary>
+            /// <param name="database">
+            /// The database.
+            /// </param>
+            private static void DropTables(SQLiteDatabase database)
+            {
+                foreach (var table in Tables)
+                {
+                    try
+                    {
+                        database.ExecSQL("DROP TABLE IF EXISTS " + table.Name);
+                    }
+                    catch (Exception localException)
+                    {
+                        Debug.WriteLine(localException);
+                    }
+                }
+            }
+
+            #endregion
+        }
     }
 }
