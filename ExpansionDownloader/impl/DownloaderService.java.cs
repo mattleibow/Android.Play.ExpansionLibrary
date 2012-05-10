@@ -227,7 +227,7 @@ namespace ExpansionDownloader.impl
             this.serviceConnection = DownloaderServiceMarshaller.CreateStub(this);
             this.serviceMessenger = this.serviceConnection.GetMessenger();
 
-            var database = DownloadsDatabase.GetDatabase(this);
+            var database = DownloadsDatabase.Instance;
 
             this.Control = database.DownloadStatus == DownloadStatus.PausedByApp
                                ? ControlAction.Paused
@@ -308,7 +308,7 @@ namespace ExpansionDownloader.impl
             {
                 this.status = value;
 
-                var database = DownloadsDatabase.GetDatabase(this);
+                var database = DownloadsDatabase.Instance;
                 database.UpdateMetadata(this.packageInfo.VersionCode, this.status);
             }
         }
@@ -429,7 +429,7 @@ namespace ExpansionDownloader.impl
 
             // the database automatically reads the metadata for version code
             // and download status when the instance is created
-            DownloadsDatabase database = DownloadsDatabase.GetDatabase(context);
+            DownloadsDatabase database = DownloadsDatabase.Instance;
 
             // we need to update the LVL check and get a successful status to proceed
             if (IsLvlCheckRequired(database, pi))
@@ -440,7 +440,7 @@ namespace ExpansionDownloader.impl
             // we don't have to update LVL. Do we still have a download to start?
             if (database.DownloadStatus == DownloadStatus.None)
             {
-                DownloadInfo[] infos = database.GetDownloads();
+                var infos = database.GetDownloads();
                 var existing = infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
 
                 if (existing.Count() > 0)
@@ -709,7 +709,7 @@ namespace ExpansionDownloader.impl
         /// </param>
         public void SetDownloadFlags(DownloaderServiceFlags flags)
         {
-            DownloadsDatabase.GetDatabase(this).UpdateFlags(flags);
+            DownloadsDatabase.Instance.Flags = flags;
         }
 
         #endregion
@@ -803,7 +803,7 @@ namespace ExpansionDownloader.impl
             {
                 // the database automatically reads the metadata for version code
                 // and download status when the instance is created
-                DownloadsDatabase database = DownloadsDatabase.GetDatabase(this);
+                DownloadsDatabase database = DownloadsDatabase.Instance;
                 var pendingIntent = (PendingIntent)intent.GetParcelableExtra(DownloaderServiceExtras.PendingIntent);
 
                 if (null != pendingIntent)
@@ -829,10 +829,10 @@ namespace ExpansionDownloader.impl
                 }
 
                 // get each download
-                DownloadInfo[] infos = database.GetDownloads();
+                var infos = database.GetDownloads();
                 this.BytesSoFar = 0;
                 this.TotalLength = 0;
-                this.fileCount = infos.Length;
+                this.fileCount = infos.Count();
                 foreach (DownloadInfo info in infos)
                 {
                     // We do an (simple) integrity check on each file, just to 
@@ -878,7 +878,7 @@ namespace ExpansionDownloader.impl
                         this.CancelAlarms();
                     }
 
-                    database.UpdateFromDatabase(info);
+                    database.UpdateFromDatabase(ref info);
                     bool setWakeWatchdog = false;
                     DownloaderClientState notifyStatus;
                     switch (info.Status)
@@ -891,7 +891,7 @@ namespace ExpansionDownloader.impl
                         case DownloadStatus.Success:
                             this.BytesSoFar += info.CurrentBytes - startingCount;
 
-                            if (index < infos.Length - 1)
+                            if (index < infos.Count() - 1)
                             {
                                 continue;
                             }
@@ -979,7 +979,7 @@ namespace ExpansionDownloader.impl
         {
             // the database automatically reads the metadata for version code 
             // and download status when the instance is created
-            return DownloadsDatabase.GetDatabase(this).DownloadStatus == DownloadStatus.None;
+            return DownloadsDatabase.Instance.DownloadStatus == DownloadStatus.None;
         }
 
         /// <summary>
@@ -1152,7 +1152,7 @@ namespace ExpansionDownloader.impl
                     }
                     else if (this.networkState.HasFlag(NetworkState.IsCellular))
                     {
-                        DownloadsDatabase database = DownloadsDatabase.GetDatabase(this);
+                        DownloadsDatabase database = DownloadsDatabase.Instance;
                         DownloaderServiceFlags flags = database.Flags;
                         if (!flags.HasFlag(DownloaderServiceFlags.FlagsDownloadOverCellular))
                         {

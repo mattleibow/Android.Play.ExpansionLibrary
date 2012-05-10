@@ -74,7 +74,7 @@ namespace ExpansionDownloader.impl
             this.downloadInfo = info;
             this.downloaderService = service;
             this.downloadNotification = notification;
-            this.downloadsDatabase = DownloadsDatabase.GetDatabase(service);
+            this.downloadsDatabase = DownloadsDatabase.Instance;
         }
 
         #endregion

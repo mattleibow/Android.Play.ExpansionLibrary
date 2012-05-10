@@ -252,7 +252,7 @@ namespace ExpansionDownloader.Sample
         /// </returns>
         private bool AreExpansionFilesDelivered()
         {
-            var db = DownloadsDatabase.GetDatabase(this);
+            var db = DownloadsDatabase.Instance;
             var downloads = db.GetDownloads();
 
             return downloads.Any() && downloads.All(x => Helpers.DoesFileExist(this, x.FileName, x.TotalBytes, false));
@@ -284,7 +284,7 @@ namespace ExpansionDownloader.Sample
         /// </param>
         private void DoValidateZipFiles(object state)
         {
-            var db = DownloadsDatabase.GetDatabase(this);
+            var db = DownloadsDatabase.Instance;
             var downloads = db.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
 
             var result = downloads.Any() && downloads.All(this.IsValidZipFile);

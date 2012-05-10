@@ -169,7 +169,7 @@ namespace ExpansionDownloader.impl
                 {
                     try
                     {
-                        DownloadsDatabase database = DownloadsDatabase.GetDatabase(this.Context);
+                        DownloadsDatabase database = DownloadsDatabase.Instance;
 
                         int count = this.policy.GetExpansionUrlCount();
                         if (count == 0)
@@ -185,7 +185,12 @@ namespace ExpansionDownloader.impl
                             string currentFileName = this.policy.GetExpansionFileName(type);
                             if (currentFileName != null)
                             {
-                                var di = new DownloadInfo(type, currentFileName, this.Context.PackageName);
+                                var di = new DownloadInfo
+                                    {
+                                        ExpansionFileType = type,
+                                        FileName = currentFileName,
+                                        //Package = this.Context.PackageName
+                                    };
 
                                 long fileSize = this.policy.GetExpansionFileSize(type);
                                 if (this.Context.HandleFileUpdated(database, currentFileName, fileSize))

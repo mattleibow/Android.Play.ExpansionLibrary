@@ -14,21 +14,10 @@ namespace ExpansionDownloader.impl
         /// <summary>
         /// Initializes a new instance of the <see cref="DownloadInfo"/> class.
         /// </summary>
-        /// <param name="fileType">
-        /// The file type.
-        /// </param>
-        /// <param name="fileName">
-        /// The file name.
-        /// </param>
-        /// <param name="package">
-        /// The package.
-        /// </param>
-        public DownloadInfo(ApkExpansionPolicy.ExpansionFileType fileType, string fileName, string package)
+        public DownloadInfo()
         {
-            this.Fuzz = Helpers.Random.Next(1001);
-            this.FileName = fileName;
-            this.Package = package;
-            this.ExpansionFileType = fileType;
+            //this.Fuzz = Helpers.Random.Next(1001);
+            this.ResetDownload();
         }
 
         #endregion
@@ -65,10 +54,10 @@ namespace ExpansionDownloader.impl
         /// </summary>
         public string FileName { get; set; }
 
-        /// <summary>
-        /// Gets or sets Fuzz.
-        /// </summary>
-        public int Fuzz { get; set; }
+        ///// <summary>
+        ///// Gets or sets Fuzz.
+        ///// </summary>
+        //public int Fuzz { get; set; }
 
         /// <summary>
         /// Gets or sets LastModified.
@@ -124,33 +113,31 @@ namespace ExpansionDownloader.impl
             this.RedirectCount = 0;
         }
 
-        /// <summary>
-        /// Returns the time when a download should be restarted.
-        /// </summary>
-        /// <param name="now">
-        /// The now.
-        /// </param>
-        /// <returns>
-        /// The restart time.
-        /// </returns>
-        public long RestartTime(long now)
-        {
-            if (this.FailedCount == 0)
-            {
-                return now;
-            }
-
-            if (this.RetryAfter > 0)
-            {
-                return this.LastModified + this.RetryAfter;
-            }
-
-            var fuzz = 1000 + this.Fuzz;
-            var failCount = 1 << (this.FailedCount - 1);
-            var i = DownloaderService.RetryFirstDelay * fuzz * failCount;
-            var restartTime = this.LastModified + i;
-            return restartTime;
-        }
+        ///// <summary>
+        ///// Returns the time when a download should be restarted.
+        ///// </summary>
+        ///// <param name="now">
+        ///// The now.
+        ///// </param>
+        ///// <returns>
+        ///// The restart time.
+        ///// </returns>
+        //public long RestartTime(long now)
+        //{
+        //    if (this.FailedCount == 0)
+        //    {
+        //        return now;
+        //    }
+        //    if (this.RetryAfter > 0)
+        //    {
+        //        return this.LastModified + this.RetryAfter;
+        //    }
+        //    var fuzz = 1000 + this.Fuzz;
+        //    var failCount = 1 << (this.FailedCount - 1);
+        //    var i = DownloaderService.RetryFirstDelay * fuzz * failCount;
+        //    var restartTime = this.LastModified + i;
+        //    return restartTime;
+        //}
 
         /// <summary>
         /// Convert the download info object into a string.
