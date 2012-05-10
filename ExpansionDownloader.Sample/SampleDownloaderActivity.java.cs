@@ -14,7 +14,7 @@ namespace ExpansionDownloader.Sample
     using Android.Views;
 
     using ExpansionDownloader.Client;
-    using ExpansionDownloader.impl;
+    using ExpansionDownloader.Database;
     using ExpansionDownloader.Service;
 
     /// <summary>
@@ -38,7 +38,7 @@ namespace ExpansionDownloader.Sample
         /// <summary>
         /// The downloader state.
         /// </summary>
-        private DownloaderClientState downloaderState;
+        private DownloaderState downloaderState;
 
         /// <summary>
         /// The is paused.
@@ -81,7 +81,7 @@ namespace ExpansionDownloader.Sample
         /// <param name="newState">
         /// The new state.
         /// </param>
-        public void OnDownloadStateChanged(DownloaderClientState newState)
+        public void OnDownloadStateChanged(DownloaderState newState)
         {
             if (this.downloaderState != newState)
             {
@@ -95,34 +95,34 @@ namespace ExpansionDownloader.Sample
             bool indeterminate = true;
             switch (newState)
             {
-                case DownloaderClientState.Idle:
-                case DownloaderClientState.Connecting:
-                case DownloaderClientState.FetchingUrl:
+                case DownloaderState.Idle:
+                case DownloaderState.Connecting:
+                case DownloaderState.FetchingUrl:
                     break;
-                case DownloaderClientState.Downloading:
+                case DownloaderState.Downloading:
                     indeterminate = false;
                     break;
-                case DownloaderClientState.Failed:
-                case DownloaderClientState.FailedCanceled:
-                case DownloaderClientState.FailedFetchingUrl:
-                case DownloaderClientState.FailedUnlicensed:
+                case DownloaderState.Failed:
+                case DownloaderState.FailedCanceled:
+                case DownloaderState.FailedFetchingUrl:
+                case DownloaderState.FailedUnlicensed:
                     paused = true;
                     showDashboard = false;
                     indeterminate = false;
                     break;
-                case DownloaderClientState.PausedNeedCellularPermission:
-                case DownloaderClientState.PausedWifiDisabledNeedCellularPermission:
+                case DownloaderState.PausedNeedCellularPermission:
+                case DownloaderState.PausedWifiDisabledNeedCellularPermission:
                     showDashboard = false;
                     paused = true;
                     indeterminate = false;
                     showCellMessage = true;
                     break;
-                case DownloaderClientState.PausedByRequest:
+                case DownloaderState.PausedByRequest:
                     paused = true;
                     indeterminate = false;
                     break;
-                case DownloaderClientState.PausedRoaming:
-                case DownloaderClientState.PausedSdCardUnavailable:
+                case DownloaderState.PausedRoaming:
+                case DownloaderState.PausedSdCardUnavailable:
                     paused = true;
                     indeterminate = false;
                     break;
@@ -131,7 +131,7 @@ namespace ExpansionDownloader.Sample
                     break;
             }
 
-            if (newState != DownloaderClientState.Completed)
+            if (newState != DownloaderState.Completed)
             {
                 this.dashboardView.Visibility = showDashboard ? ViewStates.Visible : ViewStates.Gone;
                 this.useCellDataView.Visibility = showCellMessage ? ViewStates.Visible : ViewStates.Gone;
@@ -157,7 +157,7 @@ namespace ExpansionDownloader.Sample
         /// </param>
         public void OnServiceConnected(Messenger m)
         {
-            this.downloaderService = DownloaderServiceMarshaller.CreateProxy(m);
+            this.downloaderService = ServiceMarshaller.CreateProxy(m);
             this.downloaderService.OnClientUpdated(this.downloaderServiceConnection.GetMessenger());
         }
 
@@ -341,7 +341,7 @@ namespace ExpansionDownloader.Sample
                     this, 0, intent, PendingIntentFlags.UpdateCurrent);
 
                 // Request to start the download
-                DownloadServiceRequirement startResult = DownloaderClientMarshaller.StartDownloadServiceIfRequired(
+                DownloadServiceRequirement startResult = DownloaderService.StartDownloadServiceIfRequired(
                     this, pendingIntent, typeof(SampleDownloaderService));
 
                 // The DownloaderService has started downloading the files, 
@@ -369,7 +369,7 @@ namespace ExpansionDownloader.Sample
         private void InitializeDownloadUi()
         {
             this.InitializeControls();
-            this.downloaderServiceConnection = DownloaderClientMarshaller.CreateStub(
+            this.downloaderServiceConnection = ClientMarshaller.CreateStub(
                 this, typeof(SampleDownloaderService));
         }
 
@@ -426,7 +426,7 @@ namespace ExpansionDownloader.Sample
         /// </param>
         private void OnEventHandler(object sender, EventArgs args)
         {
-            this.downloaderService.SetDownloadFlags(DownloaderServiceFlags.FlagsDownloadOverCellular);
+            this.downloaderService.SetDownloadFlags(ServiceFlags.FlagsDownloadOverCellular);
             this.downloaderService.RequestContinueDownload();
             this.useCellDataView.Visibility = ViewStates.Gone;
         }

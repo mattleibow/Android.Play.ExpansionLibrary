@@ -3,7 +3,7 @@ namespace ExpansionDownloader.Sample
     using Android.App;
     using Android.Content;
 
-    using ExpansionDownloader.impl;
+    using ExpansionDownloader.Service;
 
     /// <summary>
     /// The custom notification for API levels 11+.

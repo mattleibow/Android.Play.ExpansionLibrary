@@ -6,6 +6,7 @@ namespace ExpansionDownloader.Sample
     using Android.Content.PM;
 
     using ExpansionDownloader.Client;
+    using ExpansionDownloader.Service;
 
     /// <summary>
     /// The alarm receiver for this sample.
@@ -31,7 +32,7 @@ namespace ExpansionDownloader.Sample
 
             try
             {
-                DownloaderClientMarshaller.StartDownloadServiceIfRequired(
+                DownloaderService.StartDownloadServiceIfRequired(
                     context, intent, typeof(SampleDownloaderService));
             }
             catch (PackageManager.NameNotFoundException e)

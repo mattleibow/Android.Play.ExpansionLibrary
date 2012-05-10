@@ -2,12 +2,15 @@ namespace ExpansionDownloader.Sample
 {
     using Android.App;
 
+    using ExpansionDownloader.Service;
+
 #if NOTIFICATION_BUILDER
     using Android.Net;
     using Android.Telephony;
-#endif
 
-    using ExpansionDownloader.impl;
+    using ExpansionDownloader.Service;
+
+#endif
 
     [Service]
     public class SampleDownloaderService : DownloaderService

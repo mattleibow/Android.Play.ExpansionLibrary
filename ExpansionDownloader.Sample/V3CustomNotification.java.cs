@@ -5,7 +5,7 @@ namespace ExpansionDownloader.Sample
     using Android.Views;
     using Android.Widget;
 
-    using ExpansionDownloader.impl;
+    using ExpansionDownloader.Service;
 
     /// <summary>
     /// The v 3 custom notification.
