@@ -4,9 +4,11 @@
 
     public class ZipFileContentProvider : ApezProvider
     {
+        public const string ContentProviderAuthority = "system.io.compression.zip.tests.ZipFileContentProvider";
+
         protected override string Authority
         {
-            get { return "system.io.compression.zip.tests.ZipFileContentProvider"; }
+            get { return ContentProviderAuthority; }
         }
     }
 }

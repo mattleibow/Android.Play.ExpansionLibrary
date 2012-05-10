@@ -4,32 +4,31 @@
     using Android.OS;
     using Android.Widget;
 
+    using ExpansionDownloader.Sample;
+
     using Uri = Android.Net.Uri;
 
-    [Activity(Label = "TheZipTest", MainLauncher = true, Icon = "@drawable/icon")]
+    [Activity]
     public class ZipTestActivity : Activity
     {
         private VideoView video;
-
-        private const string ZipFile = "/sdcard/Archive.zip";
 
         protected override void OnCreate(Bundle bundle)
         {
             base.OnCreate(bundle);
 
             // Set our view from the "main" layout resource
-            SetContentView(Resource.Layout.Main);
+            SetContentView(Resource.Layout.video_player);
 
-            this.FindViewById<Button>(Resource.Id.MainPlay).Click += delegate { this.ButtonClick("video_001_sting.m4v"); };
-            this.FindViewById<Button>(Resource.Id.PatchPlay).Click += delegate { this.ButtonClick("03_texts.mp4"); };
+            this.FindViewById<Button>(Resource.Id.MainPlay).Click += delegate { this.ButtonClick("001-Sting.m4v"); };
+            this.FindViewById<Button>(Resource.Id.PatchPlay).Click += delegate { this.ButtonClick("01_intro.mp4"); };
 
             this.video = this.FindViewById<VideoView>(Resource.Id.MyVideo);
         }
 
         private void ButtonClick(string file)
         {
-            const string Authority = "system.io.compression.zip.tests.ZipFileContentProvider";
-            var uri = Uri.Parse("content://" + Authority + "/" + file);
+            var uri = Uri.Parse("content://" + ZipFileContentProvider.ContentProviderAuthority + "/" + file);
             this.video.SetVideoURI(uri);
             
             // add the start/pause controls

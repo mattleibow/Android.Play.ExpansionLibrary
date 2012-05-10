@@ -20,6 +20,7 @@
     <AndroidSupportedAbis>armeabi</AndroidSupportedAbis>
     <AndroidStoreUncompressedFileExtensions />
     <MandroidI18n />
+    <TargetFrameworkVersion>v2.2</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -48,19 +49,32 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SampleDownloaderActivity.Design.cs" />
     <Compile Include="Resources\Resource.Designer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SampleAlarmReceiver.java.cs" />
-    <Compile Include="SampleDownloaderActivity.java.cs" />
-    <Compile Include="SampleDownloaderService.java.cs" />
-    <Compile Include="V3CustomNotification.java.cs" />
+    <Compile Include="SampleAlarmReceiver.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="SampleDownloaderActivity.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="SampleDownloaderActivity.Design.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="SampleDownloaderService.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="V3CustomNotification.cs" />
+    <Compile Include="ZipFileContentProvider.cs" />
+    <Compile Include="ZipTestActivity.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="Resources\Values\styles.xml" />
     <AndroidResource Include="Resources\Layout\Main.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
+    <AndroidResource Include="Resources\Layout\notification.xml" />
+    <AndroidResource Include="Resources\Layout\status_bar_ongoing_event_progress_bar.xml" />
+    <AndroidResource Include="Resources\Layout\video_player.axml" />
+    <AndroidResource Include="Resources\Values\styles.xml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\Values\Strings.xml" />
@@ -70,9 +84,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidResource Include="Resources\Layout\notification.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExpansionDownloader\ExpansionDownloader.csproj">
@@ -90,8 +101,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\AndroidManifest.xml" />
-    <AndroidResource Include="Resources\Layout\status_bar_ongoing_event_progress_bar.xml" />
-    <AndroidResource Include="Resources\Drawable\Icon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

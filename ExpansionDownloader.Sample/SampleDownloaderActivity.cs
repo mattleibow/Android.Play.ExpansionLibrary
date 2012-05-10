@@ -3,6 +3,7 @@ namespace ExpansionDownloader.Sample
     using System;
     using System.IO;
     using System.IO.Compression.Zip;
+    using System.IO.Compression.Zip.Tests;
     using System.Linq;
     using System.Threading;
 
@@ -17,10 +18,12 @@ namespace ExpansionDownloader.Sample
     using ExpansionDownloader.Database;
     using ExpansionDownloader.Service;
 
+    using Debug = System.Diagnostics.Debug;
+
     /// <summary>
     /// The sample downloader activity.
     /// </summary>
-    [Activity(Label = "ExpansionDownloader.Sample", MainLauncher = true, Icon = "@drawable/icon")]
+    [Activity(Label = "ExpansionDownloader.Sample", MainLauncher = true, Icon = "@drawable/ic_launcher", NoHistory = true)]
     public partial class SampleDownloaderActivity : Activity, IDownloaderClient
     {
         #region Constants and Fields
@@ -187,7 +190,8 @@ namespace ExpansionDownloader.Sample
 
             if (delivered)
             {
-                return;
+                StartActivity(typeof(ZipTestActivity));
+                this.Finish();
             }
 
             if (!this.GetExpansionFiles())
@@ -265,14 +269,8 @@ namespace ExpansionDownloader.Sample
         {
 #if NOTIFICATION_BUILDER
             CustomNotificationFactory.Notification = new V11CustomNotification();
-            CustomNotificationFactory.MaxBytesOverMobile =
-                DownloadManager.GetMaxBytesOverMobile(this.ApplicationContext).LongValue();
-            CustomNotificationFactory.RecommendedMaxBytesOverMobile =
-                DownloadManager.GetRecommendedMaxBytesOverMobile(this.ApplicationContext).LongValue();
 #else
             CustomNotificationFactory.Notification = new V3CustomNotification();
-            CustomNotificationFactory.MaxBytesOverMobile = int.MaxValue;
-            CustomNotificationFactory.RecommendedMaxBytesOverMobile = 2097152L;
 #endif
         }
 
@@ -292,7 +290,12 @@ namespace ExpansionDownloader.Sample
             this.RunOnUiThread(
                 delegate
                     {
-                        this.pauseButton.Click += delegate { this.Finish(); };
+                        this.pauseButton.Click += delegate
+                            {
+                                Finish();
+                                StartActivity(typeof(ZipTestActivity));
+                            };
+
                         this.dashboardView.Visibility = ViewStates.Visible;
                         this.useCellDataView.Visibility = ViewStates.Gone;
 
@@ -355,7 +358,7 @@ namespace ExpansionDownloader.Sample
             }
             catch (PackageManager.NameNotFoundException e)
             {
-                System.Diagnostics.Debug.WriteLine("Cannot find own package! MAYDAY!");
+                Debug.WriteLine("Cannot find own package! MAYDAY!");
                 e.PrintStackTrace();
             }
 

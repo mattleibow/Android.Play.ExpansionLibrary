@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LicenseVerificationLibrary.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Zip", "System.IO.Compression.Zip\System.IO.Compression.Zip.csproj", "{6064DA47-9606-45E5-B87E-13765E4BE628}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Zip.Tests", "System.IO.Compression.Zip.Tests\System.IO.Compression.Zip.Tests.csproj", "{AC38A536-4F61-4D1C-A93F-BC14003A652C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpansionDownloader.Sample.Honeycomb", "ExpansionDownloader.Sample.Honeycomb\ExpansionDownloader.Sample.Honeycomb.csproj", "{1AF7FCB0-6343-47E7-98F5-809D040E9DE5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Other Data", "Other Data", "{92835017-22D7-4218-A171-D068BAC83E66}"
@@ -88,19 +86,6 @@ Global
 		{6064DA47-9606-45E5-B87E-13765E4BE628}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{6064DA47-9606-45E5-B87E-13765E4BE628}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{6064DA47-9606-45E5-B87E-13765E4BE628}.Release|x86.ActiveCfg = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|Mixed Platforms.Deploy.0 = Release|Any CPU
-		{AC38A536-4F61-4D1C-A93F-BC14003A652C}.Release|x86.ActiveCfg = Release|Any CPU
 		{1AF7FCB0-6343-47E7-98F5-809D040E9DE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1AF7FCB0-6343-47E7-98F5-809D040E9DE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AF7FCB0-6343-47E7-98F5-809D040E9DE5}.Debug|Any CPU.Deploy.0 = Debug|Any CPU

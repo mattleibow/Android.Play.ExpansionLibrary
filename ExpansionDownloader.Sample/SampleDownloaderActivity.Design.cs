@@ -1,7 +1,13 @@
 namespace ExpansionDownloader.Sample
 {
+    using System.Linq;
+
+    using Android.Content;
     using Android.Views;
     using Android.Widget;
+
+    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Service;
 
     /// <summary>
     /// The sample downloader activity.

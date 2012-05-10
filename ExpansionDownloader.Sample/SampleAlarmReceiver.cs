@@ -5,7 +5,6 @@ namespace ExpansionDownloader.Sample
     using Android.Content;
     using Android.Content.PM;
 
-    using ExpansionDownloader.Client;
     using ExpansionDownloader.Service;
 
     /// <summary>
@@ -28,8 +27,6 @@ namespace ExpansionDownloader.Sample
         /// </param>
         public override void OnReceive(Context context, Intent intent)
         {
-            Debug.WriteLine("SampleAlarmReceiver.OnReceive");
-
             try
             {
                 DownloaderService.StartDownloadServiceIfRequired(

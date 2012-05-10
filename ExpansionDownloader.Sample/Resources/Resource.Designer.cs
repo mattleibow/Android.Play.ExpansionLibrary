@@ -29,9 +29,6 @@ namespace ExpansionDownloader.Sample
 			// aapt resource value: 0x7f020000
 			public const int ic_launcher = 2130837504;
 			
-			// aapt resource value: 0x7f020001
-			public const int Icon = 2130837505;
-			
 			private Drawable()
 			{
 			}
@@ -39,6 +36,15 @@ namespace ExpansionDownloader.Sample
 		
 		public partial class Id
 		{
+			
+			// aapt resource value: 0x7f060017
+			public const int MainPlay = 2131099671;
+			
+			// aapt resource value: 0x7f060019
+			public const int MyVideo = 2131099673;
+			
+			// aapt resource value: 0x7f060018
+			public const int PatchPlay = 2131099672;
 			
 			// aapt resource value: 0x7f06000f
 			public const int appIcon = 2131099663;
@@ -125,6 +131,9 @@ namespace ExpansionDownloader.Sample
 			
 			// aapt resource value: 0x7f030002
 			public const int status_bar_ongoing_event_progress_bar = 2130903042;
+			
+			// aapt resource value: 0x7f030003
+			public const int video_player = 2130903043;
 			
 			private Layout()
 			{
