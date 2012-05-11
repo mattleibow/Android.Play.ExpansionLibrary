@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace LicenseVerificationLibrary.Tests
+namespace LicenseVerificationLibrary.Sample
 {
 	
 	
@@ -27,7 +27,7 @@ namespace LicenseVerificationLibrary.Tests
 		{
 			
 			// aapt resource value: 0x7f020000
-			public const int icon = 2130837504;
+			public const int Icon = 2130837504;
 			
 			private Drawable()
 			{
@@ -38,10 +38,7 @@ namespace LicenseVerificationLibrary.Tests
 		{
 			
 			// aapt resource value: 0x7f050000
-			public const int RunTests = 2131034112;
-			
-			// aapt resource value: 0x7f050001
-			public const int status_text = 2131034113;
+			public const int MyButton = 2131034112;
 			
 			private Id()
 			{
@@ -52,7 +49,7 @@ namespace LicenseVerificationLibrary.Tests
 		{
 			
 			// aapt resource value: 0x7f030000
-			public const int main = 2130903040;
+			public const int Main = 2130903040;
 			
 			private Layout()
 			{
@@ -62,11 +59,11 @@ namespace LicenseVerificationLibrary.Tests
 		public partial class String
 		{
 			
+			// aapt resource value: 0x7f040000
+			public const int ApplicationName = 2130968576;
+			
 			// aapt resource value: 0x7f040004
 			public const int allow = 2130968580;
-			
-			// aapt resource value: 0x7f040000
-			public const int app_name = 2130968576;
 			
 			// aapt resource value: 0x7f040005
 			public const int application_error = 2130968581;

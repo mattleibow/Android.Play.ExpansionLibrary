@@ -4,22 +4,18 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
-  <TextView
-      android:id="@+id/status_text"
-      android:layout_width="fill_parent"
-      android:layout_height="0dip"
-      android:layout_weight="1"
-    />
-  <Button
-      android:id="@+id/check_license_button"
-      android:layout_width="fill_parent"
-      android:layout_height="wrap_content"
-      android:text="@string/check_license"
-    />
   <Button
       android:id="@+id/RunTests"
       android:layout_width="fill_parent"
       android:layout_height="wrap_content"
       android:text="Run Tests"
     />
+  <TextView
+      android:textAppearance="?android:attr/textAppearanceMedium"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:id="@+id/status_text"
+      android:singleLine="false"
+      android:minLines="2"
+      android:text="Press button to start" />
 </LinearLayout>

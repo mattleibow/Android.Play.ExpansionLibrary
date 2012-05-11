@@ -19,39 +19,38 @@ namespace LicenseVerificationLibrary.Tests
         protected void AssertTrue(bool result)
         {
             if (!result)
+            {
                 throw new AssertionException();
+            }
         }
 
         protected void AssertFalse(bool result)
         {
             if (result)
+            {
                 throw new AssertionException();
+            }
         }
 
         protected void AssertEquals(long expected, long actual)
         {
             if (expected != actual)
+            {
                 throw new AssertionException("Expected: " + expected + " Actual: " + actual);
+            }
         }
 
         protected void AssertEquals(string expected, string actual)
         {
             if (expected != actual)
+            {
                 throw new AssertionException("Expected: " + expected + " Actual: " + actual);
-        }
-
-        public void Execute()
-        {
-            SetUp();
-            RunTests();
-            CleanUp();
+            }
         }
 
         public virtual void SetUp()
         {
         }
-
-        public abstract void RunTests();
 
         public virtual void CleanUp()
         {

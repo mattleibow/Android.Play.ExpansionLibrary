@@ -37,30 +37,22 @@ namespace LicenseVerificationLibrary.Tests
             spe.Commit();
         }
 
-        public override void RunTests()
-        {
-            this.TestCorruptDataRetunsDefaultString();
-            this.TestGetDefaultNullString();
-            this.TestGetDefaultString();
-            this.TestGetString();
-        }
-
-        private void TestGetString()
+        public void TestGetString()
         {
             AssertEquals("Hello world", op.GetString("testString", "fail"));
         }
 
-        private void TestGetDefaultString()
+        public void TestGetDefaultString()
         {
             AssertEquals("Android rocks", op.GetString("noExist", "Android rocks"));
         }
 
-        private void TestGetDefaultNullString()
+        public void TestGetDefaultNullString()
         {
             AssertEquals(null, op.GetString("noExist", null));
         }
 
-        private void TestCorruptDataRetunsDefaultString()
+        public void TestCorruptDataRetunsDefaultString()
         {
             // Insert non-obfuscated string
             ISharedPreferencesEditor spe = sp.Edit();

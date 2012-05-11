@@ -14,13 +14,6 @@ namespace LicenseVerificationLibrary.Tests
         {
         }
 
-        public override void RunTests()
-        {
-            this.TestExtraDataParsed();
-            this.TestNoFailureOnEncodedExtras();
-            this.TestRetryCountsCleared();
-        }
-
         public override void SetUp()
         {
             var salt = new byte[] { 104, 12, 112, 82, 85, 10, 11, 61, 15, 54, 44, 66, 117, 89, 64, 110, 53, 123, 33 };
@@ -32,7 +25,7 @@ namespace LicenseVerificationLibrary.Tests
         /// <summary>
         /// Verify that extra data is parsed correctly on a LICENSED resopnse..
         /// </summary>
-        private void TestExtraDataParsed()
+        public void TestExtraDataParsed()
         {
             const string SampleResponse = "0|1579380448|com.example.android.market.licensing|1|" +
                                           "ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=11&GT=22&GR=33" +
@@ -65,7 +58,7 @@ namespace LicenseVerificationLibrary.Tests
         /// <summary>
         /// Verify that retry counts are cleared after getting a NOT_LICENSED response.
         /// </summary>
-        private void TestRetryCountsCleared()
+        public void TestRetryCountsCleared()
         {
             const string SampleResponse =
                 "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&GT=2&GR=3";
@@ -84,7 +77,7 @@ namespace LicenseVerificationLibrary.Tests
             AssertEquals(0L, this.policy.MaxRetries);
         }
 
-        private void TestNoFailureOnEncodedExtras()
+        public void TestNoFailureOnEncodedExtras()
         {
             const string SampleResponse =
                 "0|1579380448|com.example.android.market.licensing|1|ADf8I4ajjgc1P5ZI1S1DN/YIPIUNPECLrg==|1279578835423:VT=1&test=hello%20world%20%26%20friends&GT=2&GR=3";
