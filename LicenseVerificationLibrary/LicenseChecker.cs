@@ -13,6 +13,9 @@ namespace LicenseVerificationLibrary
     using Java.Security;
     using Java.Security.Spec;
 
+    using LicenseVerificationLibrary.DeviceLimiter;
+    using LicenseVerificationLibrary.Policy;
+
     using Debug = System.Diagnostics.Debug;
 
     /// <summary>
@@ -165,17 +168,17 @@ namespace LicenseVerificationLibrary
         /// </param>
         public void CheckAccess(ILicenseCheckerCallback callback)
         {
+            const bool DontCacheInDebug = true;
+
             lock (this.locker)
             {
                 // If we have a valid recent LICENSED response, we can skip asking Market/Play.
-                /*
-                if (_policy.AllowAccess())
+                if (!DontCacheInDebug && this.policy.AllowAccess())
                 {
                     System.Diagnostics.Debug.WriteLine("Using cached license response");
                     callback.Allow(PolicyServerResponse.Licensed);
                 }
                 else
-                */
                 {
                     var validator = new LicenseValidator(
                         this.policy, 

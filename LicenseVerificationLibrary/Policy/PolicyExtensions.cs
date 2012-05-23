@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Policy
 {
     using System;
     using System.Collections.Generic;

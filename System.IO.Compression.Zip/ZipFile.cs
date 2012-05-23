@@ -18,11 +18,6 @@ namespace System.IO.Compression.Zip
         private const float SmoothingFactor = 0.005F;
 
         /// <summary>
-        /// Default filename encoder
-        /// </summary>
-        private static readonly Encoding DefaultEncoding = Encoding.GetEncoding(437);
-
-        /// <summary>
         /// Central dir image
         /// </summary>
         private byte[] centralDirImage;
@@ -476,7 +471,7 @@ namespace System.IO.Compression.Zip
             uint headerOffset = BitConverter.ToUInt32(this.centralDirImage, pointer + 42);
             int commentsStart = 46 + filenameSize + extraSize;
             int headerSize = commentsStart + commentSize;
-            Encoding encoder = encodeUtf8 ? Encoding.UTF8 : DefaultEncoding;
+            Encoding encoder = encodeUtf8 ? Encoding.UTF8 : Encoding.Default;
             string comment = null;
             if (commentSize > 0)
             {

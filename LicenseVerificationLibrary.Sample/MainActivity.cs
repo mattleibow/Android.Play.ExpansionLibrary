@@ -9,6 +9,9 @@
     using Android.Views;
     using Android.Widget;
 
+    using LicenseVerificationLibrary.Obfuscator;
+    using LicenseVerificationLibrary.Policy;
+
     using Uri = Android.Net.Uri;
 
     /// <summary>

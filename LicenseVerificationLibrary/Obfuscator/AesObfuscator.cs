@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Obfuscator
 {
     using System;
     using System.Text;
@@ -146,14 +146,6 @@ namespace LicenseVerificationLibrary
         /// <returns>
         /// The unobfuscate.
         /// </returns>
-        /// <exception cref="ValidationException">
-        /// </exception>
-        /// <exception cref="ValidationException">
-        /// </exception>
-        /// <exception cref="ValidationException">
-        /// </exception>
-        /// <exception cref="ValidationException">
-        /// </exception>
         /// <exception cref="ValidationException">
         /// </exception>
         /// <exception cref="RuntimeException">

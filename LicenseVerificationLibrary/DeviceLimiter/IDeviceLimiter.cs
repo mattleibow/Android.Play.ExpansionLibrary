@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.DeviceLimiter
 {
     /// <summary>
     /// The i device limiter.

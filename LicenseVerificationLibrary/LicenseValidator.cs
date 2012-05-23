@@ -5,6 +5,9 @@ namespace LicenseVerificationLibrary
     using Java.Lang;
     using Java.Security;
 
+    using LicenseVerificationLibrary.DeviceLimiter;
+    using LicenseVerificationLibrary.Policy;
+
     /// <summary>
     /// Contains data related to a licensing request and methods to verify and process the response.
     /// </summary>

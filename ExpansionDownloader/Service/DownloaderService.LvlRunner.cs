@@ -11,6 +11,8 @@ namespace ExpansionDownloader.Service
     using Java.Lang;
 
     using LicenseVerificationLibrary;
+    using LicenseVerificationLibrary.Obfuscator;
+    using LicenseVerificationLibrary.Policy;
 
     using Exception = System.Exception;
     using Object = Java.Lang.Object;
@@ -174,7 +176,7 @@ namespace ExpansionDownloader.Service
                     {
                         DownloadsDatabase database = DownloadsDatabase.Instance;
 
-                        int count = this.policy.GetExpansionUrlCount();
+                        int count = this.policy.GetExpansionFilesCount();
                         if (count == 0)
                         {
                             Debug.WriteLine("No expansion packs.");
@@ -185,23 +187,22 @@ namespace ExpansionDownloader.Service
                         {
                             var type = (ApkExpansionPolicy.ExpansionFileType)index;
 
-                            string currentFileName = this.policy.GetExpansionFileName(type);
+                            var expansionFile = this.policy.GetExpansionFile(type);
+                            string currentFileName = expansionFile.FileName;
                             if (currentFileName != null)
                             {
                                 var di = new DownloadInfo
                                     {
                                         ExpansionFileType = type,
                                         FileName = currentFileName,
-                                        //Package = this.Context.PackageName
                                     };
 
-                                long fileSize = this.policy.GetExpansionFileSize(type);
-                                if (this.Context.HandleFileUpdated(database, currentFileName, fileSize))
+                                if (this.Context.HandleFileUpdated(database, currentFileName, expansionFile.FileSize))
                                 {
                                     status = DownloadStatus.Unknown;
                                     di.ResetDownload();
-                                    di.Uri = this.policy.GetExpansionUrl(type);
-                                    di.TotalBytes = fileSize;
+                                    di.Uri = expansionFile.Url;
+                                    di.TotalBytes = expansionFile.FileSize;
                                     di.Status = status;
                                     database.UpdateDownload(di);
                                 }
@@ -215,15 +216,15 @@ namespace ExpansionDownloader.Service
                                         // was delivered by Market or through another mechanism
                                         Debug.WriteLine("file {0} found. Not downloading.", di.FileName);
                                         di.Status = DownloadStatus.Success;
-                                        di.TotalBytes = fileSize;
-                                        di.CurrentBytes = fileSize;
-                                        di.Uri = this.policy.GetExpansionUrl(type);
+                                        di.TotalBytes = expansionFile.FileSize;
+                                        di.CurrentBytes = expansionFile.FileSize;
+                                        di.Uri = expansionFile.Url;
                                         database.UpdateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
-                                        dbdi.Uri = this.policy.GetExpansionUrl(type);
+                                        dbdi.Uri = expansionFile.Url;
                                         database.UpdateDownload(dbdi);
                                         status = DownloadStatus.Unknown;
                                     }

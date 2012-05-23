@@ -46,6 +46,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CallbackErrorCode.cs" />
+    <Compile Include="DeviceLimiter\IDeviceLimiter.cs" />
+    <Compile Include="DeviceLimiter\NullDeviceLimiter.cs" />
     <Compile Include="ILicenseResultListener.cs" />
     <Compile Include="LicenseResultListenerStub.cs">
       <SubType>Code</SubType>
@@ -54,7 +56,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="LicensingServiceStub.cs" />
-    <Compile Include="IPolicy.cs" />
     <Compile Include="LicenseChecker.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -64,24 +65,21 @@
     <Compile Include="LicenseValidator.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="IDeviceLimiter.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="PolicyExtensions.cs" />
+    <Compile Include="Obfuscator\AesObfuscator.cs" />
+    <Compile Include="Obfuscator\IObfuscator.cs" />
+    <Compile Include="Obfuscator\PreferenceObfuscator.cs" />
+    <Compile Include="Obfuscator\ValidationException.cs" />
+    <Compile Include="Policy\PolicyExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AesObfuscator.cs" />
-    <Compile Include="ApkExpansionPolicy.cs" />
-    <Compile Include="NullDeviceLimiter.cs" />
-    <Compile Include="IObfuscator.cs" />
     <Compile Include="PolicyServerResponse.cs" />
-    <Compile Include="PreferenceObfuscator.cs" />
+    <Compile Include="Policy\ApkExpansionPolicy.cs" />
+    <Compile Include="Policy\IPolicy.cs" />
+    <Compile Include="Policy\ServerManagedPolicy.cs" />
+    <Compile Include="Policy\StrictPolicy.cs" />
     <Compile Include="ResponseData.cs" />
-    <Compile Include="ServerManagedPolicy.cs" />
     <Compile Include="ServerResponseCode.cs" />
-    <Compile Include="StrictPolicy.cs" />
-    <Compile Include="ValidationException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

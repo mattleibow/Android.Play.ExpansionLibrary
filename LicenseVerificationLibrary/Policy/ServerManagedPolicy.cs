@@ -1,9 +1,12 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Policy
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
 
     using Android.Content;
+
+    using LicenseVerificationLibrary.Obfuscator;
 
     /// <summary>
     /// <para>
@@ -304,8 +307,7 @@ namespace LicenseVerificationLibrary
                     Dictionary<string, string> extras;
                     if (!PolicyExtensions.TryDecodeExtras(rawData.Extra, out extras))
                     {
-                        System.Diagnostics.Debug.WriteLine(
-                            "Invalid syntax error while decoding extras data from server.");
+                        Debug.WriteLine("Invalid syntax error while decoding extras data from server.");
                     }
                     else
                     {

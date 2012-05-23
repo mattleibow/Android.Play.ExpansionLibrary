@@ -2,6 +2,8 @@ namespace LicenseVerificationLibrary.Tests
 {
     using Android.Content;
 
+    using LicenseVerificationLibrary.Policy;
+
     public class StrictPolicyTest : TestCase
     {
         public StrictPolicyTest(Context context)

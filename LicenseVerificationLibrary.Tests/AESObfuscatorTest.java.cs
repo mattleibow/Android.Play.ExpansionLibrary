@@ -4,6 +4,8 @@ namespace LicenseVerificationLibrary.Tests
     
     using Android.Content;
 
+    using LicenseVerificationLibrary.Obfuscator;
+
     public class AesObfuscatorTest : TestCase
     {
         private static readonly byte[] Salt = new byte[]

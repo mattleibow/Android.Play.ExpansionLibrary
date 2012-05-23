@@ -3,6 +3,7 @@ namespace ExpansionDownloader.Service
     using System.Text;
 
     using LicenseVerificationLibrary;
+    using LicenseVerificationLibrary.Policy;
 
     /// <summary>
     /// The download info.

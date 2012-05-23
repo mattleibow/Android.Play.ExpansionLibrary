@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Policy
 {
     /// <summary>
     /// The i policy.

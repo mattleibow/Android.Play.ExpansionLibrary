@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Obfuscator
 {
     using System;
     using System.Diagnostics;
@@ -115,6 +115,11 @@ namespace LicenseVerificationLibrary
         public T GetValue<T>(string key, T defValue)
         {
             return (T)Convert.ChangeType(this.GetString(key, defValue.ToString()), typeof(T));
+        }
+
+        public T GetValue<T>(string key)
+        {
+            return (T)Convert.ChangeType(this.GetString(key, default(T).ToString()), typeof(T));
         }
 
         /// <summary>

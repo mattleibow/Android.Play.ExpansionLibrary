@@ -4,7 +4,10 @@ namespace LicenseVerificationLibrary.Tests
     using Android.Provider;
 
     using Java.Net;
-    
+
+    using LicenseVerificationLibrary.Obfuscator;
+    using LicenseVerificationLibrary.Policy;
+
     public class ApkExpansionPolicyTest : TestCase
     {
         private ApkExpansionPolicy policy;
@@ -40,19 +43,23 @@ namespace LicenseVerificationLibrary.Tests
             AssertEquals(11L, this.policy.ValidityTimestamp);
             AssertEquals(22L, this.policy.RetryUntil);
             AssertEquals(33L, this.policy.MaxRetries);
-            AssertEquals(2, this.policy.GetExpansionUrlCount());
-            AssertEquals("main.3.com.example.android.market.licensing.obb", this.policy.GetExpansionFileName(ApkExpansionPolicy.ExpansionFileType.MainFile));
-            AssertEquals(687801613L, this.policy.GetExpansionFileSize(ApkExpansionPolicy.ExpansionFileType.MainFile));
+            AssertEquals(2, this.policy.GetExpansionFilesCount());
+
+            var mainFile = this.policy.GetExpansionFile(ApkExpansionPolicy.ExpansionFileType.MainFile);
+            var patchFile = this.policy.GetExpansionFile(ApkExpansionPolicy.ExpansionFileType.PatchFile);
+
+            AssertEquals("main.3.com.example.android.market.licensing.obb", mainFile.FileName);
+            AssertEquals(687801613L, mainFile.FileSize);
             AssertEquals(
                 URLDecoder.Decode(
                     "http://jmt17.google.com/vending_kila/download/AppDownload?packageName%3Dcom.example.android.market.licensing%26versionCode%3D3%26ft%3Do%26token%3DAOTCm0RwlzqFYylBNSCTLJApGH0cYtm9g8mGMdUhKLSLJW4v9VM8GLj4GVlGU5oyW6y3FsXrJiQqMunTGw9B"),
-                this.policy.GetExpansionUrl(0));
-            AssertEquals("patch.3.com.example.android.market.licensing.obb", this.policy.GetExpansionFileName(ApkExpansionPolicy.ExpansionFileType.PatchFile));
-            AssertEquals(204233, this.policy.GetExpansionFileSize(ApkExpansionPolicy.ExpansionFileType.PatchFile));
+                mainFile.Url);
+            AssertEquals("patch.3.com.example.android.market.licensing.obb", patchFile.FileName);
+            AssertEquals(204233, patchFile.FileSize);
             AssertEquals(
                 URLDecoder.Decode(
                     "http://jmt17.google.com/vending_kila/download/AppDownload?packageName%3Dcom.example.android.market.licensing%26versionCode%3D3%26ft%3Do%26token%3DAOTCm0RwlzqFYylBNSCTLJApGH0cYtm9g8mGMdUhKLSLJW4v9VM8GLsdSDjefsdfEKdVaseEsfaMeifTek9B"),
-                this.policy.GetExpansionUrl(ApkExpansionPolicy.ExpansionFileType.PatchFile));
+                patchFile.Url);
         }
 
         /// <summary>

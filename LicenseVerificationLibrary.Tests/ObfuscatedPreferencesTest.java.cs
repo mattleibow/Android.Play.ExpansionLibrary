@@ -3,6 +3,8 @@ using Android.Provider;
 
 namespace LicenseVerificationLibrary.Tests
 {
+    using LicenseVerificationLibrary.Obfuscator;
+
     public class ObfuscatedPreferencesTest : TestCase
     {
         private const string Filename = "com.android.vending.licnese.test.ObfuscatedPreferencePopulatedTest";

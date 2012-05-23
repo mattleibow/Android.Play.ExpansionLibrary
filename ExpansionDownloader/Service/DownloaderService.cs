@@ -18,6 +18,7 @@ namespace ExpansionDownloader.Service
     using Java.Util;
 
     using LicenseVerificationLibrary;
+    using LicenseVerificationLibrary.Policy;
 
     using Debug = System.Diagnostics.Debug;
 

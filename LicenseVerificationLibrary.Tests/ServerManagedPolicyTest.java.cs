@@ -3,6 +3,9 @@ using Android.Provider;
 
 namespace LicenseVerificationLibrary.Tests
 {
+    using LicenseVerificationLibrary.Obfuscator;
+    using LicenseVerificationLibrary.Policy;
+
     public class ServerManagedPolicyTest : TestCase
     {
         private ServerManagedPolicy policy;

@@ -1,4 +1,4 @@
-namespace LicenseVerificationLibrary
+namespace LicenseVerificationLibrary.Obfuscator
 {
     /// <summary>
     /// The i obfuscator.
