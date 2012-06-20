@@ -1,6 +1,7 @@
 namespace ExpansionDownloader.Database
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -12,107 +13,40 @@ namespace ExpansionDownloader.Database
     /// <summary>
     /// The downloads database.
     /// </summary>
-    public class DownloadsDatabase
+    public static class DownloadsDatabase
     {
-        #region Constants and Fields
+        private volatile static DownloadStatus downloadStatus;
+        private volatile static ServiceFlags flags;
+        private volatile static int versionCode;
 
-        /// <summary>
-        /// The locker.
-        /// </summary>
-        private static readonly object Locker = new object();
-
-        /// <summary>
-        /// The app path.
-        /// </summary>
-        private static string AppPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-        /// <summary>
-        /// The database path.
-        /// </summary>
-        private static string DatabasePath = Path.Combine(AppPath, "DownloadDatabase");
-
-        /// <summary>
-        /// The _instance.
-        /// </summary>
-        private static DownloadsDatabase instance;
-
-        /// <summary>
-        /// the curent status of the database
-        /// </summary>
-        private DownloadStatus downloadStatus;
-
-        /// <summary>
-        /// The flags.
-        /// </summary>
-        private ServiceFlags flags;
-
-        #endregion
-
-        #region Constructors and Destructors
-
-        /// <summary>
-        /// Prevents a default instance of the <see cref="DownloadsDatabase"/> class from being created.
-        /// </summary>
-        private DownloadsDatabase()
+        static DownloadsDatabase()
         {
-            this.downloadStatus = DownloadStatus.Unknown;
-            this.VersionCode = -1;
-
-            if (!Directory.Exists(DatabasePath))
-            {
-                Directory.CreateDirectory(DatabasePath);
-            }
-
-            var metadata = GetData<MetadataTable>();
-            if (metadata != null)
-            {
-                this.VersionCode = metadata.ApkVersion;
-                this.DownloadStatus = metadata.DownloadStatus;
-                this.Flags = metadata.Flags;
-            }
+            downloadStatus = XmlDatastore.GetData<MetadataTable>().DownloadStatus;
+            flags = XmlDatastore.GetData<MetadataTable>().Flags;
+            versionCode = XmlDatastore.GetData<MetadataTable>().ApkVersion;
         }
-
-        #endregion
 
         #region Public Properties
 
         /// <summary>
-        /// Returns a new database if there is none, or the existing database 
-        /// if there is an existing one already.
-        /// </summary>
-        /// <returns>
-        /// The instance of the database.
-        /// </returns>
-        public static DownloadsDatabase Instance
-        {
-            get
-            {
-                lock (Locker)
-                {
-                    return instance ?? (instance = new DownloadsDatabase());
-                }
-            }
-        }
-
-        /// <summary>
         /// Gets the status.
         /// </summary>
-        public DownloadStatus DownloadStatus
+        public static DownloadStatus DownloadStatus
         {
             get
             {
-                return this.downloadStatus;
+                return downloadStatus;
             }
 
             set
             {
-                if (this.DownloadStatus != value)
+                if (downloadStatus == value)
                 {
-                    var metadata = GetMetadata();
-                    metadata.DownloadStatus = value;
-                    SaveData(metadata);
+                    downloadStatus = value;
 
-                    this.downloadStatus = value;
+                    var metadata = XmlDatastore.GetData<MetadataTable>();
+                    metadata.DownloadStatus = value;
+                    XmlDatastore.SaveData(metadata);
                 }
             }
         }
@@ -120,22 +54,22 @@ namespace ExpansionDownloader.Database
         /// <summary>
         /// Gets Flags.
         /// </summary>
-        public ServiceFlags Flags
+        public static ServiceFlags Flags
         {
             get
             {
-                return this.flags;
+                return flags;
             }
 
             set
             {
-                if (this.flags != value)
+                if (flags == value)
                 {
-                    var metadata = GetMetadata();
-                    metadata.Flags = value;
-                    SaveData(metadata);
+                    flags = value;
 
-                    this.flags = value;
+                    var metadata = XmlDatastore.GetData<MetadataTable>();
+                    metadata.Flags = value;
+                    XmlDatastore.SaveData(metadata);
                 }
             }
         }
@@ -143,30 +77,25 @@ namespace ExpansionDownloader.Database
         /// <summary>
         /// Gets a value indicating whether IsDownloadRequired.
         /// </summary>
-        public bool IsDownloadRequired
+        public static bool IsDownloadRequired
         {
             get
             {
-                var downloadInfos = this.GetDownloads();
+                var downloadInfos = XmlDatastore.GetData<List<DownloadInfo>>();
                 return !downloadInfos.Any() || downloadInfos.Any(x => x.Status != DownloadStatus.None);
-            }
-        }
-
-        /// <summary>
-        /// Gets LastCheckedVersionCode.
-        /// </summary>
-        public int LastCheckedVersionCode
-        {
-            get
-            {
-                return this.VersionCode;
             }
         }
 
         /// <summary>
         /// Gets VersionCode.
         /// </summary>
-        public int VersionCode { get; private set; }
+        public static int VersionCode
+        {
+            get
+            {
+                return versionCode;
+            }
+        }
 
         #endregion
 
@@ -182,40 +111,35 @@ namespace ExpansionDownloader.Database
         /// <returns>
         /// The download information for the filename
         /// </returns>
-        public DownloadInfo GetDownloadInfo(string fileName)
+        public static DownloadInfo GetDownloadInfo(string fileName)
         {
-            return this.GetDownloads().FirstOrDefault(x => x.FileName == fileName);
+            return XmlDatastore.GetData<List<DownloadInfo>>().FirstOrDefault(x => x.FileName == fileName);
         }
 
-        /// <summary>
-        /// The get downloads.
-        /// </summary>
-        /// <returns>
-        /// </returns>
-        public List<DownloadInfo> GetDownloads()
+        public static List<DownloadInfo> GetDownloads()
         {
-            return GetData<List<DownloadInfo>>(typeof(DownloadInfo).Name) ?? new List<DownloadInfo>();
+            return XmlDatastore.GetData<List<DownloadInfo>>();
         }
 
         /// <summary>
         /// This function will add a new file to the database if it does not exist.
         /// </summary>
-        /// <param name="instance">
+        /// <param name="info">
         /// DownloadInfo that we wish to store
         /// </param>
-        public void UpdateDownload(DownloadInfo instance)
+        public static void UpdateDownload(DownloadInfo info)
         {
-            List<DownloadInfo> downloads = this.GetDownloads();
+            var downloads = XmlDatastore.GetData<List<DownloadInfo>>();
 
-            var downloadInfo = downloads.FirstOrDefault(d => d.FileName == instance.FileName);
+            var downloadInfo = downloads.FirstOrDefault(d => d.FileName == info.FileName);
             if (downloadInfo != null)
             {
                 downloads.Remove(downloadInfo);
             }
 
-            downloads.Add(instance);
+            downloads.Add(info);
 
-            SaveData(downloads, typeof(DownloadInfo).Name);
+            XmlDatastore.SaveData(downloads);
         }
 
         /// <summary>
@@ -224,11 +148,11 @@ namespace ExpansionDownloader.Database
         /// <param name="di">
         /// The di.
         /// </param>
-        public void UpdateDownloadCurrentBytes(DownloadInfo di)
+        public static void UpdateDownloadCurrentBytes(DownloadInfo di)
         {
-            var info = this.GetDownloads().First(x => x.ExpansionFileType == di.ExpansionFileType);
+            var info = XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.ExpansionFileType == di.ExpansionFileType);
             info.CurrentBytes = di.CurrentBytes;
-            this.UpdateDownload(info);
+            UpdateDownload(info);
         }
 
         /// <summary>
@@ -237,10 +161,10 @@ namespace ExpansionDownloader.Database
         /// <param name="info">
         /// The info.
         /// </param>
-        public void UpdateFromDatabase(ref DownloadInfo info)
+        public static void UpdateFromDatabase(ref DownloadInfo info)
         {
-            var downloadInfo = info;
-            info = this.GetDownloads().First(x => x.FileName == downloadInfo.FileName);
+            var i = info;
+            info = XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.FileName == i.FileName);
         }
 
         /// <summary>
@@ -252,117 +176,106 @@ namespace ExpansionDownloader.Database
         /// <param name="status">
         /// The download status.
         /// </param>
-        public void UpdateMetadata(int apkVersion, DownloadStatus status)
+        public static void UpdateMetadata(int apkVersion, DownloadStatus status)
         {
-            var metadata = GetMetadata();
+            var metadata = XmlDatastore.GetData<MetadataTable>();
             metadata.ApkVersion = apkVersion;
             metadata.DownloadStatus = status;
-            SaveData(metadata);
+            XmlDatastore.SaveData(metadata);
+
+            versionCode = apkVersion;
+            downloadStatus = status;
         }
 
         #endregion
 
-        #region Methods
-
-        /// <summary>
-        /// The get data.
-        /// </summary>
-        /// <typeparam name="T">
-        /// </typeparam>
-        /// <returns>
-        /// </returns>
-        private static T GetData<T>() where T : class
+        private static class XmlDatastore
         {
-            return GetData<T>(typeof(T).Name);
-        }
+            /// <summary>
+            /// The app path.
+            /// </summary>
+            private static readonly string AppPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-        /// <summary>
-        /// The get data.
-        /// </summary>
-        /// <param name="filename">
-        /// The filename.
-        /// </param>
-        /// <typeparam name="T">
-        /// </typeparam>
-        /// <returns>
-        /// </returns>
-        private static T GetData<T>(string filename) where T : class
-        {
-            var dataPath = GetDataPath(filename);
+            /// <summary>
+            /// The database path.
+            /// </summary>
+            private static readonly string DatabasePath = Path.Combine(AppPath, "DownloadDatabase");
 
-            if (File.Exists(dataPath))
+            /// <summary>
+            /// The get data.
+            /// </summary>
+            /// <typeparam name="T">
+            /// </typeparam>
+            /// <returns>
+            /// </returns>
+            internal static T GetData<T>() where T : class, new()
             {
-                var document = XDocument.Load(dataPath);
-                using (var reader = document.Root.CreateReader())
+                T data;
+
+                string dataPath = GetDataPath<T>();
+                if (File.Exists(dataPath))
                 {
-                    var serializer = new XmlSerializer(typeof(T));
-                    return serializer.Deserialize(reader) as T;
+                    // read the file
+                    var document = XDocument.Load(dataPath);
+                    using (var reader = document.Root.CreateReader())
+                    {
+                        var serializer = new XmlSerializer(typeof(T));
+                        data = serializer.Deserialize(reader) as T;
+                    }
+                }
+                else
+                {
+                    if (!Directory.Exists(DatabasePath))
+                    {
+                        Directory.CreateDirectory(DatabasePath);
+                    }
+
+                    // create the file
+                    data = new T();
+                    SaveData(data);
+                }
+
+                // return the loaded/new type
+                return data;
+            }
+
+            private static string GetDataPath<T>()
+            {
+                var paramType = typeof(T);
+
+                // is it a list of types
+                if (typeof(IEnumerable).IsAssignableFrom(paramType))
+                {
+                    var genericArguments = paramType.GetType().GetGenericArguments();
+                    if (genericArguments.Any())
+                    {
+                        paramType = genericArguments[0];
+                    }
+                }
+
+                // get the filename
+                var filename = paramType.Name;
+                return Path.Combine(DatabasePath, filename + ".xml");
+            }
+
+            /// <summary>
+            /// The save data.
+            /// </summary>
+            /// <param name="data">
+            /// The data.
+            /// </param>
+            /// <typeparam name="T">
+            /// </typeparam>
+            internal static void SaveData<T>(T data)
+            {
+                var type = typeof(T);
+                using (var writer = new StreamWriter(GetDataPath<T>()))
+                {
+                    var serializer = new XmlSerializer(type);
+                    serializer.Serialize(writer, data);
                 }
             }
 
-            return null;
         }
-
-        /// <summary>
-        /// The get data path.
-        /// </summary>
-        /// <param name="filename">
-        /// The filename.
-        /// </param>
-        /// <returns>
-        /// The get data path.
-        /// </returns>
-        private static string GetDataPath(string filename)
-        {
-            var dataPath = Path.Combine(DatabasePath, filename + ".xml");
-
-            return dataPath;
-        }
-
-        /// <summary>
-        /// The get metadata.
-        /// </summary>
-        /// <returns>
-        /// </returns>
-        private static MetadataTable GetMetadata()
-        {
-            return GetData<MetadataTable>() ?? new MetadataTable();
-        }
-
-        /// <summary>
-        /// The save data.
-        /// </summary>
-        /// <param name="data">
-        /// The data.
-        /// </param>
-        /// <typeparam name="T">
-        /// </typeparam>
-        private static void SaveData<T>(T data)
-        {
-            SaveData(data, typeof(T).Name);
-        }
-
-        /// <summary>
-        /// The save data.
-        /// </summary>
-        /// <param name="data">
-        /// The data.
-        /// </param>
-        /// <param name="filename">
-        /// The filename.
-        /// </param>
-        /// <typeparam name="T">
-        /// </typeparam>
-        private static void SaveData<T>(T data, string filename)
-        {
-            var type = typeof(T);
-            using (var writer = new StreamWriter(GetDataPath(filename)))
-            {
-                var serializer = new XmlSerializer(type);
-                serializer.Serialize(writer, data);
-            }
-        }
-
-        #endregion
     }
 }

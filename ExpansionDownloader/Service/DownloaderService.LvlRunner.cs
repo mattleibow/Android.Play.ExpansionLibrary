@@ -27,19 +27,16 @@ namespace ExpansionDownloader.Service
         /// <summary>
         /// Returns true if the LVL check is required.
         /// </summary>
-        /// <param name="database">
-        /// a downloads DB synchronized with the latest state
-        /// </param>
         /// <param name="pi">
         /// the package info for the project
         /// </param>
         /// <returns>
         /// true if the filenames need to be returned
         /// </returns>
-        private static bool IsLvlCheckRequired(DownloadsDatabase database, PackageInfo pi)
+        private static bool IsLvlCheckRequired(PackageInfo pi)
         {
             // we need to update the LVL check and get a successful status to proceed
-            return database.VersionCode != pi.VersionCode;
+            return DownloadsDatabase.VersionCode != pi.VersionCode;
         }
 
         #endregion
@@ -174,8 +171,6 @@ namespace ExpansionDownloader.Service
                 {
                     try
                     {
-                        DownloadsDatabase database = DownloadsDatabase.Instance;
-
                         int count = this.policy.GetExpansionFilesCount();
                         if (count == 0)
                         {
@@ -197,19 +192,19 @@ namespace ExpansionDownloader.Service
                                         FileName = currentFileName,
                                     };
 
-                                if (this.Context.HandleFileUpdated(database, currentFileName, expansionFile.FileSize))
+                                if (this.Context.HandleFileUpdated(currentFileName, expansionFile.FileSize))
                                 {
                                     status = DownloadStatus.Unknown;
                                     di.ResetDownload();
                                     di.Uri = expansionFile.Url;
                                     di.TotalBytes = expansionFile.FileSize;
                                     di.Status = status;
-                                    database.UpdateDownload(di);
+                                    DownloadsDatabase.UpdateDownload(di);
                                 }
                                 else
                                 {
                                     // we need to read the download information from the database
-                                    DownloadInfo dbdi = database.GetDownloadInfo(di.FileName);
+                                    DownloadInfo dbdi = DownloadsDatabase.GetDownloadInfo(di.FileName);
                                     if (dbdi == null)
                                     {
                                         // the file exists already and is the correct size
@@ -219,13 +214,13 @@ namespace ExpansionDownloader.Service
                                         di.TotalBytes = expansionFile.FileSize;
                                         di.CurrentBytes = expansionFile.FileSize;
                                         di.Uri = expansionFile.Url;
-                                        database.UpdateDownload(di);
+                                        DownloadsDatabase.UpdateDownload(di);
                                     }
                                     else if (dbdi.Status != DownloadStatus.Success)
                                     {
                                         // we just update the URL
                                         dbdi.Uri = expansionFile.Url;
-                                        database.UpdateDownload(dbdi);
+                                        DownloadsDatabase.UpdateDownload(dbdi);
                                         status = DownloadStatus.Unknown;
                                     }
                                 }
@@ -237,7 +232,7 @@ namespace ExpansionDownloader.Service
                         try
                         {
                             PackageInfo pi = this.Context.PackageManager.GetPackageInfo(this.Context.PackageName, 0);
-                            database.UpdateMetadata(pi.VersionCode, status);
+                            DownloadsDatabase.UpdateMetadata(pi.VersionCode, status);
                             var required = StartDownloadServiceIfRequired(
                                 this.Context, this.Context.pPendingIntent, this.Context.GetType());
                             switch (required)

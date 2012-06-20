@@ -48,11 +48,6 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private readonly DownloaderService downloaderService;
 
-        /// <summary>
-        /// The downloads database.
-        /// </summary>
-        private readonly DownloadsDatabase downloadsDatabase;
-
         #endregion
 
         #region Constructors and Destructors
@@ -75,7 +70,6 @@ namespace ExpansionDownloader.Service
             this.downloadInfo = info;
             this.downloaderService = service;
             this.downloadNotification = notification;
-            this.downloadsDatabase = DownloadsDatabase.Instance;
         }
 
         #endregion
@@ -427,7 +421,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private void CheckConnectivity()
         {
-            var availabilityState = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase);
+            var availabilityState = this.downloaderService.GetNetworkAvailabilityState();
 
             switch (availabilityState)
             {
@@ -537,7 +531,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         private DownloadStatus GetFinalStatusForHttpError(State state)
         {
-            if (this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase) != NetworkDisabledState.Ok)
+            if (this.downloaderService.GetNetworkAvailabilityState() != NetworkDisabledState.Ok)
             {
                 return DownloadStatus.WaitingForNetwork;
             }
@@ -574,7 +568,7 @@ namespace ExpansionDownloader.Service
             // {
             // downloadInfo.TotalBytes = innerState.BytesSoFar;
             // }
-            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
+            DownloadsDatabase.UpdateDownload(this.downloadInfo);
 
             bool lengthMismatched = innerState.HeaderContentLength != null
                                     && innerState.BytesSoFar != int.Parse(innerState.HeaderContentLength);
@@ -698,7 +692,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private void LogNetworkState()
         {
-            var network = this.downloaderService.GetNetworkAvailabilityState(this.downloadsDatabase)
+            var network = this.downloaderService.GetNetworkAvailabilityState()
                           == NetworkDisabledState.Ok
                               ? "Up"
                               : "Down";
@@ -844,7 +838,7 @@ namespace ExpansionDownloader.Service
             {
                 this.LogNetworkState();
                 this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                this.downloadsDatabase.UpdateDownload(this.downloadInfo);
+                DownloadsDatabase.UpdateDownload(this.downloadInfo);
 
                 string message;
                 DownloadStatus finalStatus;
@@ -957,7 +951,7 @@ namespace ExpansionDownloader.Service
             {
                 // we store progress updates to the database here
                 this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                this.downloadsDatabase.UpdateDownloadCurrentBytes(this.downloadInfo);
+                DownloadsDatabase.UpdateDownloadCurrentBytes(this.downloadInfo);
 
                 innerState.BytesNotified = innerState.BytesSoFar;
                 innerState.TimeLastNotification = now;
@@ -1118,7 +1112,7 @@ namespace ExpansionDownloader.Service
         private void UpdateDatabaseFromHeaders(InnerState innerState)
         {
             this.downloadInfo.ETag = innerState.HeaderETag;
-            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
+            DownloadsDatabase.UpdateDownload(this.downloadInfo);
         }
 
         /// <summary>
@@ -1159,7 +1153,7 @@ namespace ExpansionDownloader.Service
                 this.downloadInfo.FailedCount++;
             }
 
-            this.downloadsDatabase.UpdateDownload(this.downloadInfo);
+            DownloadsDatabase.UpdateDownload(this.downloadInfo);
         }
 
         #endregion

@@ -86,6 +86,8 @@ namespace ExpansionDownloader.Sample
         /// </param>
         public void OnDownloadStateChanged(DownloaderState newState)
         {
+            Debug.WriteLine("newState: " + newState);
+
             if (this.downloaderState != newState)
             {
                 this.downloaderState = newState;
@@ -256,8 +258,7 @@ namespace ExpansionDownloader.Sample
         /// </returns>
         private bool AreExpansionFilesDelivered()
         {
-            var db = DownloadsDatabase.Instance;
-            var downloads = db.GetDownloads();
+            var downloads = DownloadsDatabase.GetDownloads();
 
             return downloads.Any() && downloads.All(x => Helpers.DoesFileExist(this, x.FileName, x.TotalBytes, false));
         }
@@ -282,8 +283,7 @@ namespace ExpansionDownloader.Sample
         /// </param>
         private void DoValidateZipFiles(object state)
         {
-            var db = DownloadsDatabase.Instance;
-            var downloads = db.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
+            var downloads = DownloadsDatabase.GetDownloads().Select(x => Helpers.GenerateSaveFileName(this, x.FileName)).ToArray();
 
             var result = downloads.Any() && downloads.All(this.IsValidZipFile);
 
