@@ -114,12 +114,22 @@ namespace LicenseVerificationLibrary.Obfuscator
         /// </returns>
         public T GetValue<T>(string key, T defValue)
         {
-            return (T)Convert.ChangeType(this.GetString(key, defValue.ToString()), typeof(T));
+            var type = typeof(T);
+            var value = this.GetString(key, defValue.ToString());
+
+            if (type.IsEnum)
+            {
+                return (T)Enum.Parse(type, value, true);
+            }
+
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            return (T)Convert.ChangeType(value, type);
         }
 
         public T GetValue<T>(string key)
         {
-            return (T)Convert.ChangeType(this.GetString(key, default(T).ToString()), typeof(T));
+            return GetValue<T>(key, default(T));
         }
 
         /// <summary>
