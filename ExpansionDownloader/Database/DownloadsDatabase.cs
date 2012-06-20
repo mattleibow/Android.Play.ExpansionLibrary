@@ -21,9 +21,16 @@ namespace ExpansionDownloader.Database
 
         static DownloadsDatabase()
         {
-            downloadStatus = XmlDatastore.GetData<MetadataTable>().DownloadStatus;
-            flags = XmlDatastore.GetData<MetadataTable>().Flags;
-            versionCode = XmlDatastore.GetData<MetadataTable>().ApkVersion;
+            downloadStatus = DownloadStatus.Unknown;
+            flags = 0;
+            versionCode = -1;
+
+            if (File.Exists(XmlDatastore.GetDataPath<MetadataTable>()))
+            {
+                downloadStatus = XmlDatastore.GetData<MetadataTable>().DownloadStatus;
+                flags = XmlDatastore.GetData<MetadataTable>().Flags;
+                versionCode = XmlDatastore.GetData<MetadataTable>().ApkVersion;
+            }
         }
 
         #region Public Properties
@@ -239,7 +246,7 @@ namespace ExpansionDownloader.Database
                 return data;
             }
 
-            private static string GetDataPath<T>()
+            internal static string GetDataPath<T>()
             {
                 var paramType = typeof(T);
 
