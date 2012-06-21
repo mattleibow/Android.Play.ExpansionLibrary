@@ -207,7 +207,7 @@ namespace System.IO.Compression.Zip
         public override AssetFileDescriptor OpenAssetFile(Uri uri, string mode)
         {
             this.InitIfNecessary();
-            string path = uri.EncodedPath;
+            string path = uri.Path;
             if (path.StartsWith("/"))
             {
                 path = path.Substring(1);
@@ -284,7 +284,8 @@ namespace System.IO.Compression.Zip
             // lists all of the items in the file that match
             var zipEntries = this.apkExtensionFile == null ? new ZipFileEntry[0] : this.apkExtensionFile.GetAllEntries();
 
-            return MatrixCursor(projection, ApezProjections(ref projection), zipEntries);
+            var setProjections = ApezProjections(ref projection);
+            return MatrixCursor(projection, setProjections, zipEntries);
         }
 
         /// <summary>
@@ -326,7 +327,8 @@ namespace System.IO.Compression.Zip
         {
             if (projection == null)
             {
-                projection = FieldNameValueMap.Keys.ToArray();
+                var strings = FieldNameValueMap.Keys.ToArray();
+                projection = strings;
             }
 
             return projection.Select(p => FieldNameValueMap[p]).ToArray();
