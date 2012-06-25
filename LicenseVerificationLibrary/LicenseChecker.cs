@@ -510,7 +510,7 @@ namespace LicenseVerificationLibrary
                 this.checker.handler.Post(
                     delegate
                         {
-                            Debug.WriteLine("Received license response.");
+                            Debug.WriteLine("Received license response. " + responseCode);
 
                             // Make sure it hasn't already timed out.
                             if (this.checker.checksInProgress.Contains(this.licenseValidator))
