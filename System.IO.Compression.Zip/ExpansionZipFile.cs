@@ -13,7 +13,7 @@ namespace System.IO.Compression.Zip
         /// <summary>
         /// The files.
         /// </summary>
-        private readonly Dictionary<string, ZipFileEntry> files = new Dictionary<string, ZipFileEntry>();
+        private readonly Dictionary<string, ZipFileEntry> files;
 
         #endregion
 
@@ -27,7 +27,7 @@ namespace System.IO.Compression.Zip
         /// </param>
         public ExpansionZipFile(IEnumerable<ZipFileEntry> entries)
         {
-            this.files = entries.ToDictionary(x => x.FilenameInZip.ToUpper(), x => x);
+            this.files = entries.ToDictionary(x => x.FilenameInZip, x => x);
         }
 
         /// <summary>
@@ -35,12 +35,11 @@ namespace System.IO.Compression.Zip
         /// </summary>
         public ExpansionZipFile()
         {
-            this.files = new Dictionary<string, ZipFileEntry>();
+            this.files = new Dictionary<string, ZipFileEntry>(StringComparer.InvariantCultureIgnoreCase);
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExpansionZipFile"/> class. 
-        /// Initializes a new instance of the <see cref="ExpansionZipFile"/> 
         /// class from a collection of zip file paths.
         /// </summary>
         /// <param name="zipPaths">
@@ -67,7 +66,7 @@ namespace System.IO.Compression.Zip
         /// </param>
         public void AddZipFileEntries(IEnumerable<ZipFileEntry> merge)
         {
-            foreach (var entry in merge.ToDictionary(x => x.FilenameInZip.ToUpper(), x => x))
+            foreach (var entry in merge.ToDictionary(x => x.FilenameInZip, x => x))
             {
                 if (this.files.ContainsKey(entry.Key))
                 {
@@ -102,7 +101,7 @@ namespace System.IO.Compression.Zip
         /// </returns>
         public ZipFileEntry GetEntry(string path)
         {
-            return this.files[path.ToUpper()];
+            return this.files.ContainsKey(path) ? this.files[path] : null;
         }
 
         /// <summary>
