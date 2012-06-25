@@ -47,7 +47,7 @@ namespace ExpansionDownloader.Database
 
             set
             {
-                if (downloadStatus == value)
+                if (downloadStatus != value)
                 {
                     downloadStatus = value;
 
@@ -70,7 +70,7 @@ namespace ExpansionDownloader.Database
 
             set
             {
-                if (flags == value)
+                if (flags != value)
                 {
                     flags = value;
 
