@@ -198,9 +198,11 @@ namespace ExpansionDownloader.Service
             /// </param>
             public void OnClientUpdated(Messenger clientMessenger)
             {
-                var bundle = new Bundle(1);
-                bundle.PutParcelable(ServiceParameters.Messenger, clientMessenger);
-                this.Send(ServiceMessages.RequestClientUpdate, bundle);
+                using (var bundle = new Bundle(1))
+                {
+                    bundle.PutParcelable(ServiceParameters.Messenger, clientMessenger);
+                    this.Send(ServiceMessages.RequestClientUpdate, bundle);
+                }
             }
 
             /// <summary>
@@ -208,7 +210,10 @@ namespace ExpansionDownloader.Service
             /// </summary>
             public void RequestAbortDownload()
             {
-                this.Send(ServiceMessages.RequestAbortDownload, new Bundle());
+                using (var bundle = new Bundle())
+                {
+                    this.Send(ServiceMessages.RequestAbortDownload, bundle);
+                }
             }
 
             /// <summary>
@@ -216,7 +221,10 @@ namespace ExpansionDownloader.Service
             /// </summary>
             public void RequestContinueDownload()
             {
-                this.Send(ServiceMessages.RequestContinueDownload, new Bundle());
+                using (var bundle = new Bundle())
+                {
+                    this.Send(ServiceMessages.RequestContinueDownload, bundle);
+                }
             }
 
             /// <summary>
@@ -224,7 +232,10 @@ namespace ExpansionDownloader.Service
             /// </summary>
             public void RequestDownloadStatus()
             {
-                this.Send(ServiceMessages.RequestDownloadState, new Bundle());
+                using (var bundle = new Bundle())
+                {
+                    this.Send(ServiceMessages.RequestDownloadState, bundle);
+                }
             }
 
             /// <summary>
@@ -232,7 +243,10 @@ namespace ExpansionDownloader.Service
             /// </summary>
             public void RequestPauseDownload()
             {
-                this.Send(ServiceMessages.RequestPauseDownload, new Bundle());
+                using (var bundle = new Bundle())
+                {
+                    this.Send(ServiceMessages.RequestPauseDownload, bundle);
+                }
             }
 
             /// <summary>
@@ -243,9 +257,11 @@ namespace ExpansionDownloader.Service
             /// </param>
             public void SetDownloadFlags(ServiceFlags flags)
             {
-                var p = new Bundle();
-                p.PutInt(ServiceParameters.Flags, (int)flags);
-                this.Send(ServiceMessages.SetDownloadFlags, p);
+                using (var p = new Bundle())
+                {
+                    p.PutInt(ServiceParameters.Flags, (int) flags);
+                    this.Send(ServiceMessages.SetDownloadFlags, p);
+                }
             }
 
             #endregion

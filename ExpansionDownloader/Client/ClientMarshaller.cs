@@ -344,9 +344,11 @@ namespace ExpansionDownloader.Client
             /// </param>
             public void OnDownloadProgress(DownloadProgressInfo progress)
             {
-                var p = new Bundle(1);
-                p.PutString(ClientMessageParameters.Progress, progress.ToString());
-                this.SendMessage(ClientMessages.DownloadProgress, p);
+                using (var p = new Bundle(1))
+                {
+                    p.PutString(ClientMessageParameters.Progress, progress.ToString());
+                    this.SendMessage(ClientMessages.DownloadProgress, p);
+                }
             }
 
             /// <summary>
@@ -357,9 +359,11 @@ namespace ExpansionDownloader.Client
             /// </param>
             public void OnDownloadStateChanged(DownloaderState newState)
             {
-                var p = new Bundle(1);
-                p.PutInt(ClientMessageParameters.NewState, (int)newState);
-                this.SendMessage(ClientMessages.DownloadStateChanged, p);
+                using (var p = new Bundle(1))
+                {
+                    p.PutInt(ClientMessageParameters.NewState, (int) newState);
+                    this.SendMessage(ClientMessages.DownloadStateChanged, p);
+                }
             }
 
             /// <summary>
