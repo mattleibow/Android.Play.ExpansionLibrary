@@ -168,12 +168,10 @@ namespace LicenseVerificationLibrary
         /// </param>
         public void CheckAccess(ILicenseCheckerCallback callback)
         {
-            const bool DontCacheInDebug = true;
-
             lock (this.locker)
             {
                 // If we have a valid recent LICENSED response, we can skip asking Market/Play.
-                if (!DontCacheInDebug && this.policy.AllowAccess())
+                if (this.policy.AllowAccess())
                 {
                     System.Diagnostics.Debug.WriteLine("Using cached license response");
                     callback.Allow(PolicyServerResponse.Licensed);
