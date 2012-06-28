@@ -4,7 +4,7 @@ namespace LicenseVerificationLibrary.Policy
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using System.Web;
+    using Java.Net;
 
     /// <summary>
     /// The policy extensions.
@@ -142,8 +142,8 @@ namespace LicenseVerificationLibrary.Policy
                     throw new ArgumentException("uri");
                 }
 
-                string name = HttpUtility.UrlDecode(nameValue[0], encoding);
-                string value = nameValue.Length == 2 ? HttpUtility.UrlDecode(nameValue[1], encoding) : string.Empty;
+                string name = URLDecoder.Decode(nameValue[0], encoding.WebName);
+                string value = nameValue.Length == 2 ? URLDecoder.Decode(nameValue[1], encoding.WebName) : string.Empty;
 
                 result.Add(new KeyValuePair<string, string>(name, value));
             }
