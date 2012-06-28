@@ -5,7 +5,6 @@ namespace ExpansionDownloader.Database
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Xml.Linq;
     using System.Xml.Serialization;
 
     using ExpansionDownloader.Service;
@@ -223,8 +222,7 @@ namespace ExpansionDownloader.Database
                 if (File.Exists(dataPath))
                 {
                     // read the file
-                    var document = XDocument.Load(dataPath);
-                    using (var reader = document.Root.CreateReader())
+                    using (var reader = File.OpenRead(dataPath))
                     {
                         var serializer = new XmlSerializer(typeof(T));
                         data = serializer.Deserialize(reader) as T;
