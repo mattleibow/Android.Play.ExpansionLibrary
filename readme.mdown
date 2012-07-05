@@ -1,22 +1,43 @@
 This is the C# implementation of Google's License Verification Library and the 
 Android Play Expansion Library
 
-It is a bit scary as this is a direct translation of the code and I am still 
-busy '.NET'ifying it. 
 
-They both compile and the LVL works. I am busy cleaning up the LVL library and 
-sample. 
+They both compile and run correctly. 
+I have not tested on a 4.0+ device yet, but there were no problems on the 
+Android 2.x and 3.x devices. 
 
-The expansions library also compiles and runs correctly. As of this check in,
-I have not tested on a 3.0+ device and not on a Wifi connection. The downloader
-currently, correctly, notices that it is on mobile data and asks the user to
-make a decision on to wait for wifi or use mobile.
+The downloader currently, correctly, notices that it is on mobile data and 
+asks the user to make a decision on to wait for wifi or use mobile.
 
 Currently due to Mono for Android's limitation on including resource files 
 with class libraries, so I have embedded the stings temporarily. I am also 
 using a temporary static class CustomNotificationFactory to hold some app
-classes that are used insidethe library. I will movethis out soon.
+classes that are used insidethe library. I will move this out soon.
 
 This is most of the work done and it just needs cleaning and refactoring. 
 I also then want to make it friendlier towards .NET developers and using the 
 C#/.NET types instead of the Java types.
+
+There are no dependencies other than the included projects. 
+There should be two:
+ - the LicenseVerificationLibrary (which requires nothing) 
+ - the ExpansionDownloader (which requires the LVL). 
+No jars and no resources are needed.
+
+You can even use the LVL without the Downloader for pure licensing purposes.
+The other projects are either:
+ - Samples (to test using one of my accounts on Play) 
+ - Tests (Unit Tests?).
+
+The ToDo list is sort of the open issues part on GitHub. 
+Please feel free to add any new issues as new things come up. 
+Or any suggestions for improvements.
+
+I suppose the most important thing to note is that this is an almost direct 
+translation of the Java code. 
+This is not really bad, but some things could have been done better/differently
+in C#. eg: The IPCs could be better implemented, but I haven't gotten around
+to that yet.
+
+This code is released under the Apache 2.0 License.
+http://www.apache.org/licenses/LICENSE-2.0.html
