@@ -1,4 +1,15 @@
-﻿namespace System.IO.Compression.Zip
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ZipFileValidationHandler.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The zip file validation handler.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace System.IO.Compression.Zip
 {
     /// <summary>
     /// The zip file validation handler.

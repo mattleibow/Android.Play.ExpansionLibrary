@@ -1,8 +1,18 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadInfo.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The download info.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System.Text;
 
-    using LicenseVerificationLibrary;
     using LicenseVerificationLibrary.Policy;
 
     /// <summary>
@@ -17,7 +27,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         public DownloadInfo()
         {
-            //this.Fuzz = Helpers.Random.Next(1001);
+            // this.Fuzz = Helpers.Random.Next(1001);
             this.ResetDownload();
         }
 
@@ -53,7 +63,7 @@ namespace ExpansionDownloader.Service
         ///// <summary>
         ///// Gets or sets Fuzz.
         ///// </summary>
-        //public int Fuzz { get; set; }
+        // public int Fuzz { get; set; }
 
         /// <summary>
         /// Gets or sets LastModified.
@@ -117,22 +127,22 @@ namespace ExpansionDownloader.Service
         ///// <returns>
         ///// The restart time.
         ///// </returns>
-        //public long RestartTime(long now)
-        //{
-        //    if (this.FailedCount == 0)
-        //    {
-        //        return now;
-        //    }
-        //    if (this.RetryAfter > 0)
-        //    {
-        //        return this.LastModified + this.RetryAfter;
-        //    }
-        //    var fuzz = 1000 + this.Fuzz;
-        //    var failCount = 1 << (this.FailedCount - 1);
-        //    var i = DownloaderService.RetryFirstDelay * fuzz * failCount;
-        //    var restartTime = this.LastModified + i;
-        //    return restartTime;
-        //}
+        // public long RestartTime(long now)
+        // {
+        // if (this.FailedCount == 0)
+        // {
+        // return now;
+        // }
+        // if (this.RetryAfter > 0)
+        // {
+        // return this.LastModified + this.RetryAfter;
+        // }
+        // var fuzz = 1000 + this.Fuzz;
+        // var failCount = 1 << (this.FailedCount - 1);
+        // var i = DownloaderService.RetryFirstDelay * fuzz * failCount;
+        // var restartTime = this.LastModified + i;
+        // return restartTime;
+        // }
 
         /// <summary>
         /// Convert the download info object into a string.

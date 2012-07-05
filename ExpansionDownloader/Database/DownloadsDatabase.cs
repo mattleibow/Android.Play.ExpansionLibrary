@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadsDatabase.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloads database.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Database
 {
     using System;
@@ -14,10 +25,27 @@ namespace ExpansionDownloader.Database
     /// </summary>
     public static class DownloadsDatabase
     {
-        private volatile static DownloadStatus downloadStatus;
-        private volatile static ServiceFlags flags;
-        private volatile static int versionCode;
+        #region Static Fields
 
+        /// <summary>
+        /// </summary>
+        private static volatile DownloadStatus downloadStatus;
+
+        /// <summary>
+        /// </summary>
+        private static volatile ServiceFlags flags;
+
+        /// <summary>
+        /// </summary>
+        private static volatile int versionCode;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        /// <summary>
+        /// Initializes static members of the <see cref="DownloadsDatabase"/> class.
+        /// </summary>
         static DownloadsDatabase()
         {
             downloadStatus = DownloadStatus.Unknown;
@@ -31,6 +59,8 @@ namespace ExpansionDownloader.Database
                 versionCode = XmlDatastore.GetData<MetadataTable>().ApkVersion;
             }
         }
+
+        #endregion
 
         #region Public Properties
 
@@ -107,7 +137,6 @@ namespace ExpansionDownloader.Database
 
         #region Public Methods and Operators
 
-
         /// <summary>
         /// Returns the download information for the given filename.
         /// </summary>
@@ -122,6 +151,11 @@ namespace ExpansionDownloader.Database
             return XmlDatastore.GetData<List<DownloadInfo>>().FirstOrDefault(x => x.FileName == fileName);
         }
 
+        /// <summary>
+        /// </summary>
+        /// <returns>
+        /// The System.Collections.Generic.List`1[T -&gt; ExpansionDownloader.Service.DownloadInfo].
+        /// </returns>
         public static List<DownloadInfo> GetDownloads()
         {
             return XmlDatastore.GetData<List<DownloadInfo>>();
@@ -137,7 +171,7 @@ namespace ExpansionDownloader.Database
         {
             var downloads = XmlDatastore.GetData<List<DownloadInfo>>();
 
-            var downloadInfo = downloads.FirstOrDefault(d => d.FileName == info.FileName);
+            DownloadInfo downloadInfo = downloads.FirstOrDefault(d => d.FileName == info.FileName);
             if (downloadInfo != null)
             {
                 downloads.Remove(downloadInfo);
@@ -156,7 +190,8 @@ namespace ExpansionDownloader.Database
         /// </param>
         public static void UpdateDownloadCurrentBytes(DownloadInfo di)
         {
-            var info = XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.ExpansionFileType == di.ExpansionFileType);
+            DownloadInfo info =
+                XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.ExpansionFileType == di.ExpansionFileType);
             info.CurrentBytes = di.CurrentBytes;
             UpdateDownload(info);
         }
@@ -169,7 +204,7 @@ namespace ExpansionDownloader.Database
         /// </param>
         public static void UpdateFromDatabase(ref DownloadInfo info)
         {
-            var i = info;
+            DownloadInfo i = info;
             info = XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.FileName == i.FileName);
         }
 
@@ -195,8 +230,12 @@ namespace ExpansionDownloader.Database
 
         #endregion
 
+        /// <summary>
+        /// </summary>
         private static class XmlDatastore
         {
+            #region Static Fields
+
             /// <summary>
             /// The app path.
             /// </summary>
@@ -207,12 +246,17 @@ namespace ExpansionDownloader.Database
             /// </summary>
             private static readonly string DatabasePath = Path.Combine(AppPath, "DownloadDatabase");
 
+            #endregion
+
+            #region Methods
+
             /// <summary>
             /// The get data.
             /// </summary>
             /// <typeparam name="T">
             /// </typeparam>
             /// <returns>
+            /// The T.
             /// </returns>
             internal static T GetData<T>() where T : class, new()
             {
@@ -222,7 +266,7 @@ namespace ExpansionDownloader.Database
                 if (File.Exists(dataPath))
                 {
                     // read the file
-                    using (var reader = File.OpenRead(dataPath))
+                    using (FileStream reader = File.OpenRead(dataPath))
                     {
                         var serializer = new XmlSerializer(typeof(T));
                         data = serializer.Deserialize(reader) as T;
@@ -244,14 +288,21 @@ namespace ExpansionDownloader.Database
                 return data;
             }
 
+            /// <summary>
+            /// </summary>
+            /// <typeparam name="T">
+            /// </typeparam>
+            /// <returns>
+            /// The System.String.
+            /// </returns>
             internal static string GetDataPath<T>()
             {
-                var paramType = typeof(T);
+                Type paramType = typeof(T);
 
                 // is it a list of types
                 if (typeof(IEnumerable).IsAssignableFrom(paramType))
                 {
-                    var genericArguments = paramType.GetType().GetGenericArguments();
+                    Type[] genericArguments = paramType.GetType().GetGenericArguments();
                     if (genericArguments.Any())
                     {
                         paramType = genericArguments[0];
@@ -259,7 +310,7 @@ namespace ExpansionDownloader.Database
                 }
 
                 // get the filename
-                var filename = paramType.Name;
+                string filename = paramType.Name;
                 return Path.Combine(DatabasePath, filename + ".xml");
             }
 
@@ -273,7 +324,7 @@ namespace ExpansionDownloader.Database
             /// </typeparam>
             internal static void SaveData<T>(T data)
             {
-                var type = typeof(T);
+                Type type = typeof(T);
                 using (var writer = new StreamWriter(GetDataPath<T>()))
                 {
                     var serializer = new XmlSerializer(type);
@@ -281,6 +332,7 @@ namespace ExpansionDownloader.Database
                 }
             }
 
+            #endregion
         }
     }
 }

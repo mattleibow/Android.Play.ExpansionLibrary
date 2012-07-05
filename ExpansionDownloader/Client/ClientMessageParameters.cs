@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ClientMessageParameters.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloader client message parameters.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Client
 {
     /// <summary>
@@ -5,7 +16,7 @@ namespace ExpansionDownloader.Client
     /// </summary>
     public static class ClientMessageParameters
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The messenger.

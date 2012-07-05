@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ServiceMarshaller.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   Used by the client activity to proxy requests to the DownloaderService.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using Android.Content;
@@ -55,7 +66,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private class DownloaderServiceConnection : IDownloaderServiceConnection
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The downloader service.
@@ -164,7 +175,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private class Proxy : IDownloaderService
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The messenger.
@@ -259,7 +270,7 @@ namespace ExpansionDownloader.Service
             {
                 using (var p = new Bundle())
                 {
-                    p.PutInt(ServiceParameters.Flags, (int) flags);
+                    p.PutInt(ServiceParameters.Flags, (int)flags);
                     this.Send(ServiceMessages.SetDownloadFlags, p);
                 }
             }

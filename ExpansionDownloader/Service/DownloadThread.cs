@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadThread.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The download thread.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System;
@@ -13,7 +24,6 @@ namespace ExpansionDownloader.Service
     using Java.Lang;
     using Java.Net;
 
-    using LicenseVerificationLibrary;
     using LicenseVerificationLibrary.Policy;
 
     using Debug = System.Diagnostics.Debug;
@@ -26,7 +36,7 @@ namespace ExpansionDownloader.Service
     /// </summary>
     internal class DownloadThread
     {
-        #region Constants and Fields
+        #region Fields
 
         /// <summary>
         /// The context.
@@ -421,7 +431,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private void CheckConnectivity()
         {
-            var availabilityState = this.downloaderService.GetNetworkAvailabilityState();
+            NetworkDisabledState availabilityState = this.downloaderService.GetNetworkAvailabilityState();
 
             switch (availabilityState)
             {
@@ -528,6 +538,7 @@ namespace ExpansionDownloader.Service
         /// The state.
         /// </param>
         /// <returns>
+        /// The ExpansionDownloader.DownloadStatus.
         /// </returns>
         private DownloadStatus GetFinalStatusForHttpError(State state)
         {
@@ -692,10 +703,9 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private void LogNetworkState()
         {
-            var network = this.downloaderService.GetNetworkAvailabilityState()
-                          == NetworkDisabledState.Ok
-                              ? "Up"
-                              : "Down";
+            string network = this.downloaderService.GetNetworkAvailabilityState() == NetworkDisabledState.Ok
+                                 ? "Up"
+                                 : "Down";
             Debug.WriteLine("Network is {0}.", network);
         }
 
@@ -783,7 +793,7 @@ namespace ExpansionDownloader.Service
                     if (!File.Exists(state.Filename))
                     {
                         // make sure the directory exists
-                        var path = Helpers.GetSaveFilePath(this.downloaderService);
+                        string path = Helpers.GetSaveFilePath(this.downloaderService);
 
                         if (!string.IsNullOrWhiteSpace(path))
                         {
@@ -978,6 +988,9 @@ namespace ExpansionDownloader.Service
         /// <param name="request">
         /// The request.
         /// </param>
+        /// <returns>
+        /// The System.Net.HttpWebResponse.
+        /// </returns>
         private HttpWebResponse SendRequest(State state, HttpWebRequest request)
         {
             try

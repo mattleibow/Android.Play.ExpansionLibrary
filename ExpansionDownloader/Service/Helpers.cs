@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="Helpers.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The helpers.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System;
@@ -15,7 +26,7 @@ namespace ExpansionDownloader.Service
     /// </summary>
     public static class Helpers
     {
-        #region Constants and Fields
+        #region Static Fields
 
         /// <summary>
         /// The random.
@@ -52,13 +63,18 @@ namespace ExpansionDownloader.Service
         #region Public Properties
 
         /// <summary>
+        /// Gets the expansion files root path.
+        /// </summary>
+        public static string ExpansionPath { get; private set; }
+
+        /// <summary>
         /// Gets a value indicating whether the externl media is mounted.
         /// </summary>
         public static bool IsExternalMediaMounted
         {
             get
             {
-                var storageMissing = Android.OS.Environment.ExternalStorageState != Android.OS.Environment.MediaMounted;
+                bool storageMissing = Android.OS.Environment.ExternalStorageState != Android.OS.Environment.MediaMounted;
                 if (storageMissing)
                 {
                     // No SD card found.
@@ -69,14 +85,27 @@ namespace ExpansionDownloader.Service
             }
         }
 
-        /// <summary>
-        /// Gets the expansion files root path.
-        /// </summary>
-        public static string ExpansionPath { get; private set; }
-
         #endregion
 
         #region Public Methods and Operators
+
+        /// <summary>
+        /// Delete the given file from device
+        /// </summary>
+        /// <param name="path">
+        /// The path.
+        /// </param>
+        public static void DeleteFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("File '{0}' couldn't be deleted. ({1})", path, ex.Message);
+            }
+        }
 
         /// <summary>
         /// Helper function to ascertain the existence of a file and return true/false appropriately.
@@ -170,10 +199,10 @@ namespace ExpansionDownloader.Service
             if (overallTotal == 0)
             {
                 Debug.WriteLine("Notification called when total is zero");
-                return String.Empty;
+                return string.Empty;
             }
 
-            return String.Format("{0}%", overallProgress * 100 / overallTotal);
+            return string.Format("{0}%", overallProgress * 100 / overallTotal);
         }
 
         /// <summary>
@@ -196,10 +225,10 @@ namespace ExpansionDownloader.Service
             if (overallTotal == 0)
             {
                 Debug.WriteLine("Notification called when total is zero");
-                return String.Empty;
+                return string.Empty;
             }
 
-            return String.Format("{0:0.00} MB / {1:0.00} MB", overallProgress / Megabytes, overallTotal / Megabytes);
+            return string.Format("{0:0.00} MB / {1:0.00} MB", overallProgress / Megabytes, overallTotal / Megabytes);
         }
 
         /// <summary>
@@ -219,10 +248,10 @@ namespace ExpansionDownloader.Service
             if (overallTotal == 0)
             {
                 Debug.WriteLine("Notification called when total is zero");
-                return String.Empty;
+                return string.Empty;
             }
 
-            return String.Format(
+            return string.Format(
                 "{0} ({1})", 
                 GetDownloadProgressString(overallProgress, overallTotal), 
                 GetDownloadProgressPercent(overallProgress, overallTotal));
@@ -300,7 +329,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         public static string GetExpansionApkFileName(Context c, bool mainFile, int versionCode)
         {
-            return String.Format("{0}.{1}.{2}.obb", mainFile ? "main" : "patch", versionCode, c.PackageName);
+            return string.Format("{0}.{1}.{2}.obb", mainFile ? "main" : "patch", versionCode, c.PackageName);
         }
 
         /// <summary>
@@ -340,7 +369,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         public static string GetSaveFilePath(Context c)
         {
-            var root = Android.OS.Environment.ExternalStorageDirectory.AbsolutePath;
+            string root = Android.OS.Environment.ExternalStorageDirectory.AbsolutePath;
             return root + ExpansionPath + c.PackageName;
         }
 
@@ -355,7 +384,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         public static string GetSpeedString(float bytesPerMillisecond)
         {
-            return String.Format("{0:0.0}", bytesPerMillisecond * 1000 / 1024);
+            return string.Format("{0:0.0}", bytesPerMillisecond * 1000 / 1024);
         }
 
         /// <summary>
@@ -389,28 +418,6 @@ namespace ExpansionDownloader.Service
                    || filename.StartsWith(Android.OS.Environment.ExternalStorageDirectory.ToString());
         }
 
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Delete the given file from device
-        /// </summary>
-        /// <param name="path">
-        /// The path.
-        /// </param>
-        public static void DeleteFile(string path)
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("File '{0}' couldn't be deleted. ({1})", path, ex.Message);
-            }
-        }
-
         /// <summary>
         /// Parse the Content-Disposition HTTP Header. The format of the header is
         /// defined here: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html This
@@ -427,7 +434,7 @@ namespace ExpansionDownloader.Service
         {
             try
             {
-                var m = Regex.Match(contentDisposition, ContentDispositionPattern);
+                Match m = Regex.Match(contentDisposition, ContentDispositionPattern);
                 if (m.Success)
                 {
                     return m.Groups[1].Value;

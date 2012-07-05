@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloaderServiceExtras.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloader service extras.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader
 {
     /// <summary>
@@ -5,7 +16,7 @@ namespace ExpansionDownloader
     /// </summary>
     public static class DownloaderServiceExtras
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The extra file name.

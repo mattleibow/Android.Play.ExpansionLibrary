@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="CustomIntentService.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The custom intent service.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using Android.App;
@@ -13,12 +24,16 @@ namespace ExpansionDownloader.Service
     /// </summary>
     public abstract class CustomIntentService : Service
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The wha t_ message.
         /// </summary>
         private const int WhatMessage = -10;
+
+        #endregion
+
+        #region Fields
 
         /// <summary>
         /// The m name.
@@ -66,6 +81,7 @@ namespace ExpansionDownloader.Service
         /// The param intent.
         /// </param>
         /// <returns>
+        /// The Android.OS.IBinder.
         /// </returns>
         public override IBinder OnBind(Intent paramIntent)
         {
@@ -133,6 +149,7 @@ namespace ExpansionDownloader.Service
         /// The start id.
         /// </param>
         /// <returns>
+        /// The Android.App.StartCommandResult.
         /// </returns>
         public override StartCommandResult OnStartCommand(Intent paramIntent, StartCommandFlags flags, int startId)
         {
@@ -178,7 +195,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private class ServiceHandler : Handler
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The customIntentService.

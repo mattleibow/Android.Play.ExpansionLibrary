@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadStatusExtras.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   Used with <see cref="DownloadStatus" />
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader
 {
     /// <summary>
@@ -5,7 +16,7 @@ namespace ExpansionDownloader
     /// </summary>
     public class DownloadStatusExtras
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The current file size.

@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloaderService.LvlRunner.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloader service.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System.Diagnostics;
@@ -15,7 +26,6 @@ namespace ExpansionDownloader.Service
     using LicenseVerificationLibrary.Policy;
 
     using Exception = System.Exception;
-    using Object = Java.Lang.Object;
 
     /// <summary>
     /// The downloader service.
@@ -46,7 +56,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private class LvlRunnable : Object, IRunnable
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The context.
@@ -105,7 +115,7 @@ namespace ExpansionDownloader.Service
             /// </summary>
             private class ApkLicenseCheckerCallback : ILicenseCheckerCallback
             {
-                #region Constants and Fields
+                #region Fields
 
                 /// <summary>
                 /// The lvl runnable.
@@ -182,15 +192,11 @@ namespace ExpansionDownloader.Service
                         {
                             var type = (ApkExpansionPolicy.ExpansionFileType)index;
 
-                            var expansionFile = this.policy.GetExpansionFile(type);
+                            ApkExpansionPolicy.ExpansionFile expansionFile = this.policy.GetExpansionFile(type);
                             string currentFileName = expansionFile.FileName;
                             if (currentFileName != null)
                             {
-                                var di = new DownloadInfo
-                                    {
-                                        ExpansionFileType = type,
-                                        FileName = currentFileName,
-                                    };
+                                var di = new DownloadInfo { ExpansionFileType = type, FileName = currentFileName, };
 
                                 if (this.Context.HandleFileUpdated(currentFileName, expansionFile.FileSize))
                                 {
@@ -233,13 +239,12 @@ namespace ExpansionDownloader.Service
                         {
                             PackageInfo pi = this.Context.PackageManager.GetPackageInfo(this.Context.PackageName, 0);
                             DownloadsDatabase.UpdateMetadata(pi.VersionCode, status);
-                            var required = StartDownloadServiceIfRequired(
+                            DownloadServiceRequirement required = StartDownloadServiceIfRequired(
                                 this.Context, this.Context.pPendingIntent, this.Context.GetType());
                             switch (required)
                             {
                                 case DownloadServiceRequirement.NoDownloadRequired:
-                                    this.Context.downloadNotification.OnDownloadStateChanged(
-                                        DownloaderState.Completed);
+                                    this.Context.downloadNotification.OnDownloadStateChanged(DownloaderState.Completed);
                                     break;
 
                                 case DownloadServiceRequirement.LvlCheckRequired: // DANGER WILL ROBINSON!
@@ -286,8 +291,7 @@ namespace ExpansionDownloader.Service
                 {
                     try
                     {
-                        this.Context.downloadNotification.OnDownloadStateChanged(
-                            DownloaderState.FailedFetchingUrl);
+                        this.Context.downloadNotification.OnDownloadStateChanged(DownloaderState.FailedFetchingUrl);
                     }
                     finally
                     {

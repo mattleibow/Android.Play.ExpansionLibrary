@@ -1,6 +1,18 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloaderService.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloader service.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
 
@@ -26,7 +38,7 @@ namespace ExpansionDownloader.Service
     /// </summary>
     public abstract partial class DownloaderService : CustomIntentService, IDownloaderService
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The buffer size used to stream the data.
@@ -80,12 +92,6 @@ namespace ExpansionDownloader.Service
         public const int WatchdogWakeTimer = 60;
 
         /// <summary>
-        /// The maximum amount of time that the download manager accepts for a 
-        /// Retry-After response header with a parameter in delta-seconds.
-        /// </summary>
-        public static readonly int MaxRetryAfter = (int)TimeSpan.FromDays(1).TotalSeconds;
-
-        /// <summary>
         /// The wake duration to check to see if the process was killed. (seconds)
         /// </summary>
         private const int ActiveThreadWatchdog = 5;
@@ -111,6 +117,25 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private const string TemporaryFileExtension = ".tmp";
 
+        #endregion
+
+        #region Static Fields
+
+        /// <summary>
+        /// The maximum amount of time that the download manager accepts for a 
+        /// Retry-After response header with a parameter in delta-seconds.
+        /// </summary>
+        public static readonly int MaxRetryAfter = (int)TimeSpan.FromDays(1).TotalSeconds;
+
+        /// <summary>
+        /// Service thread status
+        /// </summary>
+        private static volatile bool isRunning;
+
+        #endregion
+
+        #region Fields
+
         /// <summary>
         /// The locker.
         /// </summary>
@@ -125,26 +150,6 @@ namespace ExpansionDownloader.Service
         /// Our binding to the network state broadcasts
         /// </summary>
         private readonly Messenger serviceMessenger;
-
-        /// <summary>
-        /// Service thread status
-        /// </summary>
-        private static volatile bool isRunning;
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private Messenger clientMessenger;
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private BroadcastReceiver connectionReceiver;
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private DownloadNotification downloadNotification;
 
         /// <summary>
         /// Our binding to the network state broadcasts
@@ -162,34 +167,29 @@ namespace ExpansionDownloader.Service
         private long bytesAtSample;
 
         /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private Messenger clientMessenger;
+
+        /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private BroadcastReceiver connectionReceiver;
+
+        /// <summary>
         /// Bindings to important services
         /// </summary>
         private ConnectivityManager connectivityManager;
 
         /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private DownloadNotification downloadNotification;
+
+        /// <summary>
         /// Byte counts
         /// </summary>
         private int fileCount;
-
-        /// <summary>
-        /// Package we are downloading for (defaults to package of application)
-        /// </summary>
-        private PackageInfo packageInfo;
-
-        /// <summary>
-        /// Our binding to the network state broadcasts
-        /// </summary>
-        private PendingIntent pPendingIntent;
-
-        /// <summary>
-        /// Network state.
-        /// </summary>
-        private bool stateChanged;
-
-        /// <summary>
-        /// Bindings to important services
-        /// </summary>
-        private WifiManager wifiManager;
 
         /// <summary>
         /// Used for calculating time remaining and speed
@@ -202,9 +202,29 @@ namespace ExpansionDownloader.Service
         private NetworkState networkState;
 
         /// <summary>
+        /// Our binding to the network state broadcasts
+        /// </summary>
+        private PendingIntent pPendingIntent;
+
+        /// <summary>
+        /// Package we are downloading for (defaults to package of application)
+        /// </summary>
+        private PackageInfo packageInfo;
+
+        /// <summary>
+        /// Network state.
+        /// </summary>
+        private bool stateChanged;
+
+        /// <summary>
         /// The status.
         /// </summary>
         private DownloadStatus status;
+
+        /// <summary>
+        /// Bindings to important services
+        /// </summary>
+        private WifiManager wifiManager;
 
         #endregion
 
@@ -432,7 +452,7 @@ namespace ExpansionDownloader.Service
             // we begin by getting our APK version from the package manager
             PackageInfo pi = context.PackageManager.GetPackageInfo(context.PackageName, 0);
 
-            DownloadServiceRequirement status = DownloadServiceRequirement.NoDownloadRequired;
+            var status = DownloadServiceRequirement.NoDownloadRequired;
 
             // we need to update the LVL check and get a successful status to proceed
             if (IsLvlCheckRequired(pi))
@@ -443,8 +463,9 @@ namespace ExpansionDownloader.Service
             // we don't have to update LVL. Do we still have a download to start?
             if (DownloadsDatabase.DownloadStatus == DownloadStatus.None)
             {
-                var infos = DownloadsDatabase.GetDownloads();
-                var existing = infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
+                List<DownloadInfo> infos = DownloadsDatabase.GetDownloads();
+                IEnumerable<DownloadInfo> existing =
+                    infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
 
                 if (existing.Count() > 0)
                 {
@@ -521,7 +542,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         public string GenerateTempSaveFileName(string fileName)
         {
-            return String.Format(
+            return string.Format(
                 "{0}{1}{2}{3}", 
                 Helpers.GetSaveFilePath(this), 
                 Path.DirectorySeparatorChar, 
@@ -580,8 +601,8 @@ namespace ExpansionDownloader.Service
                 float currentSpeedSample = bytesInSample / (float)timePassed;
                 if (Math.Abs(0 - this.averageDownloadSpeed) > SmoothingFactor)
                 {
-                    var smoothSpeed = SmoothingFactor * currentSpeedSample;
-                    var averageSpeed = (1 - SmoothingFactor) * this.averageDownloadSpeed;
+                    float smoothSpeed = SmoothingFactor * currentSpeedSample;
+                    float averageSpeed = (1 - SmoothingFactor) * this.averageDownloadSpeed;
                     this.averageDownloadSpeed = smoothSpeed + averageSpeed;
                 }
                 else
@@ -723,6 +744,7 @@ namespace ExpansionDownloader.Service
         /// The get network availability state.
         /// </summary>
         /// <returns>
+        /// The ExpansionDownloader.Service.NetworkDisabledState.
         /// </returns>
         internal NetworkDisabledState GetNetworkAvailabilityState()
         {
@@ -756,6 +778,7 @@ namespace ExpansionDownloader.Service
         /// <param name="info">
         /// </param>
         /// <returns>
+        /// The ExpansionDownloader.Service.DownloaderService+NetworkState.
         /// </returns>
         protected virtual NetworkState GetNetworkState(NetworkInfo info)
         {
@@ -826,7 +849,7 @@ namespace ExpansionDownloader.Service
                 }
 
                 // get each download
-                var infos = DownloadsDatabase.GetDownloads();
+                List<DownloadInfo> infos = DownloadsDatabase.GetDownloads();
                 this.BytesSoFar = 0;
                 this.TotalLength = 0;
                 this.fileCount = infos.Count();
@@ -858,7 +881,7 @@ namespace ExpansionDownloader.Service
                 }
 
                 // loop through all downloads and fetch them
-                var types = Enum.GetValues(typeof(ApkExpansionPolicy.ExpansionFileType)).Length;
+                int types = Enum.GetValues(typeof(ApkExpansionPolicy.ExpansionFileType)).Length;
                 for (int index = 0; index < types; index++)
                 {
                     DownloadInfo info = infos[index];
@@ -1200,7 +1223,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         private class InnerBroadcastReceiver : BroadcastReceiver
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The m service.
