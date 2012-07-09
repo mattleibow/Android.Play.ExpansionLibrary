@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ApkExpansionSupport.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The apk expansion support.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace System.IO.Compression.Zip
 {
     using System.Collections.Generic;
@@ -10,7 +21,7 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public static class ApkExpansionSupport
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The shared path to all app expansion files
@@ -45,7 +56,7 @@ namespace System.IO.Compression.Zip
                 string packageName = ctx.PackageName;
 
                 // Build the full path to the app's expansion files
-                var expPath = Environment.ExternalStorageDirectory + ExpansionFilesPath + packageName;
+                string expPath = Environment.ExternalStorageDirectory + ExpansionFilesPath + packageName;
 
                 // Check that expansion file path exists
                 if (Directory.Exists(expPath))

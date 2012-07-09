@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ZipFile.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   Unique class for compression/decompression file. Represents a Zip file.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace System.IO.Compression.Zip
 {
     using System.Collections.Generic;
@@ -10,12 +21,16 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public class ZipFile : IDisposable
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// todo 
         /// </summary>
         private const float SmoothingFactor = 0.005F;
+
+        #endregion
+
+        #region Fields
 
         /// <summary>
         /// Central dir image
@@ -134,12 +149,12 @@ namespace System.IO.Compression.Zip
             try
             {
                 var zip = new ZipFile(validationHandler.Filename);
-                var entries = zip.GetAllEntries();
+                ZipFileEntry[] entries = zip.GetAllEntries();
 
                 // First calculate the total compressed length
-                var totalCompressedLength = entries.Sum(entry => entry.CompressedSize);
+                long totalCompressedLength = entries.Sum(entry => entry.CompressedSize);
                 float averageVerifySpeed = 0;
-                var totalBytesRemaining = totalCompressedLength;
+                long totalBytesRemaining = totalCompressedLength;
                 validationHandler.TotalBytes = totalCompressedLength;
 
                 // Then calculate a CRC for every file in the Zip file,
@@ -148,28 +163,28 @@ namespace System.IO.Compression.Zip
                 {
                     if (entry.Crc32 != -1)
                     {
-                        var startTime = DateTime.UtcNow;
+                        DateTime startTime = DateTime.UtcNow;
 
                         var crc = new Crc32();
 
-                        var offset = entry.FileOffset;
+                        uint offset = entry.FileOffset;
                         var length = (int)entry.CompressedSize;
 
-                        var raf = zip.zipFileStream;
+                        Stream raf = zip.zipFileStream;
                         raf.Seek(offset, SeekOrigin.Begin);
 
                         while (length > 0)
                         {
-                            var seek = length > buf.Length ? buf.Length : length;
+                            int seek = length > buf.Length ? buf.Length : length;
                             raf.Read(buf, 0, seek);
                             crc.Update(buf, 0, seek);
                             length -= seek;
 
-                            var currentTime = DateTime.UtcNow;
+                            DateTime currentTime = DateTime.UtcNow;
                             var timePassed = (float)(currentTime - startTime).TotalMilliseconds;
                             if (timePassed > 0)
                             {
-                                var currentSpeedSample = seek / timePassed;
+                                float currentSpeedSample = seek / timePassed;
                                 if (averageVerifySpeed <= 0)
                                 {
                                     averageVerifySpeed = (SmoothingFactor * currentSpeedSample)
@@ -515,7 +530,7 @@ namespace System.IO.Compression.Zip
             this.zipFileStream.Read(buffer, 0, 2);
             ushort extraSize = BitConverter.ToUInt16(buffer, 0);
 
-            var offset = 30 + filenameSize + extraSize + headerOffset;
+            long offset = 30 + filenameSize + extraSize + headerOffset;
 
             return (uint)offset;
         }

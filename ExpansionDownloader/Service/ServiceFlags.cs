@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ServiceFlags.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   Flags for a download
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using System;

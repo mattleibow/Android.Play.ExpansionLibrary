@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadNotification.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The download notification.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader
 {
     using Android;
@@ -9,17 +20,23 @@ namespace ExpansionDownloader
     using ExpansionDownloader.Client;
     using ExpansionDownloader.Service;
 
+    using Java.Lang;
+
     /// <summary>
     /// The download notification.
     /// </summary>
     public class DownloadNotification : IDownloaderClient
     {
-        #region Constants and Fields
+        #region Static Fields
 
         /// <summary>
         /// The notification id.
         /// </summary>
         private static readonly int NotificationId = typeof(DownloadNotification).GetHashCode();
+
+        #endregion
+
+        #region Fields
 
         /// <summary>
         /// The m context.
@@ -47,6 +64,11 @@ namespace ExpansionDownloader
         private IDownloaderClient clientProxy;
 
         /// <summary>
+        /// The m state.
+        /// </summary>
+        private DownloaderState clientState;
+
+        /// <summary>
         /// The m current notification.
         /// </summary>
         private Notification currentNotification;
@@ -65,11 +87,6 @@ namespace ExpansionDownloader
         /// The m progress info.
         /// </summary>
         private DownloadProgressInfo progressInfo;
-
-        /// <summary>
-        /// The m state.
-        /// </summary>
-        private DownloaderState clientState;
 
         #endregion
 
@@ -157,6 +174,7 @@ namespace ExpansionDownloader
             /// The context to use to obtain access to the Notification Service
             /// </param>
             /// <returns>
+            /// The Android.App.Notification.
             /// </returns>
             Notification UpdateNotification(Context context);
 
@@ -193,7 +211,7 @@ namespace ExpansionDownloader
             if (progress.OverallTotal <= 0)
             {
                 // we just show the text
-                this.notification.TickerText = new Java.Lang.String(this.currentTitle);
+                this.notification.TickerText = new String(this.currentTitle);
                 this.notification.Icon = Resource.Drawable.StatSysDownload;
                 this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
                 this.currentNotification = this.notification;
@@ -280,7 +298,7 @@ namespace ExpansionDownloader
 
                 this.currentText = stringDownload;
                 this.currentTitle = this.label;
-                this.currentNotification.TickerText = new Java.Lang.String(this.label + ": " + this.currentText);
+                this.currentNotification.TickerText = new String(this.label + ": " + this.currentText);
                 this.currentNotification.Icon = iconResource;
                 this.currentNotification.SetLatestEventInfo(
                     this.context, this.currentTitle, this.currentText, this.PendingIntent);

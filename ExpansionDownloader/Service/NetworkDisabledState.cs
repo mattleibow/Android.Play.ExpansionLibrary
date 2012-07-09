@@ -1,3 +1,15 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="NetworkDisabledState.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The following constants are used to indicates specific reasons for disallowing a
+//   download from using a network, since specific causes can require special handling.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     /// <summary>

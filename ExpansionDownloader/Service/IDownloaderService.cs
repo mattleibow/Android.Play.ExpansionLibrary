@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="IDownloaderService.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   Represents a service that will perform downloads.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     using Android.OS;

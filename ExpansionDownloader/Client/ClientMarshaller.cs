@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ClientMarshaller.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   This class binds the service API to your application client.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Client
 {
     using System;
@@ -6,6 +17,9 @@ namespace ExpansionDownloader.Client
     using Android.OS;
 
     using Java.Lang;
+
+    using Debug = System.Diagnostics.Debug;
+    using Object = Java.Lang.Object;
 
     /// <summary>
     /// This class binds the service API to your application client.
@@ -99,7 +113,7 @@ namespace ExpansionDownloader.Client
         /// </summary>
         private class DownloaderServiceConnection : IDownloaderServiceConnection
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The client type.
@@ -168,10 +182,10 @@ namespace ExpansionDownloader.Client
                 this.classLoader = context.ClassLoader;
                 var bindIntent = new Intent(context, this.serviceTypeType);
                 bindIntent.PutExtra(ClientMessageParameters.Messenger, this.messenger);
-                var bound = context.BindService(bindIntent, this.serviceConnection, Bind.DebugUnbind);
+                bool bound = context.BindService(bindIntent, this.serviceConnection, Bind.DebugUnbind);
                 if (!bound)
                 {
-                    System.Diagnostics.Debug.WriteLine("LVLDL Service Unbound");
+                    Debug.WriteLine("LVLDL Service Unbound");
                 }
             }
 
@@ -222,7 +236,7 @@ namespace ExpansionDownloader.Client
                         {
                             Bundle bun = msg.Data;
                             bun.SetClassLoader(this.classLoader);
-                            var progress = msg.Data.GetString(ClientMessageParameters.Progress);
+                            string progress = msg.Data.GetString(ClientMessageParameters.Progress);
                             var info = new DownloadProgressInfo(progress);
                             this.clientType.OnDownloadProgress(info);
                         }
@@ -244,9 +258,9 @@ namespace ExpansionDownloader.Client
             /// <summary>
             /// Class for interacting with the main interface of the service.
             /// </summary>
-            private class ServiceConnection : Java.Lang.Object, IServiceConnection
+            private class ServiceConnection : Object, IServiceConnection
             {
-                #region Constants and Fields
+                #region Fields
 
                 /// <summary>
                 /// The connection.
@@ -310,7 +324,7 @@ namespace ExpansionDownloader.Client
         /// </summary>
         private class Proxy : IDownloaderClient
         {
-            #region Constants and Fields
+            #region Fields
 
             /// <summary>
             /// The service messenger.
@@ -361,7 +375,7 @@ namespace ExpansionDownloader.Client
             {
                 using (var p = new Bundle(1))
                 {
-                    p.PutInt(ClientMessageParameters.NewState, (int) newState);
+                    p.PutInt(ClientMessageParameters.NewState, (int)newState);
                     this.SendMessage(ClientMessages.DownloadStateChanged, p);
                 }
             }

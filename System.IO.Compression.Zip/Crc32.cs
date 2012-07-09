@@ -1,11 +1,22 @@
-﻿namespace System.IO.Compression.Zip
+﻿// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="Crc32.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The crc 32.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
+namespace System.IO.Compression.Zip
 {
     /// <summary>
     /// The crc 32.
     /// </summary>
     public sealed class Crc32
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The crc seed.
@@ -26,7 +37,7 @@
             Crc32Table = new uint[256];
             for (uint i = 0; i < Crc32Table.Length; i++)
             {
-                var c = i;
+                uint c = i;
 
                 for (int j = 0; j < 8; j++)
                 {

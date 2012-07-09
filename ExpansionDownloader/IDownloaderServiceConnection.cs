@@ -1,3 +1,15 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="IDownloaderServiceConnection.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   This is the interface that is used to connect/disconnect from the
+//   downloader service.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader
 {
     using Android.Content;
@@ -46,6 +58,7 @@ namespace ExpansionDownloader
         /// The get messenger.
         /// </summary>
         /// <returns>
+        /// The Android.OS.Messenger.
         /// </returns>
         Messenger GetMessenger();
 

@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ZipStream.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The zip stream.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace System.IO.Compression.Zip
 {
     /// <summary>
@@ -5,7 +16,7 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public class ZipStream : Stream
     {
-        #region Constants and Fields
+        #region Fields
 
         /// <summary>
         /// The inner stream.

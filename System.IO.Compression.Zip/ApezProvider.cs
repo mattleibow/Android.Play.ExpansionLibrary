@@ -1,3 +1,16 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ApezProvider.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   This defines a ContentProvider that marshalls the data from the ZIP
+//   files through a content provider Uri in order to provide file access
+//   for certain Android APIs that expect Uri access to media files.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace System.IO.Compression.Zip
 {
     using System.Collections.Generic;
@@ -23,7 +36,7 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public abstract class ApezProvider : ContentProvider
     {
-        #region Constants and Fields
+        #region Static Fields
 
         /// <summary>
         /// The field name value map.
@@ -40,6 +53,10 @@ namespace System.IO.Compression.Zip
                     { ApezContentFields.UncompressedLength, ApezProjection.UncompressedLength }, 
                     { ApezContentFields.CompressionType, ApezProjection.CompressionType }
                 };
+
+        #endregion
+
+        #region Fields
 
         /// <summary>
         /// The apk extension file.
@@ -125,6 +142,7 @@ namespace System.IO.Compression.Zip
         /// The operations.
         /// </param>
         /// <returns>
+        /// The Android.Content.ContentProviderResult[].
         /// </returns>
         public override ContentProviderResult[] ApplyBatch(IList<ContentProviderOperation> operations)
         {
@@ -176,6 +194,7 @@ namespace System.IO.Compression.Zip
         /// The values.
         /// </param>
         /// <returns>
+        /// The Android.Net.Uri.
         /// </returns>
         public override Uri Insert(Uri uri, ContentValues values)
         {
@@ -203,6 +222,7 @@ namespace System.IO.Compression.Zip
         /// The mode.
         /// </param>
         /// <returns>
+        /// The Android.Content.Res.AssetFileDescriptor.
         /// </returns>
         public override AssetFileDescriptor OpenAssetFile(Uri uri, string mode)
         {
@@ -244,6 +264,7 @@ namespace System.IO.Compression.Zip
         /// The mode.
         /// </param>
         /// <returns>
+        /// The Android.OS.ParcelFileDescriptor.
         /// </returns>
         public override ParcelFileDescriptor OpenFile(Uri uri, string mode)
         {
@@ -276,15 +297,18 @@ namespace System.IO.Compression.Zip
         /// The sort.
         /// </param>
         /// <returns>
+        /// The Android.Database.ICursor.
         /// </returns>
         public override ICursor Query(Uri uri, string[] projection, string selection, string[] selArgs, string sort)
         {
             this.InitIfNecessary();
 
             // lists all of the items in the file that match
-            var zipEntries = this.apkExtensionFile == null ? new ZipFileEntry[0] : this.apkExtensionFile.GetAllEntries();
+            ZipFileEntry[] zipEntries = this.apkExtensionFile == null
+                                            ? new ZipFileEntry[0]
+                                            : this.apkExtensionFile.GetAllEntries();
 
-            var setProjections = ApezProjections(ref projection);
+            ApezProjection[] setProjections = ApezProjections(ref projection);
             return MatrixCursor(projection, setProjections, zipEntries);
         }
 
@@ -322,12 +346,13 @@ namespace System.IO.Compression.Zip
         /// The projection.
         /// </param>
         /// <returns>
+        /// The System.IO.Compression.Zip.ApezProvider+ApezProjection[].
         /// </returns>
         private static ApezProjection[] ApezProjections(ref string[] projection)
         {
             if (projection == null)
             {
-                var strings = FieldNameValueMap.Keys.ToArray();
+                string[] strings = FieldNameValueMap.Keys.ToArray();
                 projection = strings;
             }
 
@@ -347,12 +372,13 @@ namespace System.IO.Compression.Zip
         /// The entries.
         /// </param>
         /// <returns>
+        /// The Android.Database.MatrixCursor.
         /// </returns>
         private static MatrixCursor MatrixCursor(
             string[] projection, ApezProjection[] intProjection, ZipFileEntry[] entries)
         {
             var mc = new MatrixCursor(projection, entries.Length);
-            foreach (var zer in entries)
+            foreach (ZipFileEntry zer in entries)
             {
                 MatrixCursor.RowBuilder rb = mc.NewRow();
                 for (int i = 0; i < intProjection.Length; i++)
@@ -450,7 +476,7 @@ namespace System.IO.Compression.Zip
         /// </summary>
         private static class ApezContentFields
         {
-            #region Constants and Fields
+            #region Constants
 
             /// <summary>
             /// The compressed length.

@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloaderServiceActions.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The downloader sevice actions.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader.Service
 {
     /// <summary>
@@ -5,7 +16,7 @@ namespace ExpansionDownloader.Service
     /// </summary>
     public static class DownloaderServiceActions
     {
-        #region Constants and Fields
+        #region Constants
 
         /// <summary>
         /// The intent that gets sent when deleting the notification of a completed download

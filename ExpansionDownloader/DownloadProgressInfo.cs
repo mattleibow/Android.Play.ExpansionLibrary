@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="DownloadProgressInfo.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The download progress info.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace ExpansionDownloader
 {
     /// <summary>
@@ -8,6 +19,7 @@ namespace ExpansionDownloader
         #region Constructors and Destructors
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="DownloadProgressInfo"/> class. 
         /// Initializes a new instance of the <see cref="DownloadProgressInfo"/> 
         /// class from a string that represents the info.
         /// </summary>

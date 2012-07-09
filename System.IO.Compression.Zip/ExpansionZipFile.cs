@@ -1,3 +1,14 @@
+// --------------------------------------------------------------------------------------------------------------------
+// <copyright file="ExpansionZipFile.cs" company="Matthew Leibowitz">
+//   Copyright (c) Matthew Leibowitz
+//   This code is licensed under the Apache 2.0 License
+//   http://www.apache.org/licenses/LICENSE-2.0.html
+// </copyright>
+// <summary>
+//   The expansion zip file.
+// </summary>
+// --------------------------------------------------------------------------------------------------------------------
+
 namespace System.IO.Compression.Zip
 {
     using System.Collections.Generic;
@@ -8,7 +19,7 @@ namespace System.IO.Compression.Zip
     /// </summary>
     public class ExpansionZipFile
     {
-        #region Constants and Fields
+        #region Fields
 
         /// <summary>
         /// The files.
