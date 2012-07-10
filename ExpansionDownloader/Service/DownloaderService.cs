@@ -24,6 +24,7 @@ namespace ExpansionDownloader.Service
     using Android.OS;
     using Android.Runtime;
     using Android.Telephony;
+    using Android.Util;
 
     using ExpansionDownloader.Database;
 
@@ -39,7 +40,8 @@ namespace ExpansionDownloader.Service
     public abstract partial class DownloaderService : CustomIntentService, IDownloaderService
     {
         #region Constants
-
+        public const string Tag = "DownloaderService";
+        
         /// <summary>
         /// The buffer size used to stream the data.
         /// </summary>
@@ -236,7 +238,7 @@ namespace ExpansionDownloader.Service
         protected DownloaderService()
             : base("LVLDownloadService")
         {
-            Debug.WriteLine("LVLDL DownloaderService()");
+            Log.Debug(Tag,"LVLDL DownloaderService()");
 
             this.serviceConnection = ServiceMarshaller.CreateStub(this);
             this.serviceMessenger = this.serviceConnection.GetMessenger();
@@ -509,14 +511,15 @@ namespace ExpansionDownloader.Service
 
             if (!Helpers.IsExternalMediaMounted)
             {
-                Debug.WriteLine("External media not mounted: {0}", path);
+                
+                Log.Debug(Tag,"External media not mounted: {0}", path);
 
                 throw new GenerateSaveFileError(DownloadStatus.DeviceNotFoundError, "external media is not yet mounted");
             }
 
             if (File.Exists(path))
             {
-                Debug.WriteLine("File already exists: {0}", path);
+                Log.Debug(Tag,"File already exists: {0}", path);
 
                 throw new GenerateSaveFileError(
                     DownloadStatus.FileAlreadyExists, "requested destination file already exists");
@@ -663,7 +666,7 @@ namespace ExpansionDownloader.Service
             }
             catch (PackageManager.NameNotFoundException e)
             {
-                e.PrintStackTrace();
+                Log.Error(Tag, e, "Oh oh!");
             }
         }
 
@@ -696,7 +699,7 @@ namespace ExpansionDownloader.Service
         /// </summary>
         public void RequestContinueDownload()
         {
-            Debug.WriteLine("RequestContinueDownload");
+            Log.Debug(Tag,"RequestContinueDownload");
 
             if (this.Control == ControlAction.Paused)
             {
@@ -819,7 +822,7 @@ namespace ExpansionDownloader.Service
         /// </param>
         protected override void OnHandleIntent(Intent intent)
         {
-            Debug.WriteLine("DownloaderService.OnHandleIntent");
+            Log.Debug(Tag,"DownloaderService.OnHandleIntent");
 
             this.IsServiceRunning = true;
             try
@@ -837,7 +840,7 @@ namespace ExpansionDownloader.Service
                 }
                 else
                 {
-                    Debug.WriteLine("LVLDL Downloader started in bad state without notification intent.");
+                    Log.Debug(Tag,"LVLDL Downloader started in bad state without notification intent.");
                     return;
                 }
 
@@ -885,7 +888,7 @@ namespace ExpansionDownloader.Service
                 for (int index = 0; index < types; index++)
                 {
                     DownloadInfo info = infos[index];
-                    Debug.WriteLine("Starting download of " + info.FileName);
+                    Log.Debug(Tag,"Starting download of " + info.FileName);
 
                     long startingCount = info.CurrentBytes;
 
@@ -979,8 +982,8 @@ namespace ExpansionDownloader.Service
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine(ex.StackTrace);
+                Log.Error(Tag,ex.Message);
+                Log.Error(Tag,ex.StackTrace);
             }
             finally
             {
@@ -1012,7 +1015,7 @@ namespace ExpansionDownloader.Service
                 var alarms = this.GetSystemService(AlarmService).JavaCast<AlarmManager>();
                 if (alarms == null)
                 {
-                    Debug.WriteLine("LVLDL couldn't get alarm manager");
+                    Log.Debug(Tag,"LVLDL couldn't get alarm manager");
                     return;
                 }
 
@@ -1076,7 +1079,7 @@ namespace ExpansionDownloader.Service
 
             if (this.connectivityManager == null)
             {
-                Debug.WriteLine("LVLDL couldn't get connectivity manager to poll network state");
+                Log.Debug(Tag,"LVLDL couldn't get connectivity manager to poll network state");
             }
             else
             {
@@ -1096,14 +1099,14 @@ namespace ExpansionDownloader.Service
             var alarms = this.GetSystemService(AlarmService).JavaCast<AlarmManager>();
             if (alarms == null)
             {
-                Debug.WriteLine("LVLDL couldn't get alarm manager");
+                Log.Debug(Tag,"LVLDL couldn't get alarm manager");
                 return;
             }
 
             Calendar cal = Calendar.Instance;
             cal.Add(CalendarField.Second, wakeUp);
 
-            Debug.WriteLine("LVLDL scheduling retry in {0} seconds ({1})", wakeUp, cal.Time.ToLocaleString());
+            Log.Debug(Tag,"LVLDL scheduling retry in {0} seconds ({1})", wakeUp, cal.Time.ToLocaleString());
 
             var intent = new Intent(DownloaderServiceActions.ActionRetry);
             intent.PutExtra(DownloaderServiceExtras.PendingIntent, this.pPendingIntent);
@@ -1156,9 +1159,9 @@ namespace ExpansionDownloader.Service
 
             if (this.stateChanged)
             {
-                Debug.WriteLine("LVLDL Network state changed: ");
-                Debug.WriteLine("LVLDL Starting State: {0}", tempState);
-                Debug.WriteLine("LVLDL Ending State: {0}", this.networkState);
+                Log.Debug(Tag,"LVLDL Network state changed: ");
+                Log.Debug(Tag,"LVLDL Starting State: {0}", tempState);
+                Log.Debug(Tag,"LVLDL Ending State: {0}", this.networkState);
 
                 if (this.IsServiceRunning)
                 {
@@ -1263,7 +1266,7 @@ namespace ExpansionDownloader.Service
                 this.service.PollNetworkState();
                 if (this.service.stateChanged && !this.service.IsServiceRunning)
                 {
-                    Debug.WriteLine("LVLDL InnerBroadcastReceiver Called");
+                    Log.Debug(Tag,"LVLDL InnerBroadcastReceiver Called");
                     var fileIntent = new Intent(context, this.service.GetType());
                     fileIntent.PutExtra(DownloaderServiceExtras.PendingIntent, this.service.pPendingIntent);
 
