@@ -7,12 +7,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("LicenseVerificationLibrary")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("LicenseVerificationLibrary")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2012")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
 
 // Version information for an assembly consists of the following four values:
 //      Major Version

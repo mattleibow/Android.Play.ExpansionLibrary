@@ -48,6 +48,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.Common.cs">
+      <Link>AssemblyInfo.Common.cs</Link>
+    </Compile>
     <Compile Include="AESObfuscatorTest.java.cs" />
     <Compile Include="APKExpansionPolicyTest.java.cs" />
     <Compile Include="AssertionException.cs" />

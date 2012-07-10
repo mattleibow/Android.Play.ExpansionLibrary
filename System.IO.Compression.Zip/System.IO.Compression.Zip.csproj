@@ -40,6 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.Common.cs">
+      <Link>AssemblyInfo.Common.cs</Link>
+    </Compile>
     <Compile Include="ApezProvider.cs" />
     <Compile Include="ApkExpansionSupport.cs" />
     <Compile Include="Compression.cs" />

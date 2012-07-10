@@ -49,6 +49,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.Common.cs">
+      <Link>AssemblyInfo.Common.cs</Link>
+    </Compile>
     <Compile Include="Client\ClientMarshaller.cs" />
     <Compile Include="Client\ClientMessageParameters.cs" />
     <Compile Include="Client\ClientMessages.cs" />

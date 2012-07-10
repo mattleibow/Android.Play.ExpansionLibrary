@@ -20,12 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("System.IO.Compression.Zip")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("System.IO.Compression.Zip")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2012")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
 
 // Version information for an assembly consists of the following four values:
 //      Major Version

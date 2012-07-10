@@ -10,20 +10,7 @@ using Android.App;
 [assembly: AssemblyTitle("ExpansionDownloader.Sample")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("ExpansionDownloader.Sample")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2012")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-
-// Setting ComVisible to false makes the types in this assembly not visible 
-// to COM components.  If you need to access a type in this assembly from 
-// COM, set the ComVisible attribute to true on that type.
-
-[assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-
 [assembly: Guid("a557ce8c-9dbe-4b93-8fc4-95ffc126cf14")]
 
 // Version information for an assembly consists of the following four values:
@@ -39,6 +26,7 @@ using Android.App;
 
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
 
 // Add some common permissions, these can be removed if not needed
 
