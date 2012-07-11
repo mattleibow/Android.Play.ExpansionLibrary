@@ -10,7 +10,7 @@ namespace ExpansionDownloader.Sample
     /// <summary>
     /// The alarm receiver for this sample.
     /// </summary>
-    [BroadcastReceiver]
+    [BroadcastReceiver(Exported = false)]
     public class SampleAlarmReceiver : BroadcastReceiver
     {
         #region Public Methods and Operators
