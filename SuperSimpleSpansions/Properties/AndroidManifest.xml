@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" 
+          package="com.jam.apks.sample"
+          android:versionName="third" 
+          android:versionCode="6" >
+  <uses-sdk android:targetSdkVersion="8" />
+  <application android:label="Super Simple Spansions">
+  </application>
+</manifest>
