@@ -18,6 +18,7 @@ namespace ExpansionDownloader.Service
     using Android.Content;
     using Android.OS;
     using Android.Runtime;
+    using Android.Util;
 
     using ExpansionDownloader.Database;
 
@@ -36,6 +37,8 @@ namespace ExpansionDownloader.Service
     /// </summary>
     internal class DownloadThread
     {
+        public const string Tag = "DownloadThread";
+        
         #region Fields
 
         /// <summary>
@@ -106,9 +109,7 @@ namespace ExpansionDownloader.Service
                 bool finished = false;
                 do
                 {
-                    Debug.WriteLine("DownloadThread : initiating download for " + this.downloadInfo.FileName);
-                    Debug.WriteLine("DownloadThread :   at " + this.downloadInfo.Uri);
-
+                    Log.Debug(Tag, "DownloadThread : initiating download for " + this.downloadInfo.FileName + " at " + this.downloadInfo.Uri);
                     var requestUri = new Uri(state.RequestUri);
                     var minute = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     var request = new HttpWebRequest(requestUri)
@@ -143,8 +144,8 @@ namespace ExpansionDownloader.Service
                 }
                 while (!finished);
 
-                Debug.WriteLine("DownloadThread : download completed for " + this.downloadInfo.FileName);
-                Debug.WriteLine("DownloadThread :   at " + this.downloadInfo.Uri);
+                Log.Debug(Tag, "DownloadThread : download completed for " + this.downloadInfo.FileName);
+                Log.Debug(Tag, "DownloadThread :   at " + this.downloadInfo.Uri);
 
                 this.FinalizeDestinationFile(state);
                 finalStatus = DownloadStatus.Success;
