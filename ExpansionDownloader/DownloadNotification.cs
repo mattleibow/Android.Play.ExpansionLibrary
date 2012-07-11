@@ -208,27 +208,30 @@ namespace ExpansionDownloader
                 this.clientProxy.OnDownloadProgress(progress);
             }
 
-            if (progress.OverallTotal <= 0)
+            if (CustomNotificationFactory.Notification != null)
             {
-                // we just show the text
-                this.notification.TickerText = new String(this.currentTitle);
-                this.notification.Icon = Resource.Drawable.StatSysDownload;
-                this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
-                this.currentNotification = this.notification;
-            }
-            else
-            {
-                CustomNotificationFactory.Notification.CurrentBytes = progress.OverallProgress;
-                CustomNotificationFactory.Notification.TotalBytes = progress.OverallTotal;
-                CustomNotificationFactory.Notification.Icon = Resource.Drawable.StatSysDownload;
-                CustomNotificationFactory.Notification.PendingIntent = this.PendingIntent;
-                CustomNotificationFactory.Notification.Ticker = this.label + ": " + this.currentText;
-                CustomNotificationFactory.Notification.Title = this.label;
-                CustomNotificationFactory.Notification.TimeRemaining = progress.TimeRemaining;
-                this.currentNotification = CustomNotificationFactory.Notification.UpdateNotification(this.context);
-            }
+                if (progress.OverallTotal <= 0)
+                {
+                    // we just show the text
+                    this.notification.TickerText = new String(this.currentTitle);
+                    this.notification.Icon = Resource.Drawable.StatSysDownload;
+                    this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
+                    this.currentNotification = this.notification;
+                }
+                else
+                {
+                    CustomNotificationFactory.Notification.CurrentBytes = progress.OverallProgress;
+                    CustomNotificationFactory.Notification.TotalBytes = progress.OverallTotal;
+                    CustomNotificationFactory.Notification.Icon = Resource.Drawable.StatSysDownload;
+                    CustomNotificationFactory.Notification.PendingIntent = this.PendingIntent;
+                    CustomNotificationFactory.Notification.Ticker = this.label + ": " + this.currentText;
+                    CustomNotificationFactory.Notification.Title = this.label;
+                    CustomNotificationFactory.Notification.TimeRemaining = progress.TimeRemaining;
+                    this.currentNotification = CustomNotificationFactory.Notification.UpdateNotification(this.context);
+                }
 
-            this.notificationManager.Notify(NotificationId, this.currentNotification);
+                this.notificationManager.Notify(NotificationId, this.currentNotification);
+            }
         }
 
         /// <summary>
@@ -298,21 +301,24 @@ namespace ExpansionDownloader
 
                 this.currentText = stringDownload;
                 this.currentTitle = this.label;
-                this.currentNotification.TickerText = new String(this.label + ": " + this.currentText);
-                this.currentNotification.Icon = iconResource;
-                this.currentNotification.SetLatestEventInfo(
-                    this.context, this.currentTitle, this.currentText, this.PendingIntent);
-                if (ongoingEvent)
-                {
-                    this.currentNotification.Flags |= NotificationFlags.OngoingEvent;
-                }
-                else
-                {
-                    this.currentNotification.Flags &= ~NotificationFlags.OngoingEvent;
-                    this.currentNotification.Flags |= NotificationFlags.AutoCancel;
-                }
 
-                this.notificationManager.Notify(NotificationId, this.currentNotification);
+                if (CustomNotificationFactory.Notification != null)
+                {
+                    this.currentNotification.TickerText = new String(this.label + ": " + this.currentText);
+                    this.currentNotification.Icon = iconResource;
+                    this.currentNotification.SetLatestEventInfo(this.context, this.currentTitle, this.currentText, this.PendingIntent);
+                    if (ongoingEvent)
+                    {
+                        this.currentNotification.Flags |= NotificationFlags.OngoingEvent;
+                    }
+                    else
+                    {
+                        this.currentNotification.Flags &= ~NotificationFlags.OngoingEvent;
+                        this.currentNotification.Flags |= NotificationFlags.AutoCancel;
+                    }
+
+                    this.notificationManager.Notify(NotificationId, this.currentNotification);
+                }
             }
         }
 
