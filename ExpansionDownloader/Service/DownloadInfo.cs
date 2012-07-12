@@ -11,6 +11,7 @@
 
 namespace ExpansionDownloader.Service
 {
+    using System;
     using System.Text;
 
     using LicenseVerificationLibrary.Policy;
@@ -18,6 +19,7 @@ namespace ExpansionDownloader.Service
     /// <summary>
     /// The download info.
     /// </summary>
+    [Serializable]
     public class DownloadInfo
     {
         #region Constructors and Destructors

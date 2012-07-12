@@ -16,7 +16,7 @@ namespace ExpansionDownloader.Database
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Xml.Serialization;
+    using System.Runtime.Serialization.Formatters.Binary;
 
     using ExpansionDownloader.Service;
 
@@ -268,7 +268,7 @@ namespace ExpansionDownloader.Database
                     // read the file
                     using (FileStream reader = File.OpenRead(dataPath))
                     {
-                        var serializer = new XmlSerializer(typeof(T));
+                        var serializer = new BinaryFormatter();
                         data = serializer.Deserialize(reader) as T;
                     }
                 }
@@ -302,7 +302,7 @@ namespace ExpansionDownloader.Database
                 // is it a list of types
                 if (typeof(IEnumerable).IsAssignableFrom(paramType))
                 {
-                    Type[] genericArguments = paramType.GetType().GetGenericArguments();
+                    Type[] genericArguments = paramType.GetGenericArguments();
                     if (genericArguments.Any())
                     {
                         paramType = genericArguments[0];
@@ -324,10 +324,9 @@ namespace ExpansionDownloader.Database
             /// </typeparam>
             internal static void SaveData<T>(T data)
             {
-                Type type = typeof(T);
-                using (var writer = new StreamWriter(GetDataPath<T>()))
+                using (var writer = new FileStream(GetDataPath<T>(), FileMode.Create))
                 {
-                    var serializer = new XmlSerializer(type);
+                    var serializer = new BinaryFormatter();
                     serializer.Serialize(writer, data);
                 }
             }

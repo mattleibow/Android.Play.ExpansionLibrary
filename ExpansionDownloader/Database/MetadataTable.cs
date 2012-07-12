@@ -11,11 +11,14 @@
 
 namespace ExpansionDownloader.Database
 {
+    using System;
+
     using ExpansionDownloader.Service;
 
     /// <summary>
     /// The metadata columns.
     /// </summary>
+    [Serializable]
     public class MetadataTable
     {
         #region Public Properties
