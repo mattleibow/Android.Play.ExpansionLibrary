@@ -116,7 +116,13 @@ namespace ExpansionDownloader
         /// This download exceeded a size limit for mobile networks and is
         /// waiting for a Wi-Fi connection to proceed.
         /// </summary>
-        QueuedForWifi = 196, 
+        QueuedForWifiOrCellularPermission = 196, 
+
+        /// <summary>
+        /// This download exceeded a size limit for mobile networks and is
+        /// waiting for a Wi-Fi connection to proceed.
+        /// </summary>
+        QueuedForWifi = 197, 
 
         /// <summary>
         /// This download has successfully completed. Warning: there might be 

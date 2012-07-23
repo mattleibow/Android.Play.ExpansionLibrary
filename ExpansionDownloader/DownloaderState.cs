@@ -67,47 +67,51 @@ namespace ExpansionDownloader
         /// Implies that Wi-Fi is unavailable and cellular permission will 
         /// restart the service (Wi-Fi is enabled but not available).
         /// </summary>
-        PausedNeedCellularPermission = 9, 
+        PausedNeedCellularPermission = 9,
+
+        PausedWifiDisabled = 10,
+
+        PausedNeedWifi = 11, 
 
         /// <summary>
         /// The paused roaming.
         /// </summary>
-        PausedRoaming = 10, 
+        PausedRoaming = 12, 
 
         /// <summary>
         /// We were on a network that redirected us to another website
         /// that delivered us the wrong file.
         /// </summary>
-        PausedNetworkSetupFailure = 11, 
+        PausedNetworkSetupFailure = 13, 
 
         /// <summary>
         /// The paused sd card unavailable.
         /// </summary>
-        PausedSdCardUnavailable = 12, 
+        PausedSdCardUnavailable = 14, 
 
         /// <summary>
         /// The failed unlicensed.
         /// </summary>
-        FailedUnlicensed = 13, 
+        FailedUnlicensed = 15, 
 
         /// <summary>
         /// The failed fetching url.
         /// </summary>
-        FailedFetchingUrl = 14, 
+        FailedFetchingUrl = 16, 
 
         /// <summary>
         /// The failed sd card full.
         /// </summary>
-        FailedSdCardFull = 15, 
+        FailedSdCardFull = 17, 
 
         /// <summary>
         /// The failed canceled.
         /// </summary>
-        FailedCanceled = 16, 
+        FailedCanceled = 18, 
 
         /// <summary>
         /// The failed.
         /// </summary>
-        Failed = 17
+        Failed = 19
     }
 }

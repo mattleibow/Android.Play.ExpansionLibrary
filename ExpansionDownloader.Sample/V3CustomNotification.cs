@@ -19,6 +19,14 @@ namespace ExpansionDownloader.Sample
         /// </summary>
         private readonly Notification notification;
 
+        private RemoteViews expandedView;
+
+        private bool lastHasPausedText;
+        private PendingIntent pendingIntent;
+        private int notificationIcon;
+        private string title;
+        private string pausedText;
+
         #endregion
 
         #region Constructors and Destructors
@@ -31,6 +39,9 @@ namespace ExpansionDownloader.Sample
             this.CurrentBytes = -1;
             this.TotalBytes = -1;
             this.notification = new Notification();
+            this.expandedView = null;
+
+            this.notification.Flags |= NotificationFlags.OngoingEvent;
         }
 
         #endregion
@@ -45,17 +56,54 @@ namespace ExpansionDownloader.Sample
         /// <summary>
         /// Gets or sets Icon.
         /// </summary>
-        public int Icon { private get; set; }
+        public int Icon
+        {
+            private get { return this.notificationIcon; }
+            set
+            {
+                if (this.notificationIcon != value)
+                {
+                    this.notificationIcon = value;
+                    this.notification.Icon = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets PausedText.
         /// </summary>
-        public string PausedText { private get; set; }
+        public string PausedText
+        {
+            private get { return this.pausedText; }
+            set
+            {
+                if (this.pausedText != value)
+                {
+                    this.pausedText = value;
+                    if (this.expandedView != null)
+                    {
+                        expandedView.SetTextViewText(Resource.Id.paused_text, value);
+                    }
+                }
+            }
+        }
+
 
         /// <summary>
         /// Gets or sets PendingIntent.
         /// </summary>
-        public PendingIntent PendingIntent { private get; set; }
+        public PendingIntent PendingIntent
+        {
+            private get { return this.pendingIntent; }
+            set
+            {
+                if (this.pendingIntent != value)
+                {
+                    this.pendingIntent = value;
+                    this.notification.ContentIntent = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets Ticker.
@@ -70,7 +118,21 @@ namespace ExpansionDownloader.Sample
         /// <summary>
         /// Gets or sets Title.
         /// </summary>
-        public string Title { private get; set; }
+        public string Title
+        {
+            private get { return this.title; }
+            set
+            {
+                if (this.title != value)
+                {
+                    this.title = value;
+                    if (this.expandedView != null)
+                    {
+                        expandedView.SetTextViewText(Resource.Id.title, value);
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets TotalBytes.
@@ -93,43 +155,42 @@ namespace ExpansionDownloader.Sample
         public Notification UpdateNotification(Context context)
         {
             bool hasPausedText = this.PausedText != null;
-            this.notification.Icon = this.Icon;
-
-            this.notification.Flags |= NotificationFlags.OngoingEvent;
+            bool mustUpdate = this.lastHasPausedText != hasPausedText;
 
             // Build the RemoteView object
-            var expandedView = new RemoteViews(
-                context.PackageName, Resource.Layout.status_bar_ongoing_event_progress_bar);
-
-            if (hasPausedText)
+            if (expandedView == null)
             {
-                expandedView.SetViewVisibility(Resource.Id.progress_bar_frame, ViewStates.Gone);
-                expandedView.SetViewVisibility(Resource.Id.description, ViewStates.Gone);
+                expandedView = new RemoteViews(context.PackageName, Resource.Layout.status_bar_ongoing_event_progress_bar);
+                expandedView.SetImageViewResource(Resource.Id.appIcon, this.Icon);
                 expandedView.SetTextViewText(Resource.Id.paused_text, this.PausedText);
-                expandedView.SetViewVisibility(Resource.Id.time_remaining, ViewStates.Gone);
-            }
-            else
-            {
                 expandedView.SetTextViewText(Resource.Id.title, this.Title);
 
-                // look at strings
-                expandedView.SetViewVisibility(Resource.Id.description, ViewStates.Visible);
+                this.notification.ContentView = expandedView;
+
+                mustUpdate = true;
+            }
+
+            if (mustUpdate)
+            {
+                expandedView.SetViewVisibility(Resource.Id.progress_bar_frame, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
+                expandedView.SetViewVisibility(Resource.Id.description, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
+                expandedView.SetViewVisibility(Resource.Id.time_remaining, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
+                expandedView.SetViewVisibility(Resource.Id.paused_text, hasPausedText ? ViewStates.Visible : ViewStates.Gone);
+            }
+
+            if (!hasPausedText)
+            {
+                expandedView.SetTextViewText(Resource.Id.progress_text, Helpers.GetDownloadProgressPercent(this.CurrentBytes, this.TotalBytes));
                 expandedView.SetTextViewText(Resource.Id.description, Helpers.GetDownloadProgressString(this.CurrentBytes, this.TotalBytes));
-                expandedView.SetViewVisibility(Resource.Id.progress_bar_frame, (int)ViewStates.Visible);
-                expandedView.SetViewVisibility(Resource.Id.paused_text, ViewStates.Gone);
                 expandedView.SetProgressBar(
-                    Resource.Id.progress_bar, 
-                    (int)(this.TotalBytes >> 8), 
-                    (int)(this.CurrentBytes >> 8), 
+                    Resource.Id.progress_bar,
+                    (int)(this.TotalBytes >> 8),
+                    (int)(this.CurrentBytes >> 8),
                     this.TotalBytes <= 0);
-                expandedView.SetViewVisibility(Resource.Id.time_remaining, ViewStates.Visible);
                 expandedView.SetTextViewText(Resource.Id.time_remaining, string.Format("Time remaining: {0}", Helpers.GetTimeRemaining(this.TimeRemaining)));
             }
 
-            expandedView.SetTextViewText(Resource.Id.progress_text, Helpers.GetDownloadProgressPercent(this.CurrentBytes, this.TotalBytes));
-            expandedView.SetImageViewResource(Resource.Id.appIcon, this.Icon);
-            this.notification.ContentView = expandedView;
-            this.notification.ContentIntent = this.PendingIntent;
+            this.lastHasPausedText = hasPausedText;
 
             return this.notification;
         }

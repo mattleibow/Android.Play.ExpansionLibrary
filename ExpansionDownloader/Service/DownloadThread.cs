@@ -83,6 +83,12 @@ namespace ExpansionDownloader.Service
             this.downloadInfo = info;
             this.downloaderService = service;
             this.downloadNotification = notification;
+            this.UserAgent = string.Format("APKXDL (Linux; U; Android {0};{1}; {2}/{3}){4}",
+                                           Build.VERSION.Release,
+                                           System.Threading.Thread.CurrentThread.CurrentCulture.Name,
+                                           Build.Device,
+                                           Build.Id,
+                                           this.downloaderService.PackageName);
         }
 
         #endregion
@@ -115,7 +121,7 @@ namespace ExpansionDownloader.Service
                     var request = new HttpWebRequest(requestUri)
                         {
                             Proxy = WebRequest.DefaultWebProxy, 
-                            UserAgent = UserAgent(), 
+                            UserAgent = this.UserAgent, 
                             Timeout = minute, 
                             ReadWriteTimeout = minute, 
                             AllowAutoRedirect = false
@@ -366,10 +372,7 @@ namespace ExpansionDownloader.Service
         /// <returns>
         /// The user agent.
         /// </returns>
-        private static string UserAgent()
-        {
-            return DownloaderService.DefaultUserAgent;
-        }
+        private string UserAgent { get; set; }
 
         /// <summary>
         /// Write a data buffer to the destination file.
@@ -442,9 +445,12 @@ namespace ExpansionDownloader.Service
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "waiting for network to return");
                 case NetworkDisabledState.TypeDisallowedByRequestor:
                     throw new StopRequestException(
-                        DownloadStatus.QueuedForWifi, "waiting for wifi or for download over cellular to be authorized");
+                        DownloadStatus.QueuedForWifiOrCellularPermission, 
+                        "waiting for wifi or for download over cellular to be authorized");
                 case NetworkDisabledState.CannotUseRoaming:
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "roaming is not allowed");
+                case NetworkDisabledState.UnusableDueToSize:
+                    throw new StopRequestException(DownloadStatus.QueuedForWifi, "waiting for wifi");
             }
         }
 

@@ -469,7 +469,7 @@ namespace ExpansionDownloader.Service
                 IEnumerable<DownloadInfo> existing =
                     infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
 
-                if (existing.Count() > 0)
+                if (existing.Any())
                 {
                     status = DownloadServiceRequirement.DownloadRequired;
                     DownloadsDatabase.DownloadStatus = DownloadStatus.Unknown;
@@ -939,6 +939,7 @@ namespace ExpansionDownloader.Service
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.QueuedForWifi:
+                        case DownloadStatus.QueuedForWifiOrCellularPermission:
 
                             // look for more detail here
                             notifyStatus = this.wifiManager != null && !this.wifiManager.IsWifiEnabled
@@ -979,6 +980,8 @@ namespace ExpansionDownloader.Service
                     this.downloadNotification.OnDownloadStateChanged(notifyStatus);
                     return;
                 }
+
+                this.downloadNotification.OnDownloadStateChanged(DownloaderState.Completed);
             }
             catch (Exception ex)
             {

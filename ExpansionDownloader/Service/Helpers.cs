@@ -286,8 +286,10 @@ namespace ExpansionDownloader.Service
                     return "Download paused because no network is available";
                 case DownloaderState.PausedByRequest:
                     return "Download paused";
+                case DownloaderState.PausedWifiDisabled:
                 case DownloaderState.PausedWifiDisabledNeedCellularPermission:
                     return "Download paused because wifi is disabled";
+                case DownloaderState.PausedNeedWifi:
                 case DownloaderState.PausedNeedCellularPermission:
                     return "Download paused because wifi is unavailable";
                 case DownloaderState.PausedRoaming:
