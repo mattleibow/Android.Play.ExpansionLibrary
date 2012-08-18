@@ -1,6 +1,7 @@
+# About this project
+
 This is the C# implementation of Google's License Verification Library and the 
 Android Play Expansion Library
-
 
 They both compile and run correctly. 
 I have not tested on a 4.0+ device yet, but there were no problems on the 
@@ -8,6 +9,30 @@ Android 2.x and 3.x devices.
 
 The downloader currently, correctly, notices that it is on mobile data and 
 asks the user to make a decision on to wait for wifi or use mobile.
+
+# For your app
+
+There are no dependencies other than the included projects. 
+There should be two:
+ - the LicenseVerificationLibrary (which requires nothing) 
+ - the ExpansionDownloader (which requires the LVL). 
+
+No jars and no resources are needed.
+
+What you do need to add is the required permissions. Either in the manifest:
+
+    <uses-permission android:name="com.android.vending.CHECK_LICENSE">
+
+or as an assembly attribute:
+
+    [assembly: UsesPermission("com.android.vending.CHECK_LICENSE")]
+
+You can even use the LVL without the Downloader for pure licensing purposes.
+The other projects are either:
+ - Samples (to test using one of my accounts on Play, which you can change) 
+ - Tests (Unit Tests?).
+
+# For you
 
 Currently due to Mono for Android's limitation on including resource files 
 with class libraries, so I have embedded the stings temporarily. I am also 
@@ -18,26 +43,19 @@ This is most of the work done and it just needs cleaning and refactoring.
 I also then want to make it friendlier towards .NET developers and using the 
 C#/.NET types instead of the Java types.
 
-There are no dependencies other than the included projects. 
-There should be two:
- - the LicenseVerificationLibrary (which requires nothing) 
- - the ExpansionDownloader (which requires the LVL). 
-No jars and no resources are needed.
-
-You can even use the LVL without the Downloader for pure licensing purposes.
-The other projects are either:
- - Samples (to test using one of my accounts on Play) 
- - Tests (Unit Tests?).
-
-The ToDo list is sort of the open issues part on GitHub. 
-Please feel free to add any new issues as new things come up. 
-Or any suggestions for improvements.
-
 I suppose the most important thing to note is that this is an almost direct 
 translation of the Java code. 
 This is not really bad, but some things could have been done better/differently
 in C#. eg: The IPCs could be better implemented, but I haven't gotten around
 to that yet.
+
+# Your contributions
+
+The ToDo list is sort of the open issues part on GitHub. 
+Please feel free to add any new issues as new things come up. 
+Or any suggestions for improvements.
+
+# License
 
 This code is released under the Apache 2.0 License.
 http://www.apache.org/licenses/LICENSE-2.0.html
