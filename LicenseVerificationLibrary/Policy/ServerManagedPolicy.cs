@@ -311,9 +311,9 @@ namespace LicenseVerificationLibrary.Policy
                     }
                     else
                     {
-                        this.SetValidityTimestamp(extras["VT"]);
-                        this.SetRetryUntil(extras["GT"]);
-                        this.SetMaxRetries(extras["GR"]);
+                        this.SetValidityTimestamp(extras.ContainsKey("VT") ? extras["VT"] : DefaultValidityTimestamp);
+                        this.SetRetryUntil(extras.ContainsKey("GT") ? extras["GT"] : DefaultRetryUntil);
+                        this.SetMaxRetries(extras.ContainsKey("GR") ? extras["GR"] : DefaultMaxRetries);
                     }
 
                     break;
