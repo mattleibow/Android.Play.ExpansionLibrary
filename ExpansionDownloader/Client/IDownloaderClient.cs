@@ -14,6 +14,8 @@ namespace ExpansionDownloader.Client
 {
     using Android.OS;
 
+    using ExpansionDownloader.Core;
+
     /// <summary>
     /// This interface should be implemented by the client activity for the
     /// downloader. It is used to pass status from the service to the client.

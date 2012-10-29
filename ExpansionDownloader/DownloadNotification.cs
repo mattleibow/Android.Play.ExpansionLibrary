@@ -18,6 +18,7 @@ namespace ExpansionDownloader
     using Android.Runtime;
 
     using ExpansionDownloader.Client;
+    using ExpansionDownloader.Core;
     using ExpansionDownloader.Service;
 
     using Java.Lang;
@@ -84,7 +85,7 @@ namespace ExpansionDownloader
         private string currentTitle;
 
         /// <summary>
-        /// The m progress info.
+        /// The m progress infoBase.
         /// </summary>
         private DownloadProgressInfo progressInfo;
 

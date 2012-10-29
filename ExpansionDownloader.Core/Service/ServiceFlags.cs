@@ -1,33 +1,29 @@
 // --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ServiceParameters.cs" company="Matthew Leibowitz">
+// <copyright file="ServiceFlags.cs" company="Matthew Leibowitz">
 //   Copyright (c) Matthew Leibowitz
 //   This code is licensed under the Apache 2.0 License
 //   http://www.apache.org/licenses/LICENSE-2.0.html
 // </copyright>
 // <summary>
-//   The downloader service parameters.
+//   Flags for a download
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Service
+namespace ExpansionDownloader.Core.Service
 {
+    using System;
+
     /// <summary>
-    /// The downloader service parameters.
+    /// Flags for a download
     /// </summary>
-    public static class ServiceParameters
+    [Flags]
+    public enum ServiceFlags
     {
-        #region Constants
-
         /// <summary>
-        /// The flags parameter.
+        /// Set this flag in response to the 
+        /// <see cref="DownloaderState.PausedNeedCellularPermission"/> 
+        /// state and then call RequestContinueDownload to resume a download
         /// </summary>
-        public const string Flags = "flags";
-
-        /// <summary>
-        /// The messenger parameter.
-        /// </summary>
-        public const string Messenger = DownloaderServiceExtras.MessageHandler;
-
-        #endregion
+        FlagsDownloadOverCellular = 1
     }
 }

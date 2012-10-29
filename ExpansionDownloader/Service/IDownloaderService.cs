@@ -13,6 +13,9 @@ namespace ExpansionDownloader.Service
 {
     using Android.OS;
 
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Service;
+
     /// <summary>
     /// Represents a service that will perform downloads.
     /// </summary>

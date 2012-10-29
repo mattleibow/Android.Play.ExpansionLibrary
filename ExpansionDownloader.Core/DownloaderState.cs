@@ -9,7 +9,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Core
 {
     /// <summary>
     /// The downloader client state.

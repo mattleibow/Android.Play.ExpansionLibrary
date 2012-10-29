@@ -17,7 +17,9 @@ namespace ExpansionDownloader.Service
     using Android.Content.PM;
     using Android.Provider;
 
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Service;
+    using ExpansionDownloader.Core.Database;
 
     using Java.Lang;
 
@@ -38,7 +40,7 @@ namespace ExpansionDownloader.Service
         /// Returns true if the LVL check is required.
         /// </summary>
         /// <param name="pi">
-        /// the package info for the project
+        /// the package infoBase for the project
         /// </param>
         /// <returns>
         /// true if the filenames need to be returned
@@ -210,7 +212,7 @@ namespace ExpansionDownloader.Service
                                 else
                                 {
                                     // we need to read the download information from the database
-                                    DownloadInfo dbdi = DownloadsDatabase.GetDownloadInfo(di.FileName);
+                                    DownloadInfoBase dbdi = DownloadsDatabase.GetDownloadInfo(di.FileName);
                                     if (dbdi == null)
                                     {
                                         // the file exists already and is the correct size

@@ -1,6 +1,7 @@
 namespace SuperSimpleSpansions
 {
     using ExpansionDownloader;
+    using ExpansionDownloader.Core;
 
     public static class DownloaderStateExstensions
     {

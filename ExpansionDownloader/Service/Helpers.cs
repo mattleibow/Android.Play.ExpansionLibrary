@@ -18,6 +18,8 @@ namespace ExpansionDownloader.Service
     using Android.Content;
     using Android.OS;
 
+    using ExpansionDownloader.Core;
+
     using Debug = System.Diagnostics.Debug;
     using Environment = System.Environment;
 
@@ -148,7 +150,7 @@ namespace ExpansionDownloader.Service
         }
 
         /// <summary>
-        /// Returns the filename (where the file should be saved) from info about a download
+        /// Returns the filename (where the file should be saved) from infoBase about a download
         /// </summary>
         /// <param name="c">
         /// The c.

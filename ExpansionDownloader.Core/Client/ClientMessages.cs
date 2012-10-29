@@ -1,29 +1,34 @@
 // --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ControlAction.cs" company="Matthew Leibowitz">
+// <copyright file="ClientMessages.cs" company="Matthew Leibowitz">
 //   Copyright (c) Matthew Leibowitz
 //   This code is licensed under the Apache 2.0 License
 //   http://www.apache.org/licenses/LICENSE-2.0.html
 // </copyright>
 // <summary>
-//   The control action.
+//   The downloader client messages.
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Service
+namespace ExpansionDownloader.Core.Client
 {
     /// <summary>
-    /// The control action.
+    /// The downloader client messages.
     /// </summary>
-    public enum ControlAction
+    public enum ClientMessages
     {
         /// <summary>
-        /// This download is allowed to run.
+        /// The download state changed.
         /// </summary>
-        Run = 0, 
+        DownloadStateChanged = 10, 
 
         /// <summary>
-        /// This download must pause at the first opportunity.
+        /// The download progress.
         /// </summary>
-        Paused = 1
+        DownloadProgress = 11, 
+
+        /// <summary>
+        /// The service connected.
+        /// </summary>
+        ServiceConnected = 12
     }
 }

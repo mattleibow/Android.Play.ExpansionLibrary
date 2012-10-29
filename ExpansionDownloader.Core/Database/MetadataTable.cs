@@ -9,11 +9,11 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Database
+namespace ExpansionDownloader.Core.Database
 {
     using System;
 
-    using ExpansionDownloader.Service;
+    using ExpansionDownloader.Core.Service;
 
     /// <summary>
     /// The metadata columns.

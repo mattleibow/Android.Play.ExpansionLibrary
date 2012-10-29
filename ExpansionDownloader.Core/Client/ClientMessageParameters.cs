@@ -9,7 +9,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Client
+namespace ExpansionDownloader.Core.Client
 {
     /// <summary>
     /// The downloader client message parameters.

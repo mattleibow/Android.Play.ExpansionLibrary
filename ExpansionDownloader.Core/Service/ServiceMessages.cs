@@ -9,7 +9,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Service
+namespace ExpansionDownloader.Core.Service
 {
     /// <summary>
     /// The downloader service messages.

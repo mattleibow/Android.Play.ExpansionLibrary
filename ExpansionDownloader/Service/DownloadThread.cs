@@ -20,7 +20,9 @@ namespace ExpansionDownloader.Service
     using Android.Runtime;
     using Android.Util;
 
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Service;
+    using ExpansionDownloader.Core.Database;
 
     using Java.Lang;
     using Java.Net;
@@ -47,9 +49,9 @@ namespace ExpansionDownloader.Service
         private readonly DownloaderService context;
 
         /// <summary>
-        /// The download info.
+        /// The download infoBase.
         /// </summary>
-        private readonly DownloadInfo downloadInfo;
+        private readonly DownloadInfoBase downloadInfoBase;
 
         /// <summary>
         /// The download notification.
@@ -68,8 +70,8 @@ namespace ExpansionDownloader.Service
         /// <summary>
         /// Initializes a new instance of the <see cref="DownloadThread"/> class.
         /// </summary>
-        /// <param name="info">
-        /// The info.
+        /// <param name="infoBase">
+        /// The infoBase.
         /// </param>
         /// <param name="service">
         /// The service.
@@ -77,10 +79,10 @@ namespace ExpansionDownloader.Service
         /// <param name="notification">
         /// The notification.
         /// </param>
-        internal DownloadThread(DownloadInfo info, DownloaderService service, DownloadNotification notification)
+        internal DownloadThread(DownloadInfoBase infoBase, DownloaderService service, DownloadNotification notification)
         {
             this.context = service;
-            this.downloadInfo = info;
+            this.downloadInfoBase = infoBase;
             this.downloaderService = service;
             this.downloadNotification = notification;
             this.UserAgent = string.Format("APKXDL (Linux; U; Android {0};{1}; {2}/{3}){4}",
@@ -102,7 +104,7 @@ namespace ExpansionDownloader.Service
         {
             Process.SetThreadPriority(ThreadPriority.Background);
 
-            var state = new State(this.downloadInfo, this.downloaderService);
+            var state = new State(this.downloadInfoBase, this.downloaderService);
             PowerManager.WakeLock wakeLock = null;
             var finalStatus = DownloadStatus.UnknownError;
 
@@ -115,7 +117,7 @@ namespace ExpansionDownloader.Service
                 bool finished = false;
                 do
                 {
-                    Log.Debug(Tag, "DownloadThread : initiating download for " + this.downloadInfo.FileName + " at " + this.downloadInfo.Uri);
+                    Log.Debug(Tag, "DownloadThread : initiating download for " + this.downloadInfoBase.FileName + " at " + this.downloadInfoBase.Uri);
                     var requestUri = new Uri(state.RequestUri);
                     var minute = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     var request = new HttpWebRequest(requestUri)
@@ -150,8 +152,8 @@ namespace ExpansionDownloader.Service
                 }
                 while (!finished);
 
-                Log.Debug(Tag, "DownloadThread : download completed for " + this.downloadInfo.FileName);
-                Log.Debug(Tag, "DownloadThread :   at " + this.downloadInfo.Uri);
+                Log.Debug(Tag, "DownloadThread : download completed for " + this.downloadInfoBase.FileName);
+                Log.Debug(Tag, "DownloadThread :   at " + this.downloadInfoBase.Uri);
 
                 this.FinalizeDestinationFile(state);
                 finalStatus = DownloadStatus.Success;
@@ -160,14 +162,14 @@ namespace ExpansionDownloader.Service
             {
                 // remove the cause before printing, in case it contains PII
                 Debug.WriteLine(
-                    "LVLDL Aborting request for download {0}: {1}", this.downloadInfo.FileName, error.Message);
+                    "LVLDL Aborting request for download {0}: {1}", this.downloadInfoBase.FileName, error.Message);
                 Debug.WriteLine(error.StackTrace);
                 finalStatus = error.FinalStatus;
             }
             catch (Exception ex)
             {
                 // sometimes the socket code throws unchecked exceptions
-                Debug.WriteLine("LVLDL Exception for {0}: {1}", this.downloadInfo.FileName, ex.Message);
+                Debug.WriteLine("LVLDL Exception for {0}: {1}", this.downloadInfoBase.FileName, ex.Message);
                 finalStatus = DownloadStatus.UnknownError;
             }
             finally
@@ -496,7 +498,7 @@ namespace ExpansionDownloader.Service
             HttpWebResponse response = this.SendRequest(state, request);
             this.HandleExceptionalStatus(state, innerState, response);
 
-            Debug.WriteLine("DownloadThread : received response for {0}", this.downloadInfo.Uri);
+            Debug.WriteLine("DownloadThread : received response for {0}", this.downloadInfoBase.Uri);
 
             this.ProcessResponseHeaders(state, innerState, response);
             Stream entityStream = this.OpenResponseEntity(state, response);
@@ -514,11 +516,11 @@ namespace ExpansionDownloader.Service
         {
             SyncDestination(state);
             string tempFilename = state.Filename;
-            string finalFilename = Helpers.GenerateSaveFileName(this.downloaderService, this.downloadInfo.FileName);
+            string finalFilename = Helpers.GenerateSaveFileName(this.downloaderService, this.downloadInfoBase.FileName);
             if (state.Filename != finalFilename)
             {
                 var startFile = new FileInfo(tempFilename);
-                if (this.downloadInfo.TotalBytes != -1 && this.downloadInfo.CurrentBytes == this.downloadInfo.TotalBytes)
+                if (this.downloadInfoBase.TotalBytes != -1 && this.downloadInfoBase.CurrentBytes == this.downloadInfoBase.TotalBytes)
                 {
                     try
                     {
@@ -554,13 +556,13 @@ namespace ExpansionDownloader.Service
                 return DownloadStatus.WaitingForNetwork;
             }
 
-            if (this.downloadInfo.FailedCount < DownloaderService.MaximumRetries)
+            if (this.downloadInfoBase.FailedCount < DownloaderService.MaximumRetries)
             {
                 state.CountRetry = true;
                 return DownloadStatus.WaitingToRetry;
             }
 
-            Debug.WriteLine("LVLDL reached max retries for " + this.downloadInfo.FailedCount);
+            Debug.WriteLine("LVLDL reached max retries for " + this.downloadInfoBase.FailedCount);
 
             return DownloadStatus.HttpDataError;
         }
@@ -579,14 +581,14 @@ namespace ExpansionDownloader.Service
         {
             Debug.WriteLine("HandleEndOfStream");
 
-            this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
+            this.downloadInfoBase.CurrentBytes = innerState.BytesSoFar;
 
             //// this should always be set from the market
             // if (innerState.HeaderContentLength == null)
             // {
-            // downloadInfo.TotalBytes = innerState.BytesSoFar;
+            // DownloadInfoBase.TotalBytes = innerState.BytesSoFar;
             // }
-            DownloadsDatabase.UpdateDownload(this.downloadInfo);
+            DownloadsDatabase.UpdateDownload(this.downloadInfoBase);
 
             bool lengthMismatched = innerState.HeaderContentLength != null
                                     && innerState.BytesSoFar != int.Parse(innerState.HeaderContentLength);
@@ -625,7 +627,7 @@ namespace ExpansionDownloader.Service
         {
             HttpStatusCode statusCode = response.StatusCode;
             if (statusCode == HttpStatusCode.ServiceUnavailable
-                && this.downloadInfo.FailedCount < DownloaderService.MaximumRetries)
+                && this.downloadInfoBase.FailedCount < DownloaderService.MaximumRetries)
             {
                 HandleServiceUnavailable(state, response);
             }
@@ -686,11 +688,11 @@ namespace ExpansionDownloader.Service
             string newUri;
             try
             {
-                newUri = new URI(this.downloadInfo.Uri).Resolve(new URI(header)).ToString();
+                newUri = new URI(this.downloadInfoBase.Uri).Resolve(new URI(header)).ToString();
             }
             catch (URISyntaxException)
             {
-                Debug.WriteLine("Couldn't resolve redirect URI {0} for {1}", header, this.downloadInfo.Uri);
+                Debug.WriteLine("Couldn't resolve redirect URI {0} for {1}", header, this.downloadInfoBase.Uri);
                 throw new StopRequestException(DownloadStatus.HttpDataError, "Couldn't resolve redirect URI");
             }
 
@@ -788,7 +790,7 @@ namespace ExpansionDownloader.Service
                 try
                 {
                     state.Filename = this.downloaderService.GenerateSaveFile(
-                        this.downloadInfo.FileName, this.downloadInfo.TotalBytes);
+                        this.downloadInfoBase.FileName, this.downloadInfoBase.TotalBytes);
                 }
                 catch (DownloaderService.GenerateSaveFileError exc)
                 {
@@ -820,7 +822,7 @@ namespace ExpansionDownloader.Service
                         DownloadStatus.FileError, string.Format("while opening destination file: {0}", ex), ex);
                 }
 
-                Debug.WriteLine("DownloadThread : writing {0} to {1}", this.downloadInfo.Uri, state.Filename);
+                Debug.WriteLine("DownloadThread : writing {0} to {1}", this.downloadInfoBase.Uri, state.Filename);
 
                 this.UpdateDatabaseFromHeaders(innerState);
 
@@ -854,8 +856,8 @@ namespace ExpansionDownloader.Service
             catch (IOException ex)
             {
                 this.LogNetworkState();
-                this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                DownloadsDatabase.UpdateDownload(this.downloadInfo);
+                this.downloadInfoBase.CurrentBytes = innerState.BytesSoFar;
+                DownloadsDatabase.UpdateDownload(this.downloadInfoBase);
 
                 string message;
                 DownloadStatus finalStatus;
@@ -923,7 +925,7 @@ namespace ExpansionDownloader.Service
 
                 // this is always set from Market
                 long contentLength = long.Parse(innerState.HeaderContentLength);
-                if (contentLength != -1 && contentLength != this.downloadInfo.TotalBytes)
+                if (contentLength != -1 && contentLength != this.downloadInfoBase.TotalBytes)
                 {
                     // we're most likely on a bad wifi connection -- we should probably
                     // also look at the mime type --- but the size mismatch is enough
@@ -967,8 +969,8 @@ namespace ExpansionDownloader.Service
                 && now - innerState.TimeLastNotification > DownloaderService.MinimumProgressTime)
             {
                 // we store progress updates to the database here
-                this.downloadInfo.CurrentBytes = innerState.BytesSoFar;
-                DownloadsDatabase.UpdateDownloadCurrentBytes(this.downloadInfo);
+                this.downloadInfoBase.CurrentBytes = innerState.BytesSoFar;
+                DownloadsDatabase.UpdateDownloadCurrentBytes(this.downloadInfoBase);
 
                 innerState.BytesNotified = innerState.BytesSoFar;
                 innerState.TimeLastNotification = now;
@@ -977,8 +979,8 @@ namespace ExpansionDownloader.Service
 
                 Debug.WriteLine(
                     "DownloadThread : downloaded {0} out of {1}", 
-                    this.downloadInfo.CurrentBytes, 
-                    this.downloadInfo.TotalBytes);
+                    this.downloadInfoBase.CurrentBytes, 
+                    this.downloadInfoBase.TotalBytes);
                 Debug.WriteLine(
                     "DownloadThread :      total {0} out of {1}", totalBytesSoFar, this.downloaderService.TotalLength);
 
@@ -1047,7 +1049,7 @@ namespace ExpansionDownloader.Service
                         File.Delete(state.Filename);
                         state.Filename = null;
                     }
-                    else if (this.downloadInfo.ETag == null)
+                    else if (this.downloadInfoBase.ETag == null)
                     {
                         // This should've been caught upon failure
                         File.Delete(state.Filename);
@@ -1068,12 +1070,12 @@ namespace ExpansionDownloader.Service
                         }
 
                         innerState.BytesSoFar = (int)fileLength;
-                        if (this.downloadInfo.TotalBytes != -1)
+                        if (this.downloadInfoBase.TotalBytes != -1)
                         {
-                            innerState.HeaderContentLength = this.downloadInfo.TotalBytes.ToString();
+                            innerState.HeaderContentLength = this.downloadInfoBase.TotalBytes.ToString();
                         }
 
-                        innerState.HeaderETag = this.downloadInfo.ETag;
+                        innerState.HeaderETag = this.downloadInfoBase.ETag;
                         innerState.ContinuingDownload = true;
                     }
                 }
@@ -1131,8 +1133,8 @@ namespace ExpansionDownloader.Service
         /// </param>
         private void UpdateDatabaseFromHeaders(InnerState innerState)
         {
-            this.downloadInfo.ETag = innerState.HeaderETag;
-            DownloadsDatabase.UpdateDownload(this.downloadInfo);
+            this.downloadInfoBase.ETag = innerState.HeaderETag;
+            DownloadsDatabase.UpdateDownload(this.downloadInfoBase);
         }
 
         /// <summary>
@@ -1156,24 +1158,24 @@ namespace ExpansionDownloader.Service
         private void UpdateDownloadDatabase(
             DownloadStatus status, bool countRetry, int retryAfter, int redirectCount, bool gotData)
         {
-            this.downloadInfo.Status = status;
-            this.downloadInfo.RetryAfter = retryAfter;
-            this.downloadInfo.RedirectCount = redirectCount;
-            this.downloadInfo.LastModified = PolicyExtensions.GetCurrentMilliseconds();
+            this.downloadInfoBase.Status = status;
+            this.downloadInfoBase.RetryAfter = retryAfter;
+            this.downloadInfoBase.RedirectCount = redirectCount;
+            this.downloadInfoBase.LastModified = PolicyExtensions.GetCurrentMilliseconds();
             if (!countRetry)
             {
-                this.downloadInfo.FailedCount = 0;
+                this.downloadInfoBase.FailedCount = 0;
             }
             else if (gotData)
             {
-                this.downloadInfo.FailedCount = 1;
+                this.downloadInfoBase.FailedCount = 1;
             }
             else
             {
-                this.downloadInfo.FailedCount++;
+                this.downloadInfoBase.FailedCount++;
             }
 
-            DownloadsDatabase.UpdateDownload(this.downloadInfo);
+            DownloadsDatabase.UpdateDownload(this.downloadInfoBase);
         }
 
         #endregion
@@ -1263,17 +1265,17 @@ namespace ExpansionDownloader.Service
             /// <summary>
             /// Initializes a new instance of the <see cref="State"/> class.
             /// </summary>
-            /// <param name="info">
-            /// The info.
+            /// <param name="infoBase">
+            /// The infoBase.
             /// </param>
             /// <param name="service">
             /// The service.
             /// </param>
-            public State(DownloadInfo info, DownloaderService service)
+            public State(DownloadInfoBase infoBase, DownloaderService service)
             {
-                this.RedirectCount = info.RedirectCount;
-                this.RequestUri = info.Uri;
-                this.Filename = service.GenerateTempSaveFileName(info.FileName);
+                this.RedirectCount = infoBase.RedirectCount;
+                this.RequestUri = infoBase.Uri;
+                this.Filename = service.GenerateTempSaveFileName(infoBase.FileName);
             }
 
             #endregion

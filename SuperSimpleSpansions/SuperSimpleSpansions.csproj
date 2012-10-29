@@ -66,6 +66,10 @@
     <AndroidResource Include="Resources\Drawable\Icon.png" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ExpansionDownloader.Core\ExpansionDownloader.Core.csproj">
+      <Project>{90df58a6-51bb-4f14-9f01-aef630f9a9e0}</Project>
+      <Name>ExpansionDownloader.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ExpansionDownloader\ExpansionDownloader.csproj">
       <Project>{C1B3041A-48E8-42A4-95DD-00159872548C}</Project>
       <Name>ExpansionDownloader</Name>

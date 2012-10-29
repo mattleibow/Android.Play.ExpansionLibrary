@@ -16,6 +16,9 @@ namespace ExpansionDownloader.Client
     using Android.Content;
     using Android.OS;
 
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Client;
+
     using Java.Lang;
 
     using Debug = System.Diagnostics.Debug;

@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Other Data", "Other Data", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperSimpleSpansions", "SuperSimpleSpansions\SuperSimpleSpansions.csproj", "{63AC4DE3-9ED4-4C58-9103-3B6B1B5D6EF7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpansionDownloader.Core", "ExpansionDownloader.Core\ExpansionDownloader.Core.csproj", "{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +80,16 @@ Global
 		{7FF06005-7957-453D-A647-5681C211B3DC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{7FF06005-7957-453D-A647-5681C211B3DC}.Release|Mixed Platforms.Deploy.0 = Release|Any CPU
 		{7FF06005-7957-453D-A647-5681C211B3DC}.Release|x86.ActiveCfg = Release|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}.Release|x86.ActiveCfg = Release|Any CPU
 		{9F483669-3D50-446B-A14A-5C5F85BED38A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9F483669-3D50-446B-A14A-5C5F85BED38A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F483669-3D50-446B-A14A-5C5F85BED38A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

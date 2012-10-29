@@ -26,7 +26,9 @@ namespace ExpansionDownloader.Service
     using Android.Telephony;
     using Android.Util;
 
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Service;
+    using ExpansionDownloader.Core.Database;
 
     using Java.Util;
 
@@ -465,8 +467,8 @@ namespace ExpansionDownloader.Service
             // we don't have to update LVL. Do we still have a download to start?
             if (DownloadsDatabase.DownloadStatus == DownloadStatus.None)
             {
-                List<DownloadInfo> infos = DownloadsDatabase.GetDownloads();
-                IEnumerable<DownloadInfo> existing =
+                List<DownloadInfoBase> infos = DownloadsDatabase.GetDownloads();
+                IEnumerable<DownloadInfoBase> existing =
                     infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
 
                 if (existing.Any())
@@ -494,7 +496,7 @@ namespace ExpansionDownloader.Service
         }
 
         /// <summary>
-        /// Creates a filename (where the file should be saved) from info about a download.
+        /// Creates a filename (where the file should be saved) from infoBase about a download.
         /// </summary>
         /// <param name="filename">
         /// The filename.
@@ -535,7 +537,7 @@ namespace ExpansionDownloader.Service
         }
 
         /// <summary>
-        /// Returns the filename (where the file should be saved) from info about a download
+        /// Returns the filename (where the file should be saved) from infoBase about a download
         /// </summary>
         /// <param name="fileName">
         /// The file Name.
@@ -775,7 +777,7 @@ namespace ExpansionDownloader.Service
         }
 
         /// <summary>
-        /// Updates the network type based upon the info returned from the 
+        /// Updates the network type based upon the infoBase returned from the 
         /// connectivity manager. 
         /// </summary>
         /// <param name="info">
@@ -852,11 +854,11 @@ namespace ExpansionDownloader.Service
                 }
 
                 // get each download
-                List<DownloadInfo> infos = DownloadsDatabase.GetDownloads();
+                List<DownloadInfoBase> infos = DownloadsDatabase.GetDownloads();
                 this.BytesSoFar = 0;
                 this.TotalLength = 0;
                 this.fileCount = infos.Count();
-                foreach (DownloadInfo info in infos)
+                foreach (DownloadInfoBase info in infos)
                 {
                     // We do an (simple) integrity check on each file, just to 
                     // make sure and to verify that the file matches the state
@@ -887,24 +889,24 @@ namespace ExpansionDownloader.Service
                 int types = Enum.GetValues(typeof(ApkExpansionPolicy.ExpansionFileType)).Length;
                 for (int index = 0; index < types; index++)
                 {
-                    DownloadInfo info = infos[index];
-                    Log.Debug(Tag,"Starting download of " + info.FileName);
+                    DownloadInfoBase infoBase = infos[index];
+                    Log.Debug(Tag,"Starting download of " + infoBase.FileName);
 
-                    long startingCount = info.CurrentBytes;
+                    long startingCount = infoBase.CurrentBytes;
 
-                    if (info.Status != DownloadStatus.Success)
+                    if (infoBase.Status != DownloadStatus.Success)
                     {
-                        var dt = new DownloadThread(info, this, this.downloadNotification);
+                        var dt = new DownloadThread(infoBase, this, this.downloadNotification);
                         this.CancelAlarms();
                         this.ScheduleAlarm(ActiveThreadWatchdog);
                         dt.Run();
                         this.CancelAlarms();
                     }
 
-                    DownloadsDatabase.UpdateFromDatabase(ref info);
+                    DownloadsDatabase.UpdateFromDatabase(ref infoBase);
                     bool setWakeWatchdog = false;
                     DownloaderState notifyStatus;
-                    switch (info.Status)
+                    switch (infoBase.Status)
                     {
                         case DownloadStatus.Forbidden:
 
@@ -912,7 +914,7 @@ namespace ExpansionDownloader.Service
                             this.UpdateLvl(this);
                             return;
                         case DownloadStatus.Success:
-                            this.BytesSoFar += info.CurrentBytes - startingCount;
+                            this.BytesSoFar += infoBase.CurrentBytes - startingCount;
 
                             if (index < infos.Count() - 1)
                             {
@@ -926,8 +928,8 @@ namespace ExpansionDownloader.Service
 
                             // we may be on a network that is returning us a web page on redirect
                             notifyStatus = DownloaderState.PausedNetworkSetupFailure;
-                            info.CurrentBytes = 0;
-                            DownloadsDatabase.UpdateDownload(info);
+                            infoBase.CurrentBytes = 0;
+                            DownloadsDatabase.UpdateDownload(infoBase);
                             setWakeWatchdog = true;
                             break;
                         case DownloadStatus.PausedByApp:
@@ -1045,7 +1047,7 @@ namespace ExpansionDownloader.Service
         /// </returns>
         private bool HandleFileUpdated(string filename, long fileSize)
         {
-            DownloadInfo di = DownloadsDatabase.GetDownloadInfo(filename);
+            DownloadInfoBase di = DownloadsDatabase.GetDownloadInfo(filename);
 
             if (di != null && di.FileName != null)
             {
@@ -1133,7 +1135,7 @@ namespace ExpansionDownloader.Service
         /// The update network state.
         /// </summary>
         /// <param name="info">
-        /// The info.
+        /// The infoBase.
         /// </param>
         private void UpdateNetworkState(NetworkInfo info)
         {

@@ -10,7 +10,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Core
 {
     /// <summary>
     /// Lists the states that the download manager can set on a download to 

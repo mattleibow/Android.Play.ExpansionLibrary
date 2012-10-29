@@ -10,7 +10,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Service
+namespace ExpansionDownloader.Core.Service
 {
     /// <summary>
     /// The following constants are used to indicates specific reasons for disallowing a

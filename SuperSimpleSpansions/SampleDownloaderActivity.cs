@@ -11,7 +11,9 @@ namespace SuperSimpleSpansions
 
     using ExpansionDownloader;
     using ExpansionDownloader.Client;
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Service;
+    using ExpansionDownloader.Core.Database;
     using ExpansionDownloader.Service;
 
     [Activity(Label = "Super Simple Spansions", MainLauncher = true, Icon = "@drawable/Icon", NoHistory = true)]

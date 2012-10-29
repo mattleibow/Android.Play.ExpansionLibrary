@@ -9,7 +9,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader
+namespace ExpansionDownloader.Core
 {
     /// <summary>
     /// Extension methods to help filter the <see cref="DownloadStatus"/> values.

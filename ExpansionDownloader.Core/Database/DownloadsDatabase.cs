@@ -9,7 +9,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Database
+namespace ExpansionDownloader.Core.Database
 {
     using System;
     using System.Collections;
@@ -18,7 +18,9 @@ namespace ExpansionDownloader.Database
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
 
-    using ExpansionDownloader.Service;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Database;
+    using ExpansionDownloader.Core.Service;
 
     /// <summary>
     /// The downloads database.
@@ -117,7 +119,7 @@ namespace ExpansionDownloader.Database
         {
             get
             {
-                var downloadInfos = XmlDatastore.GetData<List<DownloadInfo>>();
+                var downloadInfos = XmlDatastore.GetData<List<DownloadInfoBase>>();
                 return !downloadInfos.Any() || downloadInfos.Any(x => x.Status != DownloadStatus.None);
             }
         }
@@ -146,38 +148,38 @@ namespace ExpansionDownloader.Database
         /// <returns>
         /// The download information for the filename
         /// </returns>
-        public static DownloadInfo GetDownloadInfo(string fileName)
+        public static DownloadInfoBase GetDownloadInfo(string fileName)
         {
-            return XmlDatastore.GetData<List<DownloadInfo>>().FirstOrDefault(x => x.FileName == fileName);
+            return XmlDatastore.GetData<List<DownloadInfoBase>>().FirstOrDefault(x => x.FileName == fileName);
         }
 
         /// <summary>
         /// </summary>
         /// <returns>
-        /// The System.Collections.Generic.List`1[T -&gt; ExpansionDownloader.Service.DownloadInfo].
+        /// The System.Collections.Generic.List`1[T -&gt; ExpansionDownloader.Service.DownloadInfoBase].
         /// </returns>
-        public static List<DownloadInfo> GetDownloads()
+        public static List<DownloadInfoBase> GetDownloads()
         {
-            return XmlDatastore.GetData<List<DownloadInfo>>();
+            return XmlDatastore.GetData<List<DownloadInfoBase>>();
         }
 
         /// <summary>
         /// This function will add a new file to the database if it does not exist.
         /// </summary>
-        /// <param name="info">
-        /// DownloadInfo that we wish to store
+        /// <param name="infoBase">
+        /// DownloadInfoBase that we wish to store
         /// </param>
-        public static void UpdateDownload(DownloadInfo info)
+        public static void UpdateDownload(DownloadInfoBase infoBase)
         {
-            var downloads = XmlDatastore.GetData<List<DownloadInfo>>();
+            var downloads = XmlDatastore.GetData<List<DownloadInfoBase>>();
 
-            DownloadInfo downloadInfo = downloads.FirstOrDefault(d => d.FileName == info.FileName);
-            if (downloadInfo != null)
+            DownloadInfoBase downloadInfoBase = downloads.FirstOrDefault(d => d.FileName == infoBase.FileName);
+            if (downloadInfoBase != null)
             {
-                downloads.Remove(downloadInfo);
+                downloads.Remove(downloadInfoBase);
             }
 
-            downloads.Add(info);
+            downloads.Add(infoBase);
 
             XmlDatastore.SaveData(downloads);
         }
@@ -188,24 +190,24 @@ namespace ExpansionDownloader.Database
         /// <param name="di">
         /// The di.
         /// </param>
-        public static void UpdateDownloadCurrentBytes(DownloadInfo di)
+        public static void UpdateDownloadCurrentBytes(DownloadInfoBase di)
         {
-            DownloadInfo info =
-                XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.ExpansionFileType == di.ExpansionFileType);
-            info.CurrentBytes = di.CurrentBytes;
-            UpdateDownload(info);
+            DownloadInfoBase infoBase =
+                XmlDatastore.GetData<List<DownloadInfoBase>>().First(x => x.Id == di.Id);
+            infoBase.CurrentBytes = di.CurrentBytes;
+            UpdateDownload(infoBase);
         }
 
         /// <summary>
         /// The update from database.
         /// </summary>
-        /// <param name="info">
-        /// The info.
+        /// <param name="infoBase">
+        /// The infoBase.
         /// </param>
-        public static void UpdateFromDatabase(ref DownloadInfo info)
+        public static void UpdateFromDatabase(ref DownloadInfoBase infoBase)
         {
-            DownloadInfo i = info;
-            info = XmlDatastore.GetData<List<DownloadInfo>>().First(x => x.FileName == i.FileName);
+            DownloadInfoBase i = infoBase;
+            infoBase = XmlDatastore.GetData<List<DownloadInfoBase>>().First(x => x.FileName == i.FileName);
         }
 
         /// <summary>

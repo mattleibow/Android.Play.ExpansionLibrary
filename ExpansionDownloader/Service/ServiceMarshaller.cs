@@ -14,6 +14,8 @@ namespace ExpansionDownloader.Service
     using Android.Content;
     using Android.OS;
 
+    using ExpansionDownloader.Core.Service;
+
     /// <summary>
     /// Used by the client activity to proxy requests to the DownloaderService.
     /// </summary>

@@ -1,34 +1,33 @@
 // --------------------------------------------------------------------------------------------------------------------
-// <copyright file="ClientMessages.cs" company="Matthew Leibowitz">
+// <copyright file="ServiceParameters.cs" company="Matthew Leibowitz">
 //   Copyright (c) Matthew Leibowitz
 //   This code is licensed under the Apache 2.0 License
 //   http://www.apache.org/licenses/LICENSE-2.0.html
 // </copyright>
 // <summary>
-//   The downloader client messages.
+//   The downloader service parameters.
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace ExpansionDownloader.Client
+namespace ExpansionDownloader.Core.Service
 {
     /// <summary>
-    /// The downloader client messages.
+    /// The downloader service parameters.
     /// </summary>
-    public enum ClientMessages
+    public static class ServiceParameters
     {
-        /// <summary>
-        /// The download state changed.
-        /// </summary>
-        DownloadStateChanged = 10, 
+        #region Constants
 
         /// <summary>
-        /// The download progress.
+        /// The flags parameter.
         /// </summary>
-        DownloadProgress = 11, 
+        public const string Flags = "flags";
 
         /// <summary>
-        /// The service connected.
+        /// The messenger parameter.
         /// </summary>
-        ServiceConnected = 12
+        public const string Messenger = DownloaderServiceExtras.MessageHandler;
+
+        #endregion
     }
 }
