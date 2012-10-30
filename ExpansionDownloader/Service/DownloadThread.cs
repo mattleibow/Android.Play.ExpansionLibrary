@@ -15,16 +15,10 @@ namespace ExpansionDownloader.Service
     using System.IO;
     using System.Net;
 
-    using Android.Content;
-    using Android.OS;
-    using Android.Runtime;
-    using Android.Util;
-
     using ExpansionDownloader.Core;
     using ExpansionDownloader.Core.Service;
     using ExpansionDownloader.Core.Database;
 
-    using Java.Lang;
     using Java.Net;
 
     using LicenseVerificationLibrary.Policy;
@@ -32,15 +26,12 @@ namespace ExpansionDownloader.Service
     using Debug = System.Diagnostics.Debug;
     using Exception = System.Exception;
     using Math = System.Math;
-    using Process = Android.OS.Process;
 
     /// <summary>
     /// The download thread.
     /// </summary>
-    internal class DownloadThread
+    internal partial class DownloadThread
     {
-        public const string Tag = "DownloadThread";
-        
         #region Fields
 
         /// <summary>
@@ -85,12 +76,6 @@ namespace ExpansionDownloader.Service
             this.downloadInfoBase = infoBase;
             this.downloaderService = service;
             this.downloadNotification = notification;
-            this.UserAgent = string.Format("APKXDL (Linux; U; Android {0};{1}; {2}/{3}){4}",
-                                           Build.VERSION.Release,
-                                           System.Threading.Thread.CurrentThread.CurrentCulture.Name,
-                                           Build.Device,
-                                           Build.Id,
-                                           this.downloaderService.PackageName);
         }
 
         #endregion
@@ -102,32 +87,29 @@ namespace ExpansionDownloader.Service
         /// </summary>
         internal void Run()
         {
-            Process.SetThreadPriority(ThreadPriority.Background);
-
             var state = new State(this.downloadInfoBase, this.downloaderService);
-            PowerManager.WakeLock wakeLock = null;
             var finalStatus = DownloadStatus.UnknownError;
 
             try
             {
-                var pm = this.context.GetSystemService(Context.PowerService).JavaCast<PowerManager>();
-                wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, this.GetType().Name);
-                wakeLock.Acquire();
+                this.RunStart();
 
                 bool finished = false;
                 do
                 {
-                    Log.Debug(Tag, "DownloadThread : initiating download for " + this.downloadInfoBase.FileName + " at " + this.downloadInfoBase.Uri);
+                    Debug.WriteLine(
+                        "DownloadThread : initiating download for " + this.downloadInfoBase.FileName + 
+                        " at " + this.downloadInfoBase.Uri);
                     var requestUri = new Uri(state.RequestUri);
                     var minute = (int)TimeSpan.FromMinutes(1).TotalMilliseconds;
                     var request = new HttpWebRequest(requestUri)
-                        {
-                            Proxy = WebRequest.DefaultWebProxy, 
-                            UserAgent = this.UserAgent, 
-                            Timeout = minute, 
-                            ReadWriteTimeout = minute, 
-                            AllowAutoRedirect = false
-                        };
+                                      {
+                                          Proxy = WebRequest.DefaultWebProxy,
+                                          UserAgent = this.UserAgent,
+                                          Timeout = minute,
+                                          ReadWriteTimeout = minute,
+                                          AllowAutoRedirect = false
+                                      };
 
                     try
                     {
@@ -152,8 +134,8 @@ namespace ExpansionDownloader.Service
                 }
                 while (!finished);
 
-                Log.Debug(Tag, "DownloadThread : download completed for " + this.downloadInfoBase.FileName);
-                Log.Debug(Tag, "DownloadThread :   at " + this.downloadInfoBase.Uri);
+                Debug.WriteLine("DownloadThread : download completed for " + this.downloadInfoBase.FileName);
+                Debug.WriteLine("DownloadThread :   at " + this.downloadInfoBase.Uri);
 
                 this.FinalizeDestinationFile(state);
                 finalStatus = DownloadStatus.Success;
@@ -174,10 +156,7 @@ namespace ExpansionDownloader.Service
             }
             finally
             {
-                if (wakeLock != null)
-                {
-                    wakeLock.Release();
-                }
+                RunFinished();
 
                 CleanupDestination(state, finalStatus);
                 this.NotifyDownloadCompleted(
@@ -369,14 +348,6 @@ namespace ExpansionDownloader.Service
         }
 
         /// <summary>
-        /// Returns the default user agent
-        /// </summary>
-        /// <returns>
-        /// The user agent.
-        /// </returns>
-        private string UserAgent { get; set; }
-
-        /// <summary>
         /// Write a data buffer to the destination file.
         /// </summary>
         /// <param name="state">
@@ -412,7 +383,7 @@ namespace ExpansionDownloader.Service
                     if (!Helpers.IsExternalMediaMounted)
                     {
                         throw new StopRequestException(
-                            DownloadStatus.DeviceNotFoundError, 
+                            DownloadStatus.DeviceNotFoundError,
                             "external media not mounted while writing destination file");
                     }
 
@@ -421,8 +392,8 @@ namespace ExpansionDownloader.Service
                     if (availableBytes < bytesRead)
                     {
                         throw new StopRequestException(
-                            DownloadStatus.InsufficientSpaceError, 
-                            "insufficient space while writing destination file", 
+                            DownloadStatus.InsufficientSpaceError,
+                            "insufficient space while writing destination file",
                             ex);
                     }
 
@@ -447,7 +418,7 @@ namespace ExpansionDownloader.Service
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "waiting for network to return");
                 case NetworkDisabledState.TypeDisallowedByRequestor:
                     throw new StopRequestException(
-                        DownloadStatus.QueuedForWifiOrCellularPermission, 
+                        DownloadStatus.QueuedForWifiOrCellularPermission,
                         "waiting for wifi or for download over cellular to be authorized");
                 case NetworkDisabledState.CannotUseRoaming:
                     throw new StopRequestException(DownloadStatus.WaitingForNetwork, "roaming is not allowed");
@@ -520,7 +491,8 @@ namespace ExpansionDownloader.Service
             if (state.Filename != finalFilename)
             {
                 var startFile = new FileInfo(tempFilename);
-                if (this.downloadInfoBase.TotalBytes != -1 && this.downloadInfoBase.CurrentBytes == this.downloadInfoBase.TotalBytes)
+                if (this.downloadInfoBase.TotalBytes != -1
+                    && this.downloadInfoBase.CurrentBytes == this.downloadInfoBase.TotalBytes)
                 {
                     try
                     {
@@ -534,7 +506,7 @@ namespace ExpansionDownloader.Service
                 else
                 {
                     throw new StopRequestException(
-                        DownloadStatus.FileDeliveredIncorrectly, 
+                        DownloadStatus.FileDeliveredIncorrectly,
                         "file delivered with incorrect size. probably due to network not browser configured");
                 }
             }
@@ -684,6 +656,7 @@ namespace ExpansionDownloader.Service
             }
 
             Debug.WriteLine("Redirecting to " + header);
+            Debug.WriteLine("from " + this.downloadInfoBase.Uri);
 
             string newUri;
             try
@@ -947,9 +920,8 @@ namespace ExpansionDownloader.Service
             Debug.WriteLine("DownloadThread : Transfer-Encoding: " + headerTransferEncoding);
 
             bool noSizeInfo = innerState.HeaderContentLength == null
-                              &&
-                              (headerTransferEncoding == null
-                               || !"chunked".Equals(headerTransferEncoding, StringComparison.OrdinalIgnoreCase));
+                              && (headerTransferEncoding == null
+                                  || !"chunked".Equals(headerTransferEncoding, StringComparison.OrdinalIgnoreCase));
             if (noSizeInfo)
             {
                 throw new StopRequestException(DownloadStatus.HttpDataError, "can't know size of download, giving up");
@@ -978,8 +950,8 @@ namespace ExpansionDownloader.Service
                 long totalBytesSoFar = innerState.BytesThisSession + this.downloaderService.BytesSoFar;
 
                 Debug.WriteLine(
-                    "DownloadThread : downloaded {0} out of {1}", 
-                    this.downloadInfoBase.CurrentBytes, 
+                    "DownloadThread : downloaded {0} out of {1}",
+                    this.downloadInfoBase.CurrentBytes,
                     this.downloadInfoBase.TotalBytes);
                 Debug.WriteLine(
                     "DownloadThread :      total {0} out of {1}", totalBytesSoFar, this.downloaderService.TotalLength);
@@ -1006,12 +978,7 @@ namespace ExpansionDownloader.Service
             {
                 return (HttpWebResponse)request.GetResponse();
             }
-            catch (IllegalArgumentException ex)
-            {
-                throw new StopRequestException(
-                    DownloadStatus.HttpDataError, "while trying to execute request: " + ex.Message, ex);
-            }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 this.LogNetworkState();
                 throw new StopRequestException(
@@ -1363,6 +1330,58 @@ namespace ExpansionDownloader.Service
             public DownloadStatus FinalStatus { get; private set; }
 
             #endregion
+        }
+
+    }
+}
+namespace ExpansionDownloader.Service
+{
+    using Android.Content;
+    using Android.OS;
+    using Android.Runtime;
+
+    // the android specific
+    internal partial class DownloadThread
+    {
+        public const string Tag = "DownloadThread";
+
+        private PowerManager.WakeLock wakeLock;
+
+        protected virtual void RunStart()
+        {
+            Process.SetThreadPriority(ThreadPriority.Background);
+
+            var pm = this.context.GetSystemService(Context.PowerService).JavaCast<PowerManager>();
+            this.wakeLock = pm.NewWakeLock(WakeLockFlags.Partial, this.GetType().Name);
+            this.wakeLock.Acquire();
+        }
+
+        protected virtual void RunFinished()
+        {
+            if (this.wakeLock != null)
+            {
+                this.wakeLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Returns the default user agent
+        /// </summary>
+        /// <returns>
+        /// The user agent.
+        /// </returns>
+        protected virtual string UserAgent
+        {
+            get
+            {
+                return string.Format(
+                    "APKXDL (Linux; U; Android {0};{1}; {2}/{3}){4}",
+                    Build.VERSION.Release,
+                    System.Threading.Thread.CurrentThread.CurrentCulture.Name,
+                    Build.Device,
+                    Build.Id,
+                    this.downloaderService.PackageName);
+            }
         }
     }
 }
