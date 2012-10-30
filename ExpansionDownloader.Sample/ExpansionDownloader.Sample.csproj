@@ -89,6 +89,10 @@
     <Folder Include="Assets\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ExpansionDownloader.Core\ExpansionDownloader.Core.csproj">
+      <Project>{90DF58A6-51BB-4F14-9F01-AEF630F9A9E0}</Project>
+      <Name>ExpansionDownloader.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ExpansionDownloader\ExpansionDownloader.csproj">
       <Project>{C1B3041A-48E8-42A4-95DD-00159872548C}</Project>
       <Name>ExpansionDownloader</Name>

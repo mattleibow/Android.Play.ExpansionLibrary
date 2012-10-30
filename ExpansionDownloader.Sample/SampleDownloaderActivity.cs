@@ -15,7 +15,9 @@ namespace ExpansionDownloader.Sample
     using Android.Views;
 
     using ExpansionDownloader.Client;
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core;
+    using ExpansionDownloader.Core.Database;
+    using ExpansionDownloader.Core.Service;
     using ExpansionDownloader.Service;
 
     using Debug = System.Diagnostics.Debug;

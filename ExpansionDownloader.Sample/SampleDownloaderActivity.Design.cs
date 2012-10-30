@@ -6,7 +6,7 @@ namespace ExpansionDownloader.Sample
     using Android.Views;
     using Android.Widget;
 
-    using ExpansionDownloader.Database;
+    using ExpansionDownloader.Core.Database;
     using ExpansionDownloader.Service;
 
     /// <summary>
