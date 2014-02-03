@@ -16,7 +16,7 @@ namespace LicenseVerificationLibrary.Policy
         /// <summary>
         /// The millis per minute.
         /// </summary>
-        public static readonly long MillisPerMinute = TimeSpan.FromMinutes(1).Milliseconds;
+        public static readonly long MillisPerMinute = (long)TimeSpan.FromMinutes(1).TotalMilliseconds;
 
         /// <summary>
         /// The name value separator.
