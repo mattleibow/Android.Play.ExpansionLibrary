@@ -26,9 +26,8 @@ namespace ExpansionDownloader.Service
     using LicenseVerificationLibrary.Policy;
 
     using Exception = System.Exception;
-	using DownloadStatus = ExpansionDownloader.DownloadStatus;
 
-    /// <summary>
+	/// <summary>
     /// The downloader service.
     /// </summary>
     public abstract partial class DownloaderService
@@ -188,7 +187,7 @@ namespace ExpansionDownloader.Service
                             Debug.WriteLine("No expansion packs.");
                         }
 
-                        DownloadStatus status = 0;
+                        ExpansionDownloadStatus status = 0;
                         for (int index = 0; index < count; index++)
                         {
                             var type = (ApkExpansionPolicy.ExpansionFileType)index;
@@ -201,7 +200,7 @@ namespace ExpansionDownloader.Service
 
                                 if (this.Context.HandleFileUpdated(currentFileName, expansionFile.FileSize))
                                 {
-                                    status = DownloadStatus.Unknown;
+                                    status = ExpansionDownloadStatus.Unknown;
                                     di.ResetDownload();
                                     di.Uri = expansionFile.Url;
                                     di.TotalBytes = expansionFile.FileSize;
@@ -217,18 +216,18 @@ namespace ExpansionDownloader.Service
                                         // the file exists already and is the correct size
                                         // was delivered by Market or through another mechanism
                                         Debug.WriteLine(string.Format("file {0} found. Not downloading.", di.FileName));
-                                        di.Status = DownloadStatus.Success;
+                                        di.Status = ExpansionDownloadStatus.Success;
                                         di.TotalBytes = expansionFile.FileSize;
                                         di.CurrentBytes = expansionFile.FileSize;
                                         di.Uri = expansionFile.Url;
                                         DownloadsDatabase.UpdateDownload(di);
                                     }
-                                    else if (dbdi.Status != DownloadStatus.Success)
+                                    else if (dbdi.Status != ExpansionDownloadStatus.Success)
                                     {
                                         // we just update the URL
                                         dbdi.Uri = expansionFile.Url;
                                         DownloadsDatabase.UpdateDownload(dbdi);
-                                        status = DownloadStatus.Unknown;
+                                        status = ExpansionDownloadStatus.Unknown;
                                     }
                                 }
                             }

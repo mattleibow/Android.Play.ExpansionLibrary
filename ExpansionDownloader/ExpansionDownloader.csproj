@@ -60,8 +60,8 @@
     <Compile Include="DownloadNotification.cs" />
     <Compile Include="DownloadProgressInfo.cs" />
     <Compile Include="DownloadServiceRequirement.cs" />
-    <Compile Include="DownloadStatus.cs" />
-    <Compile Include="DownloadStatusExtensions.cs" />
+    <Compile Include="ExpansionDownloadStatus.cs" />
+    <Compile Include="ExpansionDownloadStatusExtensions.cs" />
     <Compile Include="DownloadStatusExtras.cs" />
     <Compile Include="IDownloaderServiceConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

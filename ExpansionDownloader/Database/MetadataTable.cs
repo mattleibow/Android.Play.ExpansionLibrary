@@ -31,7 +31,7 @@ namespace ExpansionDownloader.Database
         /// <summary>
         /// The download status.
         /// </summary>
-        public DownloadStatus DownloadStatus { get; set; }
+        public ExpansionDownloadStatus DownloadStatus { get; set; }
 
         /// <summary>
         /// The flags.

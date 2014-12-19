@@ -90,7 +90,7 @@ namespace ExpansionDownloader.Service
         /// <summary>
         /// Gets or sets Status.
         /// </summary>
-        public DownloadStatus Status { get; set; }
+        public ExpansionDownloadStatus Status { get; set; }
 
         /// <summary>
         /// Gets or sets TotalBytes.
@@ -114,7 +114,7 @@ namespace ExpansionDownloader.Service
             this.CurrentBytes = 0;
             this.ETag = string.Empty;
             this.LastModified = 0;
-            this.Status = DownloadStatus.Unknown;
+            this.Status = ExpansionDownloadStatus.Unknown;
             this.FailedCount = 0;
             this.RetryAfter = 0;
             this.RedirectCount = 0;

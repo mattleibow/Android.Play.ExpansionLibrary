@@ -29,7 +29,7 @@ namespace ExpansionDownloader.Database
 
         /// <summary>
         /// </summary>
-        private static volatile DownloadStatus downloadStatus;
+        private static volatile ExpansionDownloadStatus downloadStatus;
 
         /// <summary>
         /// </summary>
@@ -48,7 +48,7 @@ namespace ExpansionDownloader.Database
         /// </summary>
         static DownloadsDatabase()
         {
-            downloadStatus = DownloadStatus.Unknown;
+            downloadStatus = ExpansionDownloadStatus.Unknown;
             flags = 0;
             versionCode = -1;
 
@@ -67,7 +67,7 @@ namespace ExpansionDownloader.Database
         /// <summary>
         /// Gets the status.
         /// </summary>
-        public static DownloadStatus DownloadStatus
+        public static ExpansionDownloadStatus DownloadStatus
         {
             get
             {
@@ -118,7 +118,7 @@ namespace ExpansionDownloader.Database
             get
             {
                 var downloadInfos = XmlDatastore.GetData<List<DownloadInfo>>();
-                return !downloadInfos.Any() || downloadInfos.Any(x => x.Status != DownloadStatus.None);
+                return !downloadInfos.Any() || downloadInfos.Any(x => x.Status != ExpansionDownloadStatus.None);
             }
         }
 
@@ -217,7 +217,7 @@ namespace ExpansionDownloader.Database
         /// <param name="status">
         /// The download status.
         /// </param>
-        public static void UpdateMetadata(int apkVersion, DownloadStatus status)
+        public static void UpdateMetadata(int apkVersion, ExpansionDownloadStatus status)
         {
             var metadata = XmlDatastore.GetData<MetadataTable>();
             metadata.ApkVersion = apkVersion;
