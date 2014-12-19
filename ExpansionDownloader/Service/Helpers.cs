@@ -257,59 +257,78 @@ namespace ExpansionDownloader.Service
                 GetDownloadProgressPercent(overallProgress, overallTotal));
         }
 
-        /// <summary>
+	    /// <summary>
+	    /// Converts download states that are returned by the
+	    /// <see cref="IDownloaderClient.OnDownloadStateChanged"/> callback into usable strings.
+	    /// This is useful if using the state strings built into the library to display user messages.
+	    /// </summary>
+	    /// <param name="context">
+	    /// The context to use when reading resources.
+	    /// </param>
+	    /// <param name="state">
+	    /// A string representing one of the STATE_* constant values from <see cref="IDownloaderClient"/>.
+	    /// </param>
+	    /// <returns>
+	    /// A string id that corresponds to the state message.
+	    /// </returns>
+	    public static string GetDownloaderStringFromState(Context context, DownloaderState state)
+	    {
+		    return context.GetString(GetDownloaderStringFromState(state));
+	    }
+
+	    /// <summary>
         /// Converts download states that are returned by the
-        /// <see cref="IDownloaderClient.OnDownloadStateChanged"/> callback into usable strings.
+        /// <see cref="IDownloaderClient.OnDownloadStateChanged"/> callback into usable string IDs.
         /// This is useful if using the state strings built into the library to display user messages.
         /// </summary>
         /// <param name="state">
         /// One of the STATE_* constants from <see cref="IDownloaderClient"/>.
         /// </param>
         /// <returns>
-        /// A string message tht corresponds to the state.
+        /// A string ID that corresponds to the state message.
         /// </returns>
-        public static string GetDownloaderStringFromState(DownloaderState state)
+        public static int GetDownloaderStringFromState(DownloaderState state)
         {
             switch (state)
             {
                 case DownloaderState.Idle:
-                    return "Waiting for download to start";
+                    return Resource.String.state_idle;
                 case DownloaderState.FetchingUrl:
-                    return "Looking for resources to download";
+					return Resource.String.state_fetching_url;
                 case DownloaderState.Connecting:
-                    return "Connecting to the download server";
+					return Resource.String.state_connecting;
                 case DownloaderState.Downloading:
-                    return "Downloading resources";
+					return Resource.String.state_downloading;
                 case DownloaderState.Completed:
-                    return "Download finished";
+					return Resource.String.state_completed;
                 case DownloaderState.PausedNetworkUnavailable:
-                    return "Download paused because no network is available";
+					return Resource.String.state_paused_network_unavailable;
                 case DownloaderState.PausedByRequest:
-                    return "Download paused";
+					return Resource.String.state_paused_by_request;
                 case DownloaderState.PausedWifiDisabled:
                 case DownloaderState.PausedWifiDisabledNeedCellularPermission:
-                    return "Download paused because wifi is disabled";
+					return Resource.String.state_paused_wifi_disabled;
                 case DownloaderState.PausedNeedWifi:
                 case DownloaderState.PausedNeedCellularPermission:
-                    return "Download paused because wifi is unavailable";
+					return Resource.String.state_paused_wifi_unavailable;
                 case DownloaderState.PausedRoaming:
-                    return "Download paused because you are roaming";
+					return Resource.String.state_paused_roaming;
                 case DownloaderState.PausedNetworkSetupFailure:
-                    return "Download paused. Test a website in browser";
+					return Resource.String.state_paused_network_setup_failure;
                 case DownloaderState.PausedSdCardUnavailable:
-                    return "Download paused because the external storage is unavailable";
+					return Resource.String.state_paused_sdcard_unavailable;
                 case DownloaderState.FailedUnlicensed:
-                    return "Download failed because you may not have purchased this app";
+					return Resource.String.state_failed_unlicensed;
                 case DownloaderState.FailedFetchingUrl:
-                    return "Download failed because the resources could not be found";
+					return Resource.String.state_failed_fetching_url;
                 case DownloaderState.FailedSdCardFull:
-                    return "Download failed because the external storage is full";
+					return Resource.String.state_failed_sdcard_full;
                 case DownloaderState.Failed:
-                    return "Download failed";
+					return Resource.String.state_failed;
                 case DownloaderState.FailedCanceled:
-                    return "Download cancelled";
+					return Resource.String.state_failed_cancelled;
                 default:
-                    return "Starting...";
+					return Resource.String.state_unknown;
             }
         }
 

@@ -11,16 +11,11 @@ using Android.App;
 [assembly: AssemblyTitle("SuperSimpleSpansions")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("SuperSimpleSpansions")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2012")]
+[assembly: AssemblyCopyright("Copyright © .NET Development Addict 2014")]
 [assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-
-// Setting ComVisible to false makes the types in this assembly not visible 
-// to COM components.  If you need to access a type in this assembly from 
-// COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(false)]
+[assembly: AssemblyCulture("en-US")]
+[assembly: AssemblyCompany(".NET Development Addict")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("a557ce8c-9dbe-4b93-8fc4-95ffc126cf14")]
@@ -38,11 +33,8 @@ using Android.App;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
-// Add some common permissions, these can be removed if not needed
-[assembly: UsesPermission(Android.Manifest.Permission.Internet)]
-[assembly: UsesPermission(Android.Manifest.Permission.WriteExternalStorage)]
-
-
+[assembly: UsesPermission(Manifest.Permission.Internet)]
+[assembly: UsesPermission(Manifest.Permission.WriteExternalStorage)]
 [assembly: UsesPermission(Manifest.Permission.AccessNetworkState)]
 [assembly: UsesPermission(Manifest.Permission.WakeLock)]
 [assembly: UsesPermission(Manifest.Permission.AccessWifiState)]

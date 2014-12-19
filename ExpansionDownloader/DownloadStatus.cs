@@ -260,7 +260,7 @@ namespace ExpansionDownloader
         Unknown = -1, 
 
         /// <summary>
-        /// The current status has not been set
+        /// The current download has finished correctly and is valid
         /// </summary>
         None = 0
     }

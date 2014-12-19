@@ -6,6 +6,11 @@ using Android.App;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
+
+[assembly: AssemblyCopyright("Copyright © .NET Development Addict 2014")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("en-US")]
+[assembly: AssemblyCompany(".NET Development Addict")]
 [assembly: AssemblyTitle("LicenseVerificationLibrary.Sample")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]

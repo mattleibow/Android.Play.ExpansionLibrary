@@ -1,11 +1,7 @@
 # About this project
 
-This is the C# implementation of Google's License Verification Library and the 
-Android Play Expansion Library
-
-They both compile and run correctly. 
-I have not tested on a 4.0+ device yet, but there were no problems on the 
-Android 2.x and 3.x devices. 
+This is the C# implementation of Google's License Verification Library (r2) 
+and the Android Play Expansion Library (r3)
 
 The downloader currently, correctly, notices that it is on mobile data and 
 asks the user to make a decision on to wait for wifi or use mobile.
@@ -33,11 +29,6 @@ The other projects are either:
  - Tests (Unit Tests?).
 
 # For you
-
-Currently due to Mono for Android's limitation on including resource files 
-with class libraries, so I have embedded the stings temporarily. I am also 
-using a temporary static class CustomNotificationFactory to hold some app
-classes that are used insidethe library. I will move this out soon.
 
 This is most of the work done and it just needs cleaning and refactoring. 
 I also then want to make it friendlier towards .NET developers and using the 

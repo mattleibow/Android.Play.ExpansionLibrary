@@ -18,10 +18,10 @@
             base.OnCreate(bundle);
 
             // Set our view from the "main" layout resource
-            SetContentView(Resource.Layout.video_player);
+            SetContentView(Resource.Layout.VideoPlayer);
 
-            this.FindViewById<Button>(Resource.Id.MainPlay).Click += delegate { this.ButtonClick("001-Sting.m4v"); };
-            this.FindViewById<Button>(Resource.Id.PatchPlay).Click += delegate { this.ButtonClick("01_intro.mp4"); };
+			this.FindViewById<Button>(Resource.Id.MainPlay).Click += delegate { this.ButtonClick("MetalGearSolidV.mp4"); };
+			this.FindViewById<Button>(Resource.Id.PatchPlay).Click += delegate { this.ButtonClick("Titanfall.mp4"); };
 
             this.video = this.FindViewById<VideoView>(Resource.Id.MyVideo);
         }

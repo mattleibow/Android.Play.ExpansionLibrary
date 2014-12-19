@@ -26,6 +26,7 @@ namespace ExpansionDownloader.Service
     using LicenseVerificationLibrary.Policy;
 
     using Exception = System.Exception;
+	using DownloadStatus = ExpansionDownloader.DownloadStatus;
 
     /// <summary>
     /// The downloader service.
@@ -215,7 +216,7 @@ namespace ExpansionDownloader.Service
                                     {
                                         // the file exists already and is the correct size
                                         // was delivered by Market or through another mechanism
-                                        Debug.WriteLine("file {0} found. Not downloading.", di.FileName);
+                                        Debug.WriteLine(string.Format("file {0} found. Not downloading.", di.FileName));
                                         di.Status = DownloadStatus.Success;
                                         di.TotalBytes = expansionFile.FileSize;
                                         di.CurrentBytes = expansionFile.FileSize;

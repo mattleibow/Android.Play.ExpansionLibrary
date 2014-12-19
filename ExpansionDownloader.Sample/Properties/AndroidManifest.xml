@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" android:versionName="third" android:versionCode="6" package="com.jam.apks.sample">
-  <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="8" />
-  <application android:label="APK Expansion Sample" android:icon="@drawable/ic_launcher">
-  </application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="14" android:versionName="1.0.4.0" package="com.dotnetdevaddict.expansiondownloader.sample" android:installLocation="auto">
+	<uses-sdk android:minSdkVersion="10" android:targetSdkVersion="14" />
+	<application android:label="Expansion Downloader Sample" android:icon="@drawable/ic_launcher"></application>
 </manifest>

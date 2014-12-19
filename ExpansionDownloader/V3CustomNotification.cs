@@ -1,4 +1,4 @@
-namespace ExpansionDownloader.Sample
+namespace ExpansionDownloader
 {
     using Android.App;
     using Android.Content;
@@ -21,11 +21,9 @@ namespace ExpansionDownloader.Sample
 
         private RemoteViews expandedView;
 
-        private bool lastHasPausedText;
         private PendingIntent pendingIntent;
         private int notificationIcon;
         private string title;
-        private string pausedText;
 
         #endregion
 
@@ -42,6 +40,10 @@ namespace ExpansionDownloader.Sample
             this.expandedView = null;
 
             this.notification.Flags |= NotificationFlags.OngoingEvent;
+			if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Honeycomb)
+			{
+				this.notification.Flags |= NotificationFlags.OnlyAlertOnce; // only matters for Honeycomb
+			}
         }
 
         #endregion
@@ -68,26 +70,6 @@ namespace ExpansionDownloader.Sample
                 }
             }
         }
-
-        /// <summary>
-        /// Gets or sets PausedText.
-        /// </summary>
-        public string PausedText
-        {
-            private get { return this.pausedText; }
-            set
-            {
-                if (this.pausedText != value)
-                {
-                    this.pausedText = value;
-                    if (this.expandedView != null)
-                    {
-                        expandedView.SetTextViewText(Resource.Id.paused_text, value);
-                    }
-                }
-            }
-        }
-
 
         /// <summary>
         /// Gets or sets PendingIntent.
@@ -154,43 +136,24 @@ namespace ExpansionDownloader.Sample
         /// </returns>
         public Notification UpdateNotification(Context context)
         {
-            bool hasPausedText = this.PausedText != null;
-            bool mustUpdate = this.lastHasPausedText != hasPausedText;
-
             // Build the RemoteView object
             if (expandedView == null)
             {
                 expandedView = new RemoteViews(context.PackageName, Resource.Layout.status_bar_ongoing_event_progress_bar);
-                expandedView.SetImageViewResource(Resource.Id.appIcon, this.Icon);
-                expandedView.SetTextViewText(Resource.Id.paused_text, this.PausedText);
-                expandedView.SetTextViewText(Resource.Id.title, this.Title);
-
-                this.notification.ContentView = expandedView;
-
-                mustUpdate = true;
             }
 
-            if (mustUpdate)
-            {
-                expandedView.SetViewVisibility(Resource.Id.progress_bar_frame, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
-                expandedView.SetViewVisibility(Resource.Id.description, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
-                expandedView.SetViewVisibility(Resource.Id.time_remaining, hasPausedText ? ViewStates.Gone : ViewStates.Visible);
-                expandedView.SetViewVisibility(Resource.Id.paused_text, hasPausedText ? ViewStates.Visible : ViewStates.Gone);
-            }
+            expandedView.SetImageViewResource(Resource.Id.appIcon, this.Icon);
+            expandedView.SetTextViewText(Resource.Id.title, this.Title);
+            expandedView.SetTextViewText(Resource.Id.progress_text, Helpers.GetDownloadProgressPercent(this.CurrentBytes, this.TotalBytes));
+            expandedView.SetTextViewText(Resource.Id.description, Helpers.GetDownloadProgressString(this.CurrentBytes, this.TotalBytes));
+            expandedView.SetProgressBar(
+                Resource.Id.progress_bar,
+                (int)(this.TotalBytes >> 8),
+                (int)(this.CurrentBytes >> 8),
+                this.TotalBytes <= 0);
+            expandedView.SetTextViewText(Resource.Id.time_remaining, context.GetString(Resource.String.time_remaining_notification, Helpers.GetTimeRemaining(this.TimeRemaining)));
 
-            if (!hasPausedText)
-            {
-                expandedView.SetTextViewText(Resource.Id.progress_text, Helpers.GetDownloadProgressPercent(this.CurrentBytes, this.TotalBytes));
-                expandedView.SetTextViewText(Resource.Id.description, Helpers.GetDownloadProgressString(this.CurrentBytes, this.TotalBytes));
-                expandedView.SetProgressBar(
-                    Resource.Id.progress_bar,
-                    (int)(this.TotalBytes >> 8),
-                    (int)(this.CurrentBytes >> 8),
-                    this.TotalBytes <= 0);
-                expandedView.SetTextViewText(Resource.Id.time_remaining, string.Format("Time remaining: {0}", Helpers.GetTimeRemaining(this.TimeRemaining)));
-            }
-
-            this.lastHasPausedText = hasPausedText;
+			this.notification.ContentView = expandedView;
 
             return this.notification;
         }

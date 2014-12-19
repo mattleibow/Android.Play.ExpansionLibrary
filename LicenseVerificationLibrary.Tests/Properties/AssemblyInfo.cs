@@ -7,6 +7,10 @@ using Android.App;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 
+[assembly: AssemblyCopyright("Copyright © .NET Development Addict 2014")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("en-US")]
+[assembly: AssemblyCompany(".NET Development Addict")]
 [assembly: AssemblyTitle("LicenseVerificationLibrary.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
@@ -29,8 +33,6 @@ using Android.App;
 
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-
-// Add some common permissions, these can be removed if not needed
 
 [assembly: UsesPermission(Manifest.Permission.Internet)]
 [assembly: UsesPermission(Manifest.Permission.WriteExternalStorage)]

@@ -91,7 +91,7 @@ namespace ExpansionDownloader.Sample
             if (this.downloaderState != newState)
             {
                 this.downloaderState = newState;
-                this.statusTextView.Text = Helpers.GetDownloaderStringFromState(newState);
+                this.statusTextView.Text = this.GetString(Helpers.GetDownloaderStringFromState(newState));
             }
 
             bool showDashboard = true;
@@ -180,8 +180,6 @@ namespace ExpansionDownloader.Sample
         /// </param>
         protected override void OnCreate(Bundle savedInstanceState)
         {
-            this.CreateCustomNotification();
-
             base.OnCreate(savedInstanceState);
 
             // Before we do anything, are the files we expect already here and 
@@ -261,18 +259,6 @@ namespace ExpansionDownloader.Sample
             var downloads = DownloadsDatabase.GetDownloads();
 
             return downloads.Any() && downloads.All(x => Helpers.DoesFileExist(this, x.FileName, x.TotalBytes, false));
-        }
-
-        /// <summary>
-        /// The create custom notification.
-        /// </summary>
-        private void CreateCustomNotification()
-        {
-#if NOTIFICATION_BUILDER
-            CustomNotificationFactory.Notification = new V11CustomNotification();
-#else
-            CustomNotificationFactory.Notification = new V3CustomNotification();
-#endif
         }
 
         /// <summary>

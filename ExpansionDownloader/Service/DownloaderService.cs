@@ -33,6 +33,7 @@ namespace ExpansionDownloader.Service
     using LicenseVerificationLibrary.Policy;
 
     using Debug = System.Diagnostics.Debug;
+	using DownloadStatus = ExpansionDownloader.DownloadStatus;
 
     /// <summary>
     /// The downloader service.
@@ -322,7 +323,7 @@ namespace ExpansionDownloader.Service
             {
                 this.status = value;
 
-                DownloadsDatabase.UpdateMetadata(this.packageInfo.VersionCode, this.status);
+				DownloadsDatabase.UpdateMetadata(DownloadsDatabase.VersionCode, this.status);
             }
         }
 
@@ -466,10 +467,10 @@ namespace ExpansionDownloader.Service
             if (DownloadsDatabase.DownloadStatus == DownloadStatus.None)
             {
                 List<DownloadInfo> infos = DownloadsDatabase.GetDownloads();
-                IEnumerable<DownloadInfo> existing =
+                IEnumerable<DownloadInfo> nonExisting =
                     infos.Where(i => !Helpers.DoesFileExist(context, i.FileName, i.TotalBytes, true));
 
-                if (existing.Any())
+				if (nonExisting.Any())
                 {
                     status = DownloadServiceRequirement.DownloadRequired;
                     DownloadsDatabase.DownloadStatus = DownloadStatus.Unknown;

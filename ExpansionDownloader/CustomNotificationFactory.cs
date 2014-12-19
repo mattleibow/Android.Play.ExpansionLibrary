@@ -21,7 +21,13 @@ namespace ExpansionDownloader
         /// <summary>
         /// Gets or sets Notification.
         /// </summary>
-        public static DownloadNotification.ICustomNotification Notification { get; set; }
+	    public static DownloadNotification.ICustomNotification CreateCustomNotification()
+	    {
+			if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.IceCreamSandwich)
+				return new V14CustomNotification();
+			else
+				return new V3CustomNotification();
+	    }
 
         #endregion
     }

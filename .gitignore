@@ -30,3 +30,4 @@ _ReSharper*/
 *.*~
 *.userprefs
 *.[Rr]esharper
+Resource.Designer.cs

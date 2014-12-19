@@ -108,7 +108,7 @@ namespace SuperSimpleSpansions
             if (this.downloaderState != newState)
             {
                 this.downloaderState = newState;
-                this.statusTextView.Text = Helpers.GetDownloaderStringFromState(newState);
+                this.statusTextView.Text = this.GetString(Helpers.GetDownloaderStringFromState(newState));
             }
 
             if (newState != DownloaderState.Completed)

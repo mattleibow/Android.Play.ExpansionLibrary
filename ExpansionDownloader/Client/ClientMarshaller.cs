@@ -16,8 +16,6 @@ namespace ExpansionDownloader.Client
     using Android.Content;
     using Android.OS;
 
-    using Java.Lang;
-
     using Debug = System.Diagnostics.Debug;
     using Object = Java.Lang.Object;
 
@@ -137,11 +135,6 @@ namespace ExpansionDownloader.Client
             private readonly Type serviceTypeType;
 
             /// <summary>
-            /// The class loader.
-            /// </summary>
-            private ClassLoader classLoader;
-
-            /// <summary>
             /// The is bound.
             /// </summary>
             private bool isBound;
@@ -179,7 +172,6 @@ namespace ExpansionDownloader.Client
             /// </param>
             public void Connect(Context context)
             {
-                this.classLoader = context.ClassLoader;
                 var bindIntent = new Intent(context, this.serviceTypeType);
                 bindIntent.PutExtra(ClientMessageParameters.Messenger, this.messenger);
                 bool bound = context.BindService(bindIntent, this.serviceConnection, Bind.DebugUnbind);
@@ -202,8 +194,6 @@ namespace ExpansionDownloader.Client
                     context.UnbindService(this.serviceConnection);
                     this.isBound = false;
                 }
-
-                this.classLoader = null;
             }
 
             /// <summary>
@@ -232,15 +222,9 @@ namespace ExpansionDownloader.Client
                 switch ((ClientMessages)msg.What)
                 {
                     case ClientMessages.DownloadProgress:
-                        if (this.classLoader != null)
-                        {
-                            Bundle bun = msg.Data;
-                            bun.SetClassLoader(this.classLoader);
-                            string progress = msg.Data.GetString(ClientMessageParameters.Progress);
-                            var info = new DownloadProgressInfo(progress);
-                            this.clientType.OnDownloadProgress(info);
-                        }
-
+						string progress = msg.Data.GetString(ClientMessageParameters.Progress);
+                        var info = new DownloadProgressInfo(progress);
+                        this.clientType.OnDownloadProgress(info);
                         break;
                     case ClientMessages.DownloadStateChanged:
                         var state = (DownloaderState)msg.Data.GetInt(ClientMessageParameters.NewState);

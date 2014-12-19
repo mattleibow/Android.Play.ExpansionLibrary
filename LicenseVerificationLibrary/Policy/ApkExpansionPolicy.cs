@@ -405,6 +405,7 @@ namespace LicenseVerificationLibrary.Policy
         public void ResetPolicy()
         {
             this.LastResponse = PolicyServerResponse.Retry;
+			this.LastResponseTime = 0;
             this.RetryUntil = 0;
             this.MaxRetries = 0;
             this.RetryCount = 0;

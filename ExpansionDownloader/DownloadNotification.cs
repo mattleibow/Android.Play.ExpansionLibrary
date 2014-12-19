@@ -11,7 +11,6 @@
 
 namespace ExpansionDownloader
 {
-    using Android;
     using Android.App;
     using Android.Content;
     using Android.OS;
@@ -47,6 +46,11 @@ namespace ExpansionDownloader
         /// The m label.
         /// </summary>
         private readonly string label;
+
+        /// <summary>
+        /// The m custom notification.
+        /// </summary>
+        private readonly ICustomNotification customNotification;
 
         /// <summary>
         /// The m notification.
@@ -109,6 +113,7 @@ namespace ExpansionDownloader
             this.notificationManager =
                 this.context.GetSystemService(Context.NotificationService).JavaCast<NotificationManager>();
             this.notification = new Notification();
+			this.customNotification = CustomNotificationFactory.CreateCustomNotification();
             this.currentNotification = this.notification;
         }
 
@@ -132,11 +137,6 @@ namespace ExpansionDownloader
             /// Sets Icon.
             /// </summary>
             int Icon { set; }
-
-            /// <summary>
-            /// Sets PausedText.
-            /// </summary>
-            string PausedText { set; }
 
             /// <summary>
             /// Sets PendingIntent.
@@ -208,30 +208,27 @@ namespace ExpansionDownloader
                 this.clientProxy.OnDownloadProgress(progress);
             }
 
-            if (CustomNotificationFactory.Notification != null)
-            {
-                if (progress.OverallTotal <= 0)
-                {
-                    // we just show the text
-                    this.notification.TickerText = new String(this.currentTitle);
-                    this.notification.Icon = Resource.Drawable.StatSysDownload;
-                    this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
-                    this.currentNotification = this.notification;
-                }
-                else
-                {
-                    CustomNotificationFactory.Notification.CurrentBytes = progress.OverallProgress;
-                    CustomNotificationFactory.Notification.TotalBytes = progress.OverallTotal;
-                    CustomNotificationFactory.Notification.Icon = Resource.Drawable.StatSysDownload;
-                    CustomNotificationFactory.Notification.PendingIntent = this.PendingIntent;
-                    CustomNotificationFactory.Notification.Ticker = this.label + ": " + this.currentText;
-                    CustomNotificationFactory.Notification.Title = this.label;
-                    CustomNotificationFactory.Notification.TimeRemaining = progress.TimeRemaining;
-                    this.currentNotification = CustomNotificationFactory.Notification.UpdateNotification(this.context);
-                }
+			if (progress.OverallTotal <= 0)
+			{
+				// we just show the text
+				this.notification.TickerText = new String(this.currentTitle);
+				this.notification.Icon = Android.Resource.Drawable.StatSysDownload;
+				this.notification.SetLatestEventInfo(this.context, this.label, this.currentText, this.PendingIntent);
+				this.currentNotification = this.notification;
+			}
+			else
+			{
+				this.customNotification.CurrentBytes = progress.OverallProgress;
+				this.customNotification.TotalBytes = progress.OverallTotal;
+				this.customNotification.Icon = Android.Resource.Drawable.StatSysDownload;
+				this.customNotification.PendingIntent = this.PendingIntent;
+				this.customNotification.Ticker = string.Format("{0}: {1}", this.label, this.currentText);
+				this.customNotification.Title = this.label;
+				this.customNotification.TimeRemaining = progress.TimeRemaining;
+				this.currentNotification = this.customNotification.UpdateNotification(this.context);
+			}
 
-                this.notificationManager.Notify(NotificationId, this.currentNotification);
-            }
+			this.notificationManager.Notify(NotificationId, this.currentNotification);
         }
 
         /// <summary>
@@ -255,7 +252,7 @@ namespace ExpansionDownloader
                     return;
                 }
 
-                string stringDownload;
+                int stringDownload;
                 int iconResource;
                 bool ongoingEvent;
 
@@ -263,21 +260,21 @@ namespace ExpansionDownloader
                 switch (newState)
                 {
                     case DownloaderState.Downloading:
-                        iconResource = Resource.Drawable.StatSysDownload;
+                        iconResource = Android.Resource.Drawable.StatSysDownload;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
 
                     case DownloaderState.FetchingUrl:
                     case DownloaderState.Connecting:
-                        iconResource = Resource.Drawable.StatSysDownloadDone;
+                        iconResource = Android.Resource.Drawable.StatSysDownloadDone;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
 
                     case DownloaderState.Completed:
                     case DownloaderState.PausedByRequest:
-                        iconResource = Resource.Drawable.StatSysDownloadDone;
+                        iconResource = Android.Resource.Drawable.StatSysDownloadDone;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = false;
                         break;
@@ -287,23 +284,21 @@ namespace ExpansionDownloader
                     case DownloaderState.FailedFetchingUrl:
                     case DownloaderState.FailedSdCardFull:
                     case DownloaderState.FailedUnlicensed:
-                        iconResource = Resource.Drawable.StatSysWarning;
+                        iconResource = Android.Resource.Drawable.StatSysWarning;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = false;
                         break;
 
                     default:
-                        iconResource = Resource.Drawable.StatSysWarning;
+                        iconResource = Android.Resource.Drawable.StatSysWarning;
                         stringDownload = Helpers.GetDownloaderStringFromState(newState);
                         ongoingEvent = true;
                         break;
                 }
 
-                this.currentText = stringDownload;
+                this.currentText = context.GetString(stringDownload);
                 this.currentTitle = this.label;
 
-                if (CustomNotificationFactory.Notification != null)
-                {
                     this.currentNotification.TickerText = new String(this.label + ": " + this.currentText);
                     this.currentNotification.Icon = iconResource;
                     this.currentNotification.SetLatestEventInfo(this.context, this.currentTitle, this.currentText, this.PendingIntent);
@@ -319,7 +314,6 @@ namespace ExpansionDownloader
 
                     this.notificationManager.Notify(NotificationId, this.currentNotification);
                 }
-            }
         }
 
         /// <summary>
