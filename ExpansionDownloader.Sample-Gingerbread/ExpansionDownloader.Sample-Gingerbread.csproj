@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F9E37C74-7963-4A1E-B304-D81F709072DF}</ProjectGuid>
+    <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ExpansionDownloader.Sample</RootNamespace>
+    <AssemblyName>ExpansionDownloader.Sample</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <AndroidApplication>true</AndroidApplication>
+    <AndroidResgenFile>Resources\Resource.Designer.cs</AndroidResgenFile>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <DeployExternal>false</DeployExternal>
+    <AndroidSupportedAbis>armeabi</AndroidSupportedAbis>
+    <MandroidI18n />
+    <TargetFrameworkVersion>v2.3</TargetFrameworkVersion>
+    <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
+    <AndroidUseLatestPlatformSdk />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <AndroidUseSharedRuntime>True</AndroidUseSharedRuntime>
+    <AndroidLinkSkip />
+    <EmbedAssembliesIntoApk>True</EmbedAssembliesIntoApk>
+    <BundleAssemblies>False</BundleAssemblies>
+    <AndroidCreatePackagePerAbi>False</AndroidCreatePackagePerAbi>
+    <AndroidSupportedAbis>armeabi,armeabi-v7a,x86</AndroidSupportedAbis>
+    <AndroidStoreUncompressedFileExtensions />
+    <MandroidI18n />
+    <JavaMaximumHeapSize />
+    <JavaOptions />
+    <MonoDroidExtraArgs />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <AndroidSupportedAbis>armeabi;armeabi-v7a;x86</AndroidSupportedAbis>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Mono.Android" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="..\ExpansionDownloader.Sample\Resources\Drawable\ic_launcher.png">
+      <Link>Resources\Drawable\ic_launcher.png</Link>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ExpansionDownloader-Gingerbread\ExpansionDownloader-Gingerbread.csproj">
+      <Project>{c1b3041a-48e8-42a4-95dd-00159872548f}</Project>
+      <Name>ExpansionDownloader-Gingerbread</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\LicenseVerificationLibrary\LicenseVerificationLibrary.csproj">
+      <Project>{C95FFDB8-C066-4669-8328-AAEEDBA94C87}</Project>
+      <Name>LicenseVerificationLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\System.IO.Compression.Zip\System.IO.Compression.Zip.csproj">
+      <Project>{6064DA47-9606-45E5-B87E-13765E4BE628}</Project>
+      <Name>System.IO.Compression.Zip</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="..\ExpansionDownloader.Sample\Resources\Layout\Main.axml">
+      <Link>Resources\Layout\Main.axml</Link>
+    </AndroidResource>
+    <AndroidResource Include="..\ExpansionDownloader.Sample\Resources\Layout\VideoPlayer.axml">
+      <Link>Resources\Layout\VideoPlayer.axml</Link>
+    </AndroidResource>
+    <None Include="Properties\AndroidManifest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="..\ExpansionDownloader.Sample\Resources\Values\Strings.xml">
+      <Link>Resources\Values\Strings.xml</Link>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="..\ExpansionDownloader.Sample\Resources\Values\styles.xml">
+      <Link>Resources\Values\styles.xml</Link>
+    </AndroidResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleAlarmReceiver.cs">
+      <Link>SampleAlarmReceiver.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderActivity.cs">
+      <Link>SampleDownloaderActivity.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderActivity.Design.cs">
+      <Link>SampleDownloaderActivity.Design.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\SampleDownloaderService.cs">
+      <Link>SampleDownloaderService.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\ZipFileContentProvider.cs">
+      <Link>ZipFileContentProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\ExpansionDownloader.Sample\ZipTestActivity.cs">
+      <Link>ZipTestActivity.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Resource.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+     Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

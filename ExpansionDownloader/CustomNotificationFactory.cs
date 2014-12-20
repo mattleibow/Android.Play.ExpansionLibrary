@@ -23,9 +23,11 @@ namespace ExpansionDownloader
         /// </summary>
 	    public static DownloadNotification.ICustomNotification CreateCustomNotification()
 	    {
+#if __ANDROID_14__
 			if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.IceCreamSandwich)
 				return new V14CustomNotification();
 			else
+#endif
 				return new V3CustomNotification();
 	    }
 

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+    <metadata>
+        <id>DotNetDevAddict.Android.LicenseVerificationLibrary</id>
+        <version>1.1.0.0-beta2</version>
+        <title>License Verification Library</title>
+        <authors>Matthew Leibowitz</authors>
+        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <projectUrl>https://github.com/mattleibow/android.Play.ExpansionLibrary</projectUrl>
+        <iconUrl>https://raw.githubusercontent.com/mattleibow/Android.Play.ExpansionLibrary/master/Resources/LicenseVerificationLibrary_128x128.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>C# implementation of Google's Android License Verification Library (LVL).</description>
+        <summary>C# implementation of Google's Android License Verification Library (LVL).</summary>
+        <releaseNotes>- Added the XML documentation file</releaseNotes>
+        <copyright>.NET Development Addict</copyright>
+        <tags>android,monodroid,xamarin,google,lvl,license,verification,library</tags>
+    </metadata>
+    <files>
+        <file src="..\LicenseVerificationLibrary\bin\Release\LicenseVerificationLibrary.dll" target="lib\MonoAndroid2.3\LicenseVerificationLibrary.dll" />
+        <file src="..\LicenseVerificationLibrary\bin\Release\LicenseVerificationLibrary.pdb" target="lib\MonoAndroid2.3\LicenseVerificationLibrary.pdb" />
+        <file src="..\LicenseVerificationLibrary\bin\Release\LicenseVerificationLibrary.XML" target="lib\MonoAndroid2.3\LicenseVerificationLibrary.XML" />
+    </files>
+</package>

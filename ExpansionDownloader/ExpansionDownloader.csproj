@@ -37,6 +37,7 @@
     <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
     <MandroidI18n>
     </MandroidI18n>
+    <DocumentationFile>bin\Release\ExpansionDownloader.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Android" />

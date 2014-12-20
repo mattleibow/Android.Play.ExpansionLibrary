@@ -4,9 +4,6 @@ namespace ExpansionDownloader.Sample
 
     using ExpansionDownloader.Service;
 
-    using Android.Net;
-    using Android.Telephony;
-
     [Service]
     public class SampleDownloaderService : DownloaderService
     {
@@ -47,32 +44,6 @@ namespace ExpansionDownloader.Sample
             {
                 return "expansiondownloader.sample.SampleAlarmReceiver";
             }
-        }
-
-        /// <summary>
-        /// Updates the network type based upon the info returned from the 
-        /// connectivity manager. 
-        /// </summary>
-        /// <param name="info"></param>
-        /// <returns></returns>
-        protected override NetworkState GetNetworkState(NetworkInfo info)
-        {
-            var state = NetworkState.Disconnected;
-
-            if (info.Type == ConnectivityType.Mobile)
-            {
-                var networkType = (NetworkType)info.Subtype;
-                switch (networkType)
-                {
-                    case NetworkType.Hspap:
-                    case NetworkType.Ehrpd:
-                    case NetworkType.Lte:
-                        state = NetworkState.Is3G | NetworkState.Is4G;
-                        break;
-                }
-            }
-
-            return base.GetNetworkState(info) | state;
         }
     }
 }

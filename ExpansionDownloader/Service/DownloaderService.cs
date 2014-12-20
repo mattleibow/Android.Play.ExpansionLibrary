@@ -783,20 +783,32 @@ namespace ExpansionDownloader.Service
         /// <returns>
         /// The ExpansionDownloader.Service.DownloaderService+NetworkState.
         /// </returns>
-        protected virtual NetworkState GetNetworkState(NetworkInfo info)
+        private NetworkState GetNetworkState(NetworkInfo info)
         {
             var state = NetworkState.Disconnected;
 
             switch (info.Type)
             {
+                case ConnectivityType.Wifi:
+#if __ANDROID_13__
+                case ConnectivityType.Ethernet:
+                case ConnectivityType.Bluetooth:
+#endif
+		            break;
                 case ConnectivityType.Wimax:
-                    state = NetworkState.Is3G | NetworkState.Is3G | NetworkState.IsCellular;
+                    state = NetworkState.Is3G | NetworkState.Is4G | NetworkState.IsCellular;
                     break;
 
                 case ConnectivityType.Mobile:
                     state = NetworkState.IsCellular;
                     switch ((NetworkType)info.Subtype)
                     {
+                        case NetworkType.OneXrtt:
+                        case NetworkType.Cdma:
+                        case NetworkType.Edge:
+                        case NetworkType.Gprs:
+                        case NetworkType.Iden:
+                            break;
                         case NetworkType.Hsdpa:
                         case NetworkType.Hsupa:
                         case NetworkType.Hspa:
@@ -805,6 +817,17 @@ namespace ExpansionDownloader.Service
                         case NetworkType.Umts:
                             state |= NetworkState.Is3G;
                             break;
+#if __ANDROID_11__
+                        case NetworkType.Lte:
+                        case NetworkType.Ehrpd:
+							state |= NetworkState.Is3G | NetworkState.Is4G;
+                            break;
+#endif
+#if __ANDROID_13__
+                        case NetworkType.Hspap:
+							state |= NetworkState.Is3G | NetworkState.Is4G;
+                            break;
+#endif
                     }
 
                     break;

@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata>
+        <id>DotNetDevAddict.Android.ExpansionDownloader</id>
+        <version>1.1.0.0-beta2</version>
+        <title>APK Expansion Downloader</title>
+        <authors>Matthew Leibowitz</authors>
+        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <projectUrl>https://github.com/mattleibow/android.Play.ExpansionLibrary</projectUrl>
+        <iconUrl>https://raw.githubusercontent.com/mattleibow/Android.Play.ExpansionLibrary/master/Resources/ExpansionDownloader_128x128.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>C# implementation of Google's Android APK Expansion Downloader.</description>
+        <summary>C# implementation of Google's Android APK Expansion Downloader.</summary>
+        <copyright>.NET Development Addict</copyright>
+        <tags>android,monodroid,xamarin,google,lvl,license,verification,library,apk,expansion,downloader</tags>
+        <dependencies>
+            <group targetFramework="MonoAndroid2.3">
+                <dependency id="DotNetDevAddict.Android.LicenseVerificationLibrary" version="1.1.0.0-beta2" />
+            </group>
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="..\ExpansionDownloader\bin\Release\ExpansionDownloader.dll" target="lib\MonoAndroid4.0\ExpansionDownloader.dll" />
+        <file src="..\ExpansionDownloader\bin\Release\ExpansionDownloader.pdb" target="lib\MonoAndroid4.0\ExpansionDownloader.pdb" />
+        <file src="..\ExpansionDownloader\bin\Release\ExpansionDownloader.XML" target="lib\MonoAndroid4.0\ExpansionDownloader.XML" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.dll" target="lib\MonoAndroid4.0\System.IO.Compression.Zip.dll" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.pdb" target="lib\MonoAndroid4.0\System.IO.Compression.Zip.pdb" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.XML" target="lib\MonoAndroid4.0\System.IO.Compression.Zip.XML" />
+        <file src="..\ExpansionDownloader-Gingerbread\bin\Release\ExpansionDownloader.dll" target="lib\MonoAndroid2.3\ExpansionDownloader.dll" />
+        <file src="..\ExpansionDownloader-Gingerbread\bin\Release\ExpansionDownloader.pdb" target="lib\MonoAndroid2.3\ExpansionDownloader.pdb" />
+        <file src="..\ExpansionDownloader-Gingerbread\bin\Release\ExpansionDownloader.XML" target="lib\MonoAndroid2.3\ExpansionDownloader.XML" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.dll" target="lib\MonoAndroid2.3\System.IO.Compression.Zip.dll" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.pdb" target="lib\MonoAndroid2.3\System.IO.Compression.Zip.pdb" />
+        <file src="..\System.IO.Compression.Zip\bin\Release\System.IO.Compression.Zip.XML" target="lib\MonoAndroid2.3\System.IO.Compression.Zip.XML" />
+    </files>
+</package>

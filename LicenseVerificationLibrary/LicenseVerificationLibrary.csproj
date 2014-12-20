@@ -36,6 +36,7 @@
     <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
     <MandroidI18n>
     </MandroidI18n>
+    <DocumentationFile>bin\Release\LicenseVerificationLibrary.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mono.Android" />

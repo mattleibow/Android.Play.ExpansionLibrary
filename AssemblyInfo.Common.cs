@@ -13,7 +13,7 @@ using System.Reflection;
 
 [assembly: AssemblyCopyright("Copyright © .NET Development Addict 2014")]
 [assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("en-US")]
+[assembly: AssemblyCulture("")]
 [assembly: AssemblyCompany(".NET Development Addict")]
 
 // Version information for an assembly consists of the following four values:

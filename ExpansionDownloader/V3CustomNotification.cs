@@ -39,11 +39,7 @@ namespace ExpansionDownloader
             this.notification = new Notification();
             this.expandedView = null;
 
-            this.notification.Flags |= NotificationFlags.OngoingEvent;
-			if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Honeycomb)
-			{
-				this.notification.Flags |= NotificationFlags.OnlyAlertOnce; // only matters for Honeycomb
-			}
+            this.notification.Flags |= NotificationFlags.OngoingEvent | NotificationFlags.OnlyAlertOnce;
         }
 
         #endregion
