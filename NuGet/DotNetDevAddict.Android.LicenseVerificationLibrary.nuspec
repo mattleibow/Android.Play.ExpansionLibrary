@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
     <metadata>
         <id>DotNetDevAddict.Android.LicenseVerificationLibrary</id>
-        <version>1.1.0.0-beta3</version>
+        <version>1.1.0.0-beta4</version>
         <title>License Verification Library</title>
         <authors>Matthew Leibowitz</authors>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
@@ -11,7 +11,7 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>C# implementation of Google's Android License Verification Library (LVL).</description>
         <summary>C# implementation of Google's Android License Verification Library (LVL).</summary>
-        <releaseNotes>- Added the XML documentation file</releaseNotes>
+        <releaseNotes>- Added a constant for the license check permission: LicenseChecker.MetaData.Permission.CheckLicense</releaseNotes>
         <copyright>.NET Development Addict</copyright>
         <tags>android,monodroid,xamarin,google,lvl,license,verification,library</tags>
     </metadata>
