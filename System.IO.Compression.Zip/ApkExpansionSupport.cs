@@ -62,7 +62,7 @@ namespace System.IO.Compression.Zip
                 if (Directory.Exists(expPath))
                 {
                     string main = Path.Combine(expPath, string.Format("main.{0}.{1}.obb", mainVersion, packageName));
-                    string patch = Path.Combine(expPath, string.Format("patch.{0}.{1}.obb", mainVersion, packageName));
+                    string patch = Path.Combine(expPath, string.Format("patch.{0}.{1}.obb", patchVersion, packageName));
 
                     if (mainVersion > 0 && File.Exists(main))
                     {
