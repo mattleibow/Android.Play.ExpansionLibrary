@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Android;
 using Android.App;
+using LicenseVerificationLibrary;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -39,4 +40,4 @@ using Android.App;
 [assembly: UsesPermission(Manifest.Permission.AccessNetworkState)]
 [assembly: UsesPermission(Manifest.Permission.WakeLock)]
 [assembly: UsesPermission(Manifest.Permission.AccessWifiState)]
-[assembly: UsesPermission("com.android.vending.CHECK_LICENSE")]
+[assembly: UsesPermission(LicenseChecker.Manifest.Permission.CheckLicense)]

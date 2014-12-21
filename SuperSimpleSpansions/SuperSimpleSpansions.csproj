@@ -65,6 +65,10 @@
       <Project>{C1B3041A-48E8-42A4-95DD-00159872548C}</Project>
       <Name>ExpansionDownloader</Name>
     </ProjectReference>
+    <ProjectReference Include="..\LicenseVerificationLibrary\LicenseVerificationLibrary.csproj">
+      <Project>{c95ffdb8-c066-4669-8328-aaeedba94c87}</Project>
+      <Name>LicenseVerificationLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

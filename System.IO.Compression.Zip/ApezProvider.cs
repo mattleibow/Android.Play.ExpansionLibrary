@@ -445,8 +445,8 @@ namespace System.IO.Compression.Zip
                     int appVersionCode = packInfo.VersionCode;
                     if (null != pi.MetaData)
                     {
-                        mainFileVersion = pi.MetaData.GetInt("mainVersion", appVersionCode);
-                        patchFileVersion = pi.MetaData.GetInt("patchVersion", appVersionCode);
+                        mainFileVersion = pi.MetaData.GetInt(MetaData.MainVersion, appVersionCode);
+                        patchFileVersion = pi.MetaData.GetInt(MetaData.PatchVersion, appVersionCode);
                     }
                     else
                     {
@@ -520,5 +520,12 @@ namespace System.IO.Compression.Zip
 
             #endregion
         }
+
+	    public static class MetaData
+	    {
+			public const string MainVersion = "mainVersion";
+
+			public const string PatchVersion = "patchVersion";
+	    }
     }
 }

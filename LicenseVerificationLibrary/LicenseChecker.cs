@@ -588,5 +588,13 @@ namespace LicenseVerificationLibrary
 
             #endregion
         }
+
+	    public static class Manifest
+	    {
+		    public static class Permission
+		    {
+			    public const string CheckLicense = "com.android.vending.CHECK_LICENSE";
+		    }
+	    }
     }
 }
