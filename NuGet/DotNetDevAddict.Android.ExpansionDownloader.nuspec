@@ -11,8 +11,7 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>C# implementation of Google's Android APK Expansion Downloader.</description>
         <summary>C# implementation of Google's Android APK Expansion Downloader.</summary>
-        <releaseNotes>- Added constants for the metadata attributes on the content provider: ApezProvider.MetaData.MainVersion and ApezProvider.MetaData.PatchVersion
-- Fixed small bug in System.IO.Compression.Zip for selecting correct patch file (jokvist)</releaseNotes>
+        <releaseNotes>- Updated to use the new LVL assemblies</releaseNotes>
         <copyright>.NET Development Addict</copyright>
         <tags>android,monodroid,xamarin,google,lvl,license,verification,library,apk,expansion,downloader</tags>
         <dependencies>

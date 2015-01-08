@@ -11,7 +11,9 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>C# implementation of Google's Android License Verification Library (LVL).</description>
         <summary>C# implementation of Google's Android License Verification Library (LVL).</summary>
-        <releaseNotes>- Added a constant for the license check permission: LicenseChecker.MetaData.Permission.CheckLicense</releaseNotes>
+        <releaseNotes>- Fixed bug in ServerManagedPolicy where it was always Licensed
+- ApkExtensionPolicy now inherits from ServerManagedPolicy
+- Added a ResetPolicy method</releaseNotes>
         <copyright>.NET Development Addict</copyright>
         <tags>android,monodroid,xamarin,google,lvl,license,verification,library</tags>
     </metadata>
