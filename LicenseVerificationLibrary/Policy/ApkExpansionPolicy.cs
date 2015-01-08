@@ -184,7 +184,7 @@ namespace LicenseVerificationLibrary.Policy
 
             set
             {
-                this.LastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
+                this.lastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
                 this.lastResponse = value;
                 this.obfuscator.PutString(Preferences.LastResponse, value.ToString());
             }

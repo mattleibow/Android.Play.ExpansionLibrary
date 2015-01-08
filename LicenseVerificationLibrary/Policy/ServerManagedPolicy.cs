@@ -36,22 +36,22 @@ namespace LicenseVerificationLibrary.Policy
         /// <summary>
         /// The default max retries.
         /// </summary>
-        private const string DefaultMaxRetries = "0";
+		private const long DefaultMaxRetries = 0;
 
         /// <summary>
         /// The default retry count.
         /// </summary>
-        private const string DefaultRetryCount = "0";
+        private const long DefaultRetryCount = 0;
 
         /// <summary>
         /// The default retry until.
         /// </summary>
-        private const string DefaultRetryUntil = "0";
+        private const long DefaultRetryUntil = 0;
 
         /// <summary>
         /// The default validity timestamp.
         /// </summary>
-        private const string DefaultValidityTimestamp = "0";
+        private const long DefaultValidityTimestamp = 0;
 
         /// <summary>
         /// The pref last response.
@@ -137,14 +137,11 @@ namespace LicenseVerificationLibrary.Policy
             // Import old values
             ISharedPreferences sp = context.GetSharedPreferences(PrefsFile, FileCreationMode.Private);
             this.preferences = new PreferenceObfuscator(sp, obfuscator);
-            string lastResponse = this.preferences.GetString(
-                PrefLastResponse, ((int)PolicyServerResponse.Retry).ToString());
-            this.LastResponse = (PolicyServerResponse)Enum.Parse(typeof(PolicyServerResponse), lastResponse);
-            this.ValidityTimestamp =
-                long.Parse(this.preferences.GetString(PrefValidityTimestamp, DefaultValidityTimestamp));
-            this.RetryUntil = long.Parse(this.preferences.GetString(PrefRetryUntil, DefaultRetryUntil));
-            this.MaxRetries = long.Parse(this.preferences.GetString(PrefMaxRetries, DefaultMaxRetries));
-            this.RetryCount = long.Parse(this.preferences.GetString(PrefRetryCount, DefaultRetryCount));
+			this.lastResponse = this.preferences.GetValue<PolicyServerResponse>(PrefLastResponse, PolicyServerResponse.Retry);
+            this.validityTimestamp = this.preferences.GetValue<long>(PrefValidityTimestamp, DefaultValidityTimestamp);
+            this.retryUntil = this.preferences.GetValue<long>(PrefRetryUntil, DefaultRetryUntil);
+			this.maxRetries = this.preferences.GetValue<long>(PrefMaxRetries, DefaultMaxRetries);
+			this.retryCount = this.preferences.GetValue<long>(PrefRetryCount, DefaultRetryCount);
         }
 
         #endregion
@@ -167,7 +164,7 @@ namespace LicenseVerificationLibrary.Policy
             {
                 this.lastResponseTime = PolicyExtensions.GetCurrentMilliseconds();
                 this.lastResponse = value;
-                this.preferences.PutString(PrefLastResponse, this.lastResponse.ToString());
+                this.preferences.PutValue(PrefLastResponse, this.lastResponse);
             }
         }
 
@@ -184,7 +181,7 @@ namespace LicenseVerificationLibrary.Policy
             private set
             {
                 this.maxRetries = value;
-                this.preferences.PutString(PrefMaxRetries, this.maxRetries.ToString());
+                this.preferences.PutValue(PrefMaxRetries, this.maxRetries);
             }
         }
 
@@ -202,7 +199,7 @@ namespace LicenseVerificationLibrary.Policy
             private set
             {
                 this.retryCount = value;
-                this.preferences.PutString(PrefRetryCount, this.retryCount.ToString());
+                this.preferences.PutValue(PrefRetryCount, this.retryCount);
             }
         }
 
@@ -219,7 +216,7 @@ namespace LicenseVerificationLibrary.Policy
             private set
             {
                 this.retryUntil = value;
-                this.preferences.PutString(PrefRetryUntil, this.retryUntil.ToString());
+                this.preferences.PutValue(PrefRetryUntil, this.retryUntil);
             }
         }
 
@@ -236,7 +233,7 @@ namespace LicenseVerificationLibrary.Policy
             private set
             {
                 this.validityTimestamp = value;
-                this.preferences.PutString(PrefValidityTimestamp, this.validityTimestamp.ToString());
+                this.preferences.PutValue(PrefValidityTimestamp, this.validityTimestamp);
             }
         }
 
@@ -311,16 +308,16 @@ namespace LicenseVerificationLibrary.Policy
                     }
                     else
                     {
-                        this.SetValidityTimestamp(extras.ContainsKey("VT") ? extras["VT"] : DefaultValidityTimestamp);
-                        this.SetRetryUntil(extras.ContainsKey("GT") ? extras["GT"] : DefaultRetryUntil);
-                        this.SetMaxRetries(extras.ContainsKey("GR") ? extras["GR"] : DefaultMaxRetries);
+                        this.SetValidityTimestamp(extras.ContainsKey("VT") ? extras["VT"] : DefaultValidityTimestamp.ToString());
+						this.SetRetryUntil(extras.ContainsKey("GT") ? extras["GT"] : DefaultRetryUntil.ToString());
+						this.SetMaxRetries(extras.ContainsKey("GR") ? extras["GR"] : DefaultMaxRetries.ToString());
                     }
 
                     break;
                 case PolicyServerResponse.NotLicensed:
-                    this.SetValidityTimestamp(DefaultValidityTimestamp);
-                    this.SetRetryUntil(DefaultRetryUntil);
-                    this.SetMaxRetries(DefaultMaxRetries);
+					this.SetValidityTimestamp(DefaultValidityTimestamp.ToString());
+					this.SetRetryUntil(DefaultRetryUntil.ToString());
+					this.SetMaxRetries(DefaultMaxRetries.ToString());
                     break;
             }
 
