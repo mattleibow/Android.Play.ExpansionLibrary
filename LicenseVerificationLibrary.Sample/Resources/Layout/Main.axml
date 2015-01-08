@@ -5,8 +5,13 @@
     android:layout_height="fill_parent"
     android:label="Press Check License">
     <Button
-        android:id="@+id/MyButton"
+        android:id="@+id/checkButton"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:text="@string/check_license" />
+    <Button
+        android:id="@+id/resetButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/reset_license" />
 </LinearLayout>

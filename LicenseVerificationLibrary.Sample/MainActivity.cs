@@ -53,6 +53,7 @@
             { 46, 65, 30, 128, 103, 57, 74, 64, 51, 88, 95, 45, 77, 117, 36, 113, 11, 32, 64, 89 };
 
         private Button checkLicenseButton;
+        private Button resetLicenseButton;
         private LicenseChecker checker;
 
         protected override void OnCreate(Bundle savedInstanceState)
@@ -61,9 +62,6 @@
             RequestWindowFeature(WindowFeatures.IndeterminateProgress);
             SetContentView(Resource.Layout.Main);
 
-            this.checkLicenseButton = FindViewById<Button>(Resource.Id.MyButton);
-            this.checkLicenseButton.Click += delegate { this.DoCheck(); };
-
             // Try to use more data here. ANDROID_ID is a single point of attack.
             string deviceId = Settings.Secure.GetString(ContentResolver, Settings.Secure.AndroidId);
 
@@ -71,6 +69,12 @@
             var obfuscator = new AesObfuscator(Salt, this.PackageName, deviceId);
             var policy = new ServerManagedPolicy(this, obfuscator);
             this.checker = new LicenseChecker(this, policy, Base64PublicKey);
+
+			this.checkLicenseButton = FindViewById<Button>(Resource.Id.checkButton);
+			this.checkLicenseButton.Click += delegate { this.DoCheck(); };
+
+			this.resetLicenseButton = FindViewById<Button>(Resource.Id.resetButton);
+			this.resetLicenseButton.Click += delegate { policy.ResetPolicy(); };
 
             this.DoCheck();
         }
@@ -107,6 +111,7 @@
         private void DoCheck()
         {
             this.checkLicenseButton.Enabled = false;
+			this.resetLicenseButton.Enabled = false;
             this.SetProgressBarIndeterminateVisibility(true);
             this.checkLicenseButton.SetText(Resource.String.checking_license);
             this.checker.CheckAccess(this);
@@ -120,6 +125,7 @@
                         this.checkLicenseButton.Text = result;
                         this.SetProgressBarIndeterminateVisibility(false);
                         this.checkLicenseButton.Enabled = true;
+						this.resetLicenseButton.Enabled = true;
                     });
         }
 
@@ -131,6 +137,7 @@
                         SetProgressBarIndeterminateVisibility(false);
                         ShowDialog(showRetry ? 1 : 0);
                         this.checkLicenseButton.Enabled = true;
+						this.resetLicenseButton.Enabled = true;
                     });
         }
 
