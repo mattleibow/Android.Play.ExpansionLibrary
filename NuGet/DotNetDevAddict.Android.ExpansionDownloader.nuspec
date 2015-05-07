@@ -2,8 +2,8 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>DotNetDevAddict.Android.ExpansionDownloader</id>
-        <version>1.1.0.0-beta5</version>
-        <title>APK Expansion Downloader</title>
+        <version>1.1.1</version>
+        <title>Android APK Expansion Downloader</title>
         <authors>Matthew Leibowitz</authors>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>https://github.com/mattleibow/android.Play.ExpansionLibrary</projectUrl>
@@ -11,12 +11,11 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>C# implementation of Google's Android APK Expansion Downloader.</description>
         <summary>C# implementation of Google's Android APK Expansion Downloader.</summary>
-        <releaseNotes>- Updated to use the new LVL assemblies</releaseNotes>
         <copyright>.NET Development Addict</copyright>
         <tags>android,monodroid,xamarin,google,lvl,license,verification,library,apk,expansion,downloader</tags>
         <dependencies>
             <group targetFramework="MonoAndroid2.3">
-                <dependency id="DotNetDevAddict.Android.LicenseVerificationLibrary" version="1.1.0.0-beta5" />
+                <dependency id="DotNetDevAddict.Android.LicenseVerificationLibrary" version="1.1.1" />
             </group>
         </dependencies>
     </metadata>

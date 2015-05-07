@@ -2,8 +2,8 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
     <metadata>
         <id>DotNetDevAddict.Android.LicenseVerificationLibrary</id>
-        <version>1.1.0.0-beta5</version>
-        <title>License Verification Library</title>
+        <version>1.1.1</version>
+        <title>Android License Verification Library</title>
         <authors>Matthew Leibowitz</authors>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>https://github.com/mattleibow/android.Play.ExpansionLibrary</projectUrl>
@@ -11,9 +11,6 @@
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>C# implementation of Google's Android License Verification Library (LVL).</description>
         <summary>C# implementation of Google's Android License Verification Library (LVL).</summary>
-        <releaseNotes>- Fixed bug in ServerManagedPolicy where it was always Licensed
-- ApkExtensionPolicy now inherits from ServerManagedPolicy
-- Added a ResetPolicy method</releaseNotes>
         <copyright>.NET Development Addict</copyright>
         <tags>android,monodroid,xamarin,google,lvl,license,verification,library</tags>
     </metadata>
