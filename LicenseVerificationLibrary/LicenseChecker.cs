@@ -51,6 +51,7 @@ namespace LicenseVerificationLibrary
         ///   Source String: "com.android.vending.licensing.ILicensingService"
         /// </summary>
         private const string LicensingServiceIntentString = "com.android.vending.licensing.ILicensingService";
+        private const string LicensingServicePackageString = "com.android.vending";
 
         /// <summary>
         /// Timeout value (in milliseconds) for calls to service.
@@ -191,6 +192,7 @@ namespace LicenseVerificationLibrary
                         try
                         {
                             var i = new Intent(LicensingServiceIntentString);
+                            i.SetPackage(LicensingServicePackageString);
 
                             if (this.context.BindService(i, this, Bind.AutoCreate))
                             {
