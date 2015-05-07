@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.dotnetdevaddict.expansiondownloader.sample" android:versionName="1.0.4.0" android:versionCode="14" android:installLocation="auto">
-	<uses-sdk />
-	<application android:label="Super Simple Spansions" android:icon="@drawable/Icon"></application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto" package="com.dotnetdevaddict.expansiondownloader.sample" android:versionCode="14" android:versionName="1.0.4.0">
+	<uses-sdk android:minSdkVersion="10" />
+	<application android:label="Super Simple Spansions"></application>
 </manifest>
