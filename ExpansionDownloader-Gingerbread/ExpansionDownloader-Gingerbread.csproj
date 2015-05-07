@@ -167,11 +167,6 @@
     </AndroidResource>
   </ItemGroup>
   <ItemGroup>
-    <AndroidResource Include="..\ExpansionDownloader\Resources\values\notification.xml">
-      <Link>Resources\values\notification.xml</Link>
-    </AndroidResource>
-  </ItemGroup>
-  <ItemGroup>
     <AndroidResource Include="..\ExpansionDownloader\Resources\values\strings.xml">
       <Link>Resources\values\strings.xml</Link>
     </AndroidResource>

@@ -92,7 +92,6 @@
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\drawable-hdpi\notify_panel_notification_icon_bg.png" />
-    <AndroidResource Include="Resources\values\notification.xml" />
     <AndroidResource Include="Resources\values\styles.xml" />
     <AndroidResource Include="Resources\drawable-mdpi\notify_panel_notification_icon_bg.png" />
     <AndroidResource Include="Resources\layout\status_bar_ongoing_event_progress_bar.axml" />
