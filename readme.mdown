@@ -1,3 +1,28 @@
+# Deprecation
+
+This library is deprecated moving forward. New packages have been uploaded that 
+are no longer a C# port of the library, but a direct binding of the Java code: 
+
+ - https://www.nuget.org/packages/Xamarin.Google.Android.Vending.Licensing 
+ - https://www.nuget.org/packages/Xamarin.Google.Android.Vending.Expansion.Downloader 
+ - https://www.nuget.org/packages/Xamarin.Google.Android.Vending.Expansion.ZipFile
+
+There are several breaking changes, although the API is fairly similar - mostly
+namespace/type changes. All the changes are documented here, along with their
+replacements: 
+
+https://github.com/xamarin/XamarinComponents/blob/master/Android/GoogleAndroidVending/docs/API-Changes.md
+
+More detailed docs can be found here: 
+
+https://github.com/xamarin/XamarinComponents/tree/master/Android/GoogleAndroidVending/docs
+
+The new library is located here:
+
+https://github.com/xamarin/XamarinComponents/tree/master/Android/GoogleAndroidVending
+
+---
+
 # About this project
 
 This is the C# implementation of Google's License Verification Library (r2) 
